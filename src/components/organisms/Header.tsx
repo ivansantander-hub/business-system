@@ -127,13 +127,13 @@ export default function Header() {
           {theme === "dark" ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
         </button>
         {user && (
-          <div className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 ml-1 sm:ml-2 border-l border-slate-200 dark:border-slate-800">
+          <a href="/dashboard/perfil" className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 ml-1 sm:ml-2 border-l border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity">
             <div className="text-right hidden sm:block">
               <p className="text-sm font-semibold text-slate-900 dark:text-white truncate max-w-[140px]">{user.name}</p>
               <p className="text-[11px] text-slate-500">{roleLabels[user.role] || user.role}</p>
             </div>
-            <Avatar name={user.name} size="md" />
-          </div>
+            <Avatar name={user.name} src={user.avatarUrl} size="md" />
+          </a>
         )}
       </div>
     </header>

@@ -17,7 +17,7 @@ This document describes the test suite for SGC, including how to run tests, what
 pnpm test
 ```
 
-Runs both concurrency and API integration tests. API tests gracefully skip if no dev server is running.
+Runs concurrency, email, API, R2 unit, and R2 integration tests. API and R2 integration tests gracefully skip if no dev server is running.
 
 ### Watch mode
 
@@ -31,6 +31,8 @@ pnpm test:watch
 pnpm test:concurrency    # Concurrency tests only (no server needed)
 pnpm test:api             # API integration tests (requires running server)
 pnpm test:email           # Email template unit tests (no server needed)
+pnpm test:r2              # R2 key/PDF unit tests (no server needed)
+pnpm test:r2-integration  # R2 integration tests (requires server + R2 credentials)
 pnpm test:e2e             # E2E browser tests (requires running server)
 ```
 
@@ -56,12 +58,14 @@ python -m playwright install chromium
 
 ```
 tests/
-├── setup.ts              # Global setup (Prisma disconnect)
-├── helpers.ts            # Shared test utilities
-├── email.test.ts         # Email template unit tests (17 tests)
-├── concurrency.test.ts   # Concurrency tests (6 tests)
-├── api.test.ts           # API integration tests (27 tests)
-└── e2e.py                # E2E browser tests (18 tests)
+├── setup.ts                 # Global setup (Prisma disconnect)
+├── helpers.ts               # Shared test utilities
+├── email.test.ts            # Email template unit tests (12 tests)
+├── concurrency.test.ts      # Concurrency tests (6 tests)
+├── api.test.ts              # API integration tests (32 tests)
+├── r2-pdf.test.ts           # R2 key generation and PDF generation tests (8 tests)
+├── r2-integration.test.ts   # R2 live integration tests (8 tests)
+└── e2e.py                   # E2E browser tests (24 tests)
 ```
 
 ### Configuration
@@ -73,14 +77,27 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, "src") } },
   test: {
     globals: true,
-    testTimeout: 30000,
+    testTimeout: 60000,
+    hookTimeout: 60000,
     include: ["tests/**/*.test.ts"],
     setupFiles: ["tests/setup.ts"],
   },
 });
 ```
 
-## Test Suites
+## Test Suites Summary
+
+| Suite | Tests | Server Required | R2 Required | Description |
+|-------|-------|-----------------|-------------|-------------|
+| `concurrency.test.ts` | 6 | No | No | Parallel database operation integrity |
+| `email.test.ts` | 12 | No | No | Email templates and event constants |
+| `api.test.ts` | 32 | Yes | No | REST API endpoint validation |
+| `r2-pdf.test.ts` | 8 | No | No | R2 key generation and PDF creation |
+| `r2-integration.test.ts` | 8 | Yes | Yes | Live R2 upload/download/delete + API flows |
+| `e2e.py` | 24 | Yes | No | Full browser-based user experience |
+| **Total** | **90** | | | |
+
+## Test Suites Detail
 
 ### Concurrency Tests (`tests/concurrency.test.ts`)
 
@@ -112,8 +129,49 @@ export default defineConfig({
 | Invoices | 1 | List invoices |
 | Purchases | 3 | Create purchase, receive (updates stock), double-receive returns 409 |
 | Reports | 1 | Dashboard report endpoint |
+| Forgot Password | 2 | Forgot password always 200, reset rejects invalid token |
+| Notifications | 4 | List event templates, toggle notification, user/role preferences |
+| RBAC | 4 | List role configs, toggle permission, bulk-update, reject invalid role |
+| Profile | 3 | Get profile, update name, reject wrong password |
+| Invoice PDF | 1 | Returns 404 for non-existent invoice |
+| Purchase PDF | 1 | Returns 404 for non-existent purchase |
 
 **Authentication:** Tests generate a JWT token using `signToken()` and send it as a cookie.
+
+### Email Tests (`tests/email.test.ts`)
+
+Unit tests for the email/notification system. These do not require a running server or SMTP credentials.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Email Event Constants | 2 | Validates all event types and labels are defined |
+| Event Meta / Recipient Types | 4 | Validates external/internal/system classification |
+| formatCurrency | 2 | COP currency formatting |
+| Email Template Functions | 8 | Validates each template function generates correct params |
+
+### R2 & PDF Unit Tests (`tests/r2-pdf.test.ts`)
+
+Unit tests for the R2 storage layer and PDF generation. No server or R2 credentials needed.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| R2 Key Generation | 5 | Validates key paths for invoices, purchases, and avatars |
+| R2 Configuration | 1 | Validates `isR2Configured()` returns a boolean |
+| PDF Generation | 3 | Generates sale invoice, purchase order, and empty-item PDFs — validates PDF magic bytes |
+
+### R2 Integration Tests (`tests/r2-integration.test.ts`)
+
+**Purpose:** Validate live Cloudflare R2 integration end-to-end, including actual uploads, downloads, and deletions against the real R2 bucket, plus API-level PDF and avatar flows.
+
+**Requires:** Running dev server AND valid R2 credentials in `.env`. Tests skip gracefully if either is unavailable.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| R2 Direct Client | 2 | Upload/download/delete text file; upload/download/verify PDF binary |
+| Invoice PDF Flow | 2 | Create sale via API → wait for PDF generation → retrieve via `/api/invoices/:id/pdf`; verify R2 caching |
+| Purchase PDF Flow | 1 | Create purchase via API → wait for PDF generation → retrieve via `/api/purchases/:id/pdf` |
+| Avatar Upload Flow | 1 | Upload avatar PNG → retrieve → delete → verify 404 |
+| Profile Integration | 2 | `/api/auth/me` includes `avatarUrl`; `/api/profile` includes `avatarUrl` |
 
 ### E2E Tests (`tests/e2e.py`)
 
@@ -126,7 +184,8 @@ export default defineConfig({
 | Login | 3 | Page loads, invalid credentials rejected, successful login redirects to dashboard |
 | Dashboard | 2 | Dashboard renders content, sidebar has navigation links |
 | Page Navigation | 8 | Products, Customers, Invoices, POS, Accounting, Reports, Purchases, Settings pages load |
-| Features | 2 | Theme toggle (dark/light), responsive mobile viewport |
+| Features | 7 | Theme toggle, responsive mobile viewport, forgot password, notifications, RBAC, profile pages, PDF 404 |
+| R2 & PDF Integration | 4 | Avatar file input present, invoice PDF link in detail, purchase PDF via API, actual invoice PDF download |
 
 ## Test Helpers (`tests/helpers.ts`)
 
@@ -172,35 +231,14 @@ def test_my_feature(page):
 
 2. Call it from `main()` in the appropriate group.
 
-## Email Tests (`tests/email.test.ts`)
-
-Unit tests for the email/notification system. These do not require a running server or SMTP credentials.
-
-| Test Group | Tests | Description |
-|------------|-------|-------------|
-| Email Event Constants | 2 | Validates all event types and labels are defined |
-| Event Meta / Recipient Types | 4 | Validates external/internal/system classification |
-| formatCurrency | 2 | COP currency formatting |
-| Email Template Functions | 9 | Validates each template function generates correct params |
-
-### API Tests for Notifications & RBAC
-
-The `tests/api.test.ts` file includes additional integration tests:
-
-- `POST /api/auth/forgot-password` — Always returns 200
-- `POST /api/auth/reset-password` — Rejects invalid tokens
-- `GET /api/notifications` — Returns event templates with recipient info
-- `PUT /api/notifications` — Toggles a notification
-- `GET /api/notifications/users` — Returns user preferences
-- `GET /api/notifications/roles` — Returns role groups
-- `GET /api/rbac` — Returns role permission configs per company
-- `PUT /api/rbac` — Toggles a single permission for a role
-- `POST /api/rbac` — Bulk-updates permissions for a role
-- `PUT /api/rbac (invalid role)` — Rejects non-configurable roles
-
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | (required) | PostgreSQL connection string for test database |
 | `TEST_BASE_URL` | `http://localhost:3000` | Base URL for API and E2E tests |
+| `R2_ACCESS_KEY_ID` | — | Required for R2 integration tests |
+| `R2_SECRET_ACCESS_KEY` | — | Required for R2 integration tests |
+| `R2_ACCOUNT_ID` | — | Required for R2 integration tests |
+| `R2_BUCKET_NAME` | `business-system` | R2 bucket name |
+| `R2_ENDPOINT` | auto-generated | S3-compatible endpoint for R2 |

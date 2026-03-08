@@ -342,3 +342,66 @@ Company Template (enabled?) → User Preference (enabled?) → Send Email
 ```
 
 Both must be enabled for the email to be sent. See [docs/EMAILS.md](./EMAILS.md) for complete reference.
+
+## Cloudflare R2 Object Storage
+
+The system uses **Cloudflare R2** (S3-compatible) for storing binary assets such as invoice PDFs and user avatars. The integration uses `@aws-sdk/client-s3`.
+
+### Bucket Structure
+
+```
+business-system/
+├── companies/
+│   ├── {companyId}/
+│   │   ├── invoices/          # Sale invoice PDFs
+│   │   │   ├── FE-00000001.pdf
+│   │   │   └── FE-00000002.pdf
+│   │   └── purchases/         # Purchase order PDFs
+│   │       ├── OC-000001.pdf
+│   │       └── OC-000002.pdf
+│   └── {companyId2}/
+│       └── ...
+└── users/
+    ├── {userId}/
+    │   └── avatar.jpg          # User profile photos
+    └── {userId2}/
+        └── avatar.png
+```
+
+### Key Components
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| R2 client | `src/lib/r2.ts` | S3 client, upload/download/delete, key helpers |
+| PDF generator | `src/lib/pdf.ts` | Invoice/purchase PDF creation using `pdf-lib` |
+| PDF background worker | `src/lib/pdf-worker.ts` | Fire-and-forget PDF generation + R2 upload |
+| Invoice PDF API | `src/app/api/invoices/[id]/pdf/` | Generate/serve invoice PDFs |
+| Purchase PDF API | `src/app/api/purchases/[id]/pdf/` | Generate/serve purchase order PDFs |
+| Avatar API | `src/app/api/profile/avatar/` | Upload/serve/delete user avatars |
+
+### PDF Generation Flow
+
+1. User creates a sale (invoice) or purchase order.
+2. After the transaction commits, `generateAndUploadInvoicePdf` or `generateAndUploadPurchasePdf` is called fire-and-forget.
+3. The PDF is generated using `pdf-lib` and uploaded to R2 under the company's folder.
+4. When a PDF is requested via `/api/invoices/[id]/pdf`, the system first checks R2 for a cached version. If not found, it generates the PDF on-the-fly and caches it.
+
+## User Profile System
+
+Users can manage their personal information, password, and profile photo.
+
+### Key Components
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| Profile API | `src/app/api/profile/` | GET/PUT for user info and password |
+| Avatar API | `src/app/api/profile/avatar/` | POST (upload), GET (serve), DELETE |
+| Profile page | `src/app/dashboard/perfil/` | UI for managing profile |
+
+### Avatar Upload Flow
+
+1. User selects an image file (JPEG, PNG, WebP, GIF, max 5 MB).
+2. The file is uploaded via `POST /api/profile/avatar` as `multipart/form-data`.
+3. The API uploads the file to R2 under `users/{userId}/avatar.{ext}`.
+4. The `avatarUrl` field on the `User` model is updated with the R2 key.
+5. The avatar is served via `GET /api/profile/avatar` which reads from R2.

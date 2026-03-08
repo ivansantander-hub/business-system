@@ -16,6 +16,7 @@ export interface AuthUser {
   companyType?: string;
   companies?: CompanyOption[];
   permissions?: string[];
+  avatarUrl?: string | null;
 }
 
 export const authUserAtom = atom<AuthUser | null>(null);

@@ -259,7 +259,11 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <div className={`flex-shrink-0 border-t border-slate-800/60 ${isCompact ? "p-2" : "p-3"}`}>
           {/* User info */}
           {!isCompact && userName && (
-            <div className="flex items-center gap-3 px-3 py-2.5 mb-1">
+            <Link
+              href="/dashboard/perfil"
+              className="flex items-center gap-3 px-3 py-2.5 mb-1 rounded-xl hover:bg-white/[0.04] transition-colors"
+              onClick={closeMobile}
+            >
               <div className="w-8 h-8 bg-gradient-accent rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-[10px] font-bold text-white">
                   {userName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
@@ -269,7 +273,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 <p className="text-xs font-medium text-slate-300 truncate">{userName}</p>
                 <p className="text-[10px] text-slate-600 truncate">{roleLabel[userRole] || userRole}</p>
               </div>
-            </div>
+            </Link>
           )}
 
           {/* Collapse toggle */}

@@ -24,7 +24,10 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Sistema de emails transaccionales (Brevo)** — Notificaciones en ventas, compras, membresías, tiqueteras, facturas
 - **Recuperación de contraseña** — Flujo completo con token y email
 - **Panel de notificaciones** — Gestión por empresa, rol y usuario
-- **Test suite completa** — Concurrencia, API, Email, E2E
+- **Almacenamiento R2 (Cloudflare)** — PDFs de facturas y compras, fotos de perfil
+- **Generación automática de PDFs** — Facturas y órdenes de compra en PDF con diseño profesional
+- **Perfil de usuario** — Gestión de info personal, contraseña y foto de perfil
+- **Test suite completa** — Concurrencia, API, Email, E2E, R2/PDF
 
 ## Requisitos previos
 
@@ -55,6 +58,11 @@ SMTP_USER="tu-email-brevo@ejemplo.com"
 SMTP_PASS="tu-smtp-key-de-brevo"
 SMTP_FROM_EMAIL="noreply@tuempresa.com"
 SMTP_FROM_NAME="SGC - Sistema de Gestión Comercial"
+R2_ACCOUNT_ID="tu-cloudflare-account-id"
+R2_ACCESS_KEY_ID="tu-r2-access-key"
+R2_SECRET_ACCESS_KEY="tu-r2-secret-key"
+R2_BUCKET_NAME="business-system"
+R2_ENDPOINT="https://tu-account-id.r2.cloudflarestorage.com"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
@@ -124,12 +132,14 @@ business-system/
 | `pnpm db:seed` | Ejecuta el seed (datos iniciales) |
 | `pnpm db:studio` | Abre Prisma Studio |
 | `pnpm setup` | `db:generate` + `db:push` + `db:seed` |
-| `pnpm test` | Ejecuta tests (Vitest) |
+| `pnpm test` | Ejecuta todos los tests (Vitest) — 72 tests |
 | `pnpm test:watch` | Tests en modo watch |
-| `pnpm test:concurrency` | Tests de concurrencia |
-| `pnpm test:api` | Tests de API |
-| `pnpm test:email` | Tests del sistema de email |
-| `pnpm test:e2e` | Tests E2E |
+| `pnpm test:concurrency` | Tests de concurrencia (6 tests) |
+| `pnpm test:api` | Tests de API (32 tests, requiere servidor) |
+| `pnpm test:email` | Tests del sistema de email (12 tests) |
+| `pnpm test:r2` | Tests unitarios R2/PDF (8 tests) |
+| `pnpm test:r2-integration` | Tests integración R2 live (8 tests, requiere servidor + R2) |
+| `pnpm test:e2e` | Tests E2E Playwright (24 tests, requiere servidor) |
 
 ## Documentación adicional
 

@@ -16,6 +16,7 @@ export async function GET(request: Request) {
       name: true,
       email: true,
       role: true,
+      avatarUrl: true,
       companies: {
         include: { company: { select: { id: true, name: true, isActive: true, type: true } } },
       },
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
     name: user.name,
     email: user.email,
     role: effectiveRole,
+    avatarUrl: user.avatarUrl ? `/api/profile/avatar?t=${Date.now()}` : null,
     companyId,
     companyName: activeAssignment?.company.name || null,
     companyType,

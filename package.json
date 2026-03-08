@@ -15,16 +15,20 @@
     "test:watch": "vitest",
     "test:concurrency": "vitest run tests/concurrency.test.ts",
     "test:api": "vitest run tests/api.test.ts",
-    "test:e2e": "vitest run tests/e2e.test.ts",
+    "test:r2": "vitest run tests/r2-pdf.test.ts",
+    "test:r2-integration": "vitest run tests/r2-integration.test.ts",
+    "test:e2e": "python tests/e2e.py",
     "test:email": "vitest run tests/email.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1004.0",
     "@prisma/client": "^6.0.0",
     "bcryptjs": "^2.4.3",
     "jose": "^5.2.0",
     "jotai": "^2.18.0",
     "lucide-react": "^0.460.0",
     "next": "latest",
+    "pdf-lib": "^1.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^2.15.0"

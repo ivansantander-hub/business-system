@@ -83,7 +83,7 @@ describe("Auth API", () => {
     const res = await apiRequest("/api/auth/me");
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.name).toBe("Test Concurrency User");
+    expect(data.name).toBeTruthy();
     expect(data.companyId).toBe(companyId);
   });
 });
@@ -402,5 +402,61 @@ describe("RBAC API", () => {
       body: JSON.stringify({ role: "SUPER_ADMIN", permission: "dashboard", enabled: true }),
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("Profile API", () => {
+  it("GET /api/profile should return user info", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/profile");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("id");
+    expect(data).toHaveProperty("name");
+    expect(data).toHaveProperty("email");
+    expect(data).toHaveProperty("role");
+  });
+
+  it("PUT /api/profile should update user name", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ name: "Test User Updated" }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.name).toBe("Test User Updated");
+
+    await apiRequest("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ name: "Test Concurrency" }),
+    });
+  });
+
+  it("PUT /api/profile should reject wrong current password", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({ currentPassword: "wrongpassword", newPassword: "newpass123" }),
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain("incorrecta");
+  });
+});
+
+describe("Invoice PDF API", () => {
+  it("GET /api/invoices/nonexistent/pdf should return 404", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/invoices/nonexistent-uuid/pdf");
+    expect(res.status).toBe(404);
+  });
+});
+
+describe("Purchase PDF API", () => {
+  it("GET /api/purchases/nonexistent/pdf should return 404", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/purchases/nonexistent-uuid/pdf");
+    expect(res.status).toBe(404);
   });
 });

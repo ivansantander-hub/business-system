@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FileText, Eye, XCircle, Printer } from "lucide-react";
+import { FileText, Eye, XCircle, Printer, Download } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -137,8 +137,9 @@ export default function FacturasPage() {
               )}
             </div>
 
-            <div className="flex gap-3 no-print">
+            <div className="flex flex-wrap gap-3 no-print">
               <button onClick={() => window.print()} className="btn-primary flex items-center gap-2 flex-1"><Printer className="w-4 h-4" /> Imprimir</button>
+              <a href={`/api/invoices/${showDetail.id}/pdf`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex items-center gap-2"><Download className="w-4 h-4" /> PDF</a>
               {showDetail.status !== "CANCELLED" && (
                 <button onClick={() => cancelInvoice(showDetail.id)} className="btn-danger flex items-center gap-2"><XCircle className="w-4 h-4" /> Anular</button>
               )}

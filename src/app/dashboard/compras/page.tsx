@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ShoppingBag, Plus, Eye, CheckCircle, XCircle } from "lucide-react";
+import { ShoppingBag, Plus, Eye, CheckCircle, XCircle, Download } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { Button } from "@/components/atoms";
@@ -155,9 +155,15 @@ export default function ComprasPage() {
             <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-0"><table className="w-full min-w-[400px]"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
               <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>))}</tbody></table></div>
             <div className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-3 text-right font-bold text-lg">Total: {formatCurrency(showDetail.total)}</div>
-            {showDetail.status === "PENDING" && (
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><Button variant="success" onClick={() => updateStatus(showDetail.id, "RECEIVED")} icon={<CheckCircle className="w-4 h-4" />} className="flex-1">Marcar Recibida</Button><Button variant="danger" onClick={() => updateStatus(showDetail.id, "CANCELLED")} icon={<XCircle className="w-4 h-4" />}>Cancelar</Button></div>
-            )}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <a href={`/api/purchases/${showDetail.id}/pdf`} target="_blank" rel="noopener noreferrer" className="btn-secondary flex items-center justify-center gap-2"><Download className="w-4 h-4" /> Descargar PDF</a>
+              {showDetail.status === "PENDING" && (
+                <>
+                  <Button variant="success" onClick={() => updateStatus(showDetail.id, "RECEIVED")} icon={<CheckCircle className="w-4 h-4" />} className="flex-1">Marcar Recibida</Button>
+                  <Button variant="danger" onClick={() => updateStatus(showDetail.id, "CANCELLED")} icon={<XCircle className="w-4 h-4" />}>Cancelar</Button>
+                </>
+              )}
+            </div>
           </div>
         )}
       </Modal>

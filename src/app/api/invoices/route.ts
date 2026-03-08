@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
 import { sendNotification, EMAIL_EVENTS, emailSaleCompleted } from "@/lib/email";
+import { generateAndUploadInvoicePdf } from "@/lib/pdf-worker";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -65,6 +66,8 @@ export async function POST(request: Request) {
         ).catch(() => {});
       }
     }
+
+    generateAndUploadInvoicePdf(result.invoice.id, companyId).catch(() => {});
 
     return NextResponse.json(result.invoice, { status: 201 });
   } catch (error) {
