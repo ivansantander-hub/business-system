@@ -7,24 +7,11 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Building2, ChevronDown, Check, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { useAtomValue, useSetAtom } from "jotai";
+import { authUserAtom, themeAtom, toggleThemeAtom, fetchAuthAtom } from "@/store";
 import Avatar from "../atoms/Avatar";
-
-interface CompanyOption {
-  id: string;
-  name: string;
-  role: string;
-}
-
-interface UserInfo {
-  name: string;
-  role: string;
-  companyId: string | null;
-  companyName?: string;
-  companies?: CompanyOption[];
-}
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: "Super Administrador",
@@ -36,18 +23,13 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function Header() {
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const user = useAtomValue(authUserAtom);
+  const theme = useAtomValue(themeAtom);
+  const toggleTheme = useSetAtom(toggleThemeAtom);
+  const fetchAuth = useSetAtom(fetchAuthAtom);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [switching, setSwitching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { theme, toggleTheme } = useTheme();
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then(setUser)
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -71,7 +53,10 @@ export default function Header() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ companyId }),
       });
-      if (res.ok) window.location.reload();
+      if (res.ok) {
+        await fetchAuth();
+        window.location.reload();
+      }
     } finally {
       setSwitching(false);
       setShowCompanyDropdown(false);

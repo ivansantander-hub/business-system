@@ -16,6 +16,8 @@ import {
   UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket, ChevronDown,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useAtomValue } from "jotai";
+import { permissionsAtom, userRoleAtom, userNameAtom } from "@/store";
 import type { Permission } from "@/lib/rbac";
 
 interface MenuItem {
@@ -99,21 +101,10 @@ function NavLink({
 export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [userRole, setUserRole] = useState("");
-  const [userName, setUserName] = useState("");
+  const permissions = useAtomValue(permissionsAtom);
+  const userRole = useAtomValue(userRoleAtom);
+  const userName = useAtomValue(userNameAtom);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((data) => {
-        setUserRole(data.role || "");
-        setUserName(data.name || "");
-        setPermissions(data.permissions || []);
-      })
-      .catch(() => {});
-  }, []);
 
   const menuItems = allMenuItems.filter((item) => permissions.includes(item.permission));
   const groups = [...new Set(menuItems.map((i) => i.group))];

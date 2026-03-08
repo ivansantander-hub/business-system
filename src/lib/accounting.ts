@@ -11,8 +11,11 @@ interface JournalLineInput {
 
 /**
  * Creates a journal entry within an existing Prisma transaction.
- * Looks up accounts by PUC code for the given company, creates
- * the entry + lines, and updates account balances.
+ * Uses atomic balance updates to prevent race conditions.
+ *
+ * CONCURRENCY: This function expects to be called inside a Serializable
+ * or at least RepeatableRead transaction. Balance updates use Prisma's
+ * atomic `increment` to avoid lost-update anomalies.
  */
 export async function createJournalEntry(
   tx: Tx,
@@ -58,6 +61,7 @@ export async function createJournalEntry(
     },
   });
 
+  // Atomic balance updates using Prisma increment to prevent lost updates
   for (const line of resolvedLines) {
     const account = await tx.account.findFirst({
       where: { id: line.accountId, companyId },

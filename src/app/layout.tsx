@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "@/context/ThemeContext";
+import StoreProvider from "@/store/Provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
       </head>
       <body className="antialiased font-sans" style={{ touchAction: "manipulation" }}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <StoreProvider>{children}</StoreProvider>
       </body>
     </html>
   );
