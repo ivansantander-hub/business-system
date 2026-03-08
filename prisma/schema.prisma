@@ -466,30 +466,33 @@ model OrderItem {
 }
 
 model Invoice {
-  id            Int           @id @default(autoincrement())
-  companyId     Int           @map("company_id")
-  company       Company       @relation(fields: [companyId], references: [id])
-  orderId       Int?          @map("order_id")
-  order         Order?        @relation(fields: [orderId], references: [id])
-  customerId    Int?          @map("customer_id")
-  customer      Customer?     @relation(fields: [customerId], references: [id])
-  userId        Int           @map("user_id")
-  user          User          @relation(fields: [userId], references: [id])
-  number        String        @unique
-  date          DateTime      @default(now())
-  subtotal      Decimal       @default(0)
-  taxRate       Decimal       @default(0.19) @map("tax_rate")
-  tax           Decimal       @default(0)
-  discount      Decimal       @default(0)
-  total         Decimal       @default(0)
-  paidAmount    Decimal       @default(0) @map("paid_amount")
-  changeAmount  Decimal       @default(0) @map("change_amount")
-  paymentMethod PaymentMethod @default(CASH) @map("payment_method")
-  status        InvoiceStatus @default(PAID)
-  notes         String?
-  createdAt     DateTime      @default(now()) @map("created_at")
-  items         InvoiceItem[]
+  id             Int           @id @default(autoincrement())
+  companyId      Int           @map("company_id")
+  company        Company       @relation(fields: [companyId], references: [id])
+  orderId        Int?          @map("order_id")
+  order          Order?        @relation(fields: [orderId], references: [id])
+  customerId     Int?          @map("customer_id")
+  customer       Customer?     @relation(fields: [customerId], references: [id])
+  userId         Int           @map("user_id")
+  user           User          @relation(fields: [userId], references: [id])
+  cashSessionId  Int?          @map("cash_session_id")
+  cashSession    CashSession?  @relation(fields: [cashSessionId], references: [id])
+  number         String
+  date           DateTime      @default(now())
+  subtotal       Decimal       @default(0)
+  taxRate        Decimal       @default(0.19) @map("tax_rate")
+  tax            Decimal       @default(0)
+  discount       Decimal       @default(0)
+  total          Decimal       @default(0)
+  paidAmount     Decimal       @default(0) @map("paid_amount")
+  changeAmount   Decimal       @default(0) @map("change_amount")
+  paymentMethod  PaymentMethod @default(CASH) @map("payment_method")
+  status         InvoiceStatus @default(PAID)
+  notes          String?
+  createdAt      DateTime      @default(now()) @map("created_at")
+  items          InvoiceItem[]
 
+  @@unique([companyId, number])
   @@schema("tenant")
   @@map("invoices")
 }
@@ -523,6 +526,7 @@ model CashSession {
   openedAt       DateTime          @default(now()) @map("opened_at")
   closedAt       DateTime?         @map("closed_at")
   status         CashSessionStatus @default(OPEN)
+  invoices       Invoice[]
 
   @@schema("tenant")
   @@map("cash_sessions")

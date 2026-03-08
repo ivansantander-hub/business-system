@@ -166,30 +166,33 @@ export default function POSPage() {
       return;
     }
 
-    const regularItems = cart.filter(i => i.product.id > 0);
+    const allItems = cart.map(i => ({
+      productId: i.product.id > 0 ? i.product.id : undefined,
+      productName: i.product.name,
+      quantity: i.quantity,
+      unitPrice: i.unitPrice,
+    }));
+
+    const res = await fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: allItems,
+        paymentMethod,
+        paidAmount: paymentMethod === "CASH" ? Number(paidAmount) : total,
+        discount: 0,
+        notes: `Cliente: ${customerName} - NIT: ${customerNit}`,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      setToast({ message: err.error || "Error al procesar venta", type: "error" });
+      return;
+    }
+
     const membershipItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Membresía");
     const dayPassItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Pase Día");
-
-    if (regularItems.length > 0) {
-      const items = regularItems.map(i => ({
-        productId: i.product.id,
-        productName: i.product.name,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-      }));
-
-      await fetch("/api/invoices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items,
-          paymentMethod,
-          paidAmount: paymentMethod === "CASH" ? Number(paidAmount) : total,
-          discount: 0,
-          notes: `Cliente: ${customerName} - NIT: ${customerNit}`,
-        }),
-      });
-    }
 
     for (const item of membershipItems) {
       const planId = Math.abs(item.product.id);
@@ -197,7 +200,13 @@ export default function POSPage() {
         await fetch("/api/membership-plans", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "create-membership", memberId: selectedMemberId, planId, paymentStatus: "PAID" }),
+          body: JSON.stringify({
+            action: "create-membership",
+            memberId: selectedMemberId,
+            planId,
+            paymentMethod,
+            paidAmount: Number(item.total),
+          }),
         });
       }
     }
@@ -210,6 +219,7 @@ export default function POSPage() {
           memberId: selectedMemberId || undefined,
           guestName: guestName || customerName,
           price: Number(dayPassPrice),
+          paymentMethod,
         }),
       });
     }
@@ -221,7 +231,7 @@ export default function POSPage() {
     setCustomerNit("222222222");
     setSelectedMemberId(null);
     loadProducts();
-    setToast({ message: "Venta registrada exitosamente", type: "success" });
+    setToast({ message: "Venta registrada y facturada", type: "success" });
   }
 
   if (!cashSession) {

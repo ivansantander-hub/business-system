@@ -82,8 +82,9 @@ export default function MembresiasPage() {
   });
 
   const [showMembershipModal, setShowMembershipModal] = useState(false);
-  const [membershipForm, setMembershipForm] = useState({ customerId: "", planId: "", paymentStatus: "PENDING" });
+  const [membershipForm, setMembershipForm] = useState({ customerId: "", planId: "", paymentMethod: "CASH", paidAmount: "" });
   const [customerSearch, setCustomerSearch] = useState("");
+  const [hasCashSession, setHasCashSession] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -109,6 +110,13 @@ export default function MembresiasPage() {
   }, [customerSearch]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    fetch("/api/cash?action=current")
+      .then(r => r.json())
+      .then(data => setHasCashSession(!!data?.id))
+      .catch(() => setHasCashSession(false));
+  }, []);
 
   useEffect(() => {
     if (showMembershipModal) loadCustomers();
@@ -173,7 +181,11 @@ export default function MembresiasPage() {
   }
 
   function openCreateMembership() {
-    setMembershipForm({ customerId: "", planId: "", paymentStatus: "PENDING" });
+    if (!hasCashSession) {
+      setToast({ message: "Debe abrir una caja antes de vender membresías", type: "error" });
+      return;
+    }
+    setMembershipForm({ customerId: "", planId: "", paymentMethod: "CASH", paidAmount: "" });
     setCustomerSearch("");
     setShowMembershipModal(true);
   }
@@ -184,6 +196,8 @@ export default function MembresiasPage() {
       setToast({ message: "Seleccione un cliente y un plan", type: "error" });
       return;
     }
+    const selectedPlan = activePlans.find(p => String(p.id) === membershipForm.planId);
+    const planPrice = selectedPlan ? Number(selectedPlan.price) : 0;
     const res = await fetch("/api/membership-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -191,16 +205,21 @@ export default function MembresiasPage() {
         action: "create-membership",
         customerId: Number(membershipForm.customerId),
         planId: Number(membershipForm.planId),
-        paymentStatus: membershipForm.paymentStatus,
+        paymentMethod: membershipForm.paymentMethod,
+        paidAmount: Number(membershipForm.paidAmount) || planPrice,
       }),
     });
     if (res.ok) {
       setShowMembershipModal(false);
       load();
-      setToast({ message: "Membresía creada", type: "success" });
+      setToast({ message: "Membresía creada y facturada", type: "success" });
     } else {
-      const err = await res.json();
-      setToast({ message: err.error || "Error", type: "error" });
+      try {
+        const err = await res.json();
+        setToast({ message: err.error || "Error al crear membresía", type: "error" });
+      } catch {
+        setToast({ message: "Error al crear membresía", type: "error" });
+      }
     }
   }
 
@@ -484,21 +503,45 @@ export default function MembresiasPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado de pago</label>
-            <select
-              className="input-field"
-              value={membershipForm.paymentStatus}
-              onChange={(e) => setMembershipForm({ ...membershipForm, paymentStatus: e.target.value })}
-            >
-              <option value="PENDING">Pendiente</option>
-              <option value="PAID">Pagado</option>
-              <option value="OVERDUE">Vencido</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago *</label>
+              <select
+                className="input-field"
+                value={membershipForm.paymentMethod}
+                onChange={(e) => setMembershipForm({ ...membershipForm, paymentMethod: e.target.value })}
+              >
+                <option value="CASH">Efectivo</option>
+                <option value="CARD">Tarjeta</option>
+                <option value="TRANSFER">Transferencia</option>
+                <option value="CREDIT">Crédito</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                className="input-field"
+                value={membershipForm.paidAmount}
+                onChange={(e) => setMembershipForm({ ...membershipForm, paidAmount: e.target.value })}
+                placeholder="Precio del plan"
+              />
+            </div>
           </div>
+          {membershipForm.planId && (
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Total a cobrar: </span>
+              <span className="font-bold text-indigo-700 dark:text-indigo-300">
+                {formatCurrency(activePlans.find(p => String(p.id) === membershipForm.planId)?.price || 0)}
+              </span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(+ IVA según configuración)</span>
+            </div>
+          )}
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowMembershipModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">Crear Membresía</button>
+            <button type="submit" className="btn-primary">Vender Membresía</button>
           </div>
         </form>
       </Modal>

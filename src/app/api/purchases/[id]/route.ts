@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { createJournalEntry } from "@/lib/accounting";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { companyId } = getUserFromHeaders(_req);
@@ -66,6 +67,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         where: { id: Number(id) },
         data: { status: "RECEIVED" },
       });
+
+      const purchaseTotal = Number(purchase.total);
+      await createJournalEntry(
+        tx,
+        companyId,
+        `Compra recibida ${purchase.number}`,
+        purchase.number,
+        [
+          { accountCode: "1435", debit: purchaseTotal, credit: 0, description: `Inventario - Compra ${purchase.number}` },
+          { accountCode: "2205", debit: 0, credit: purchaseTotal, description: `Proveedor - Compra ${purchase.number}` },
+        ]
+      );
     });
 
     return NextResponse.json({ ok: true });

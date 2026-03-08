@@ -40,10 +40,11 @@ function statusLabel(status: string) {
 export default function TiqueterasPage() {
   const [dayPasses, setDayPasses] = useState<DayPass[]>([]);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ customerId: "", guestName: "", price: "15000", totalEntries: "10" });
+  const [form, setForm] = useState({ customerId: "", guestName: "", price: "15000", totalEntries: "10", paymentMethod: "CASH", paidAmount: "" });
   const [customerSearch, setCustomerSearch] = useState("");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [hasCashSession, setHasCashSession] = useState(false);
 
   const loadPasses = useCallback(async () => {
     const res = await fetch("/api/day-passes?from=2000-01-01");
@@ -51,6 +52,13 @@ export default function TiqueterasPage() {
   }, []);
 
   useEffect(() => { loadPasses(); }, [loadPasses]);
+
+  useEffect(() => {
+    fetch("/api/cash?action=current")
+      .then(r => r.json())
+      .then(data => setHasCashSession(!!data?.id))
+      .catch(() => setHasCashSession(false));
+  }, []);
 
   useEffect(() => {
     if (showModal) {
@@ -83,17 +91,23 @@ export default function TiqueterasPage() {
         guestName: form.guestName.trim() || undefined,
         price: Number(form.price) || 0,
         totalEntries: Number(form.totalEntries) || 1,
+        paymentMethod: form.paymentMethod,
+        paidAmount: Number(form.paidAmount) || undefined,
       }),
     });
     if (res.ok) {
       setShowModal(false);
-      setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10" });
+      setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10", paymentMethod: "CASH", paidAmount: "" });
       setCustomerSearch("");
       loadPasses();
-      setToast({ message: "Tiquetera creada", type: "success" });
+      setToast({ message: "Tiquetera creada y facturada", type: "success" });
     } else {
-      const data = await res.json();
-      setToast({ message: data.error || "Error al crear", type: "error" });
+      try {
+        const data = await res.json();
+        setToast({ message: data.error || "Error al crear", type: "error" });
+      } catch {
+        setToast({ message: "Error al crear tiquetera", type: "error" });
+      }
     }
   }
 
@@ -109,7 +123,11 @@ export default function TiqueterasPage() {
         </div>
         <button
           onClick={() => {
-            setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10" });
+            if (!hasCashSession) {
+              setToast({ message: "Debe abrir una caja antes de vender tiqueteras", type: "error" });
+              return;
+            }
+            setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10", paymentMethod: "CASH", paidAmount: "" });
             setCustomerSearch("");
             setShowModal(true);
           }}
@@ -257,9 +275,36 @@ export default function TiqueterasPage() {
               />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago *</label>
+              <select
+                className="input-field"
+                value={form.paymentMethod}
+                onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+              >
+                <option value="CASH">Efectivo</option>
+                <option value="CARD">Tarjeta</option>
+                <option value="TRANSFER">Transferencia</option>
+                <option value="CREDIT">Crédito</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                className="input-field"
+                value={form.paidAmount}
+                onChange={(e) => setForm({ ...form, paidAmount: e.target.value })}
+                placeholder="Precio total"
+              />
+            </div>
+          </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">Crear Tiquetera</button>
+            <button type="submit" className="btn-primary">Vender Tiquetera</button>
           </div>
         </form>
       </Modal>

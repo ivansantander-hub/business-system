@@ -34,7 +34,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const shouldReleaseTable = (body.status === "CANCELLED" || body.status === "PAID") && existing.tableId;
+  if (body.status === "PAID") {
+    return NextResponse.json(
+      { error: "Para marcar como pagada, debe crear una factura a través de la caja" },
+      { status: 400 }
+    );
+  }
+
+  const shouldReleaseTable = body.status === "CANCELLED" && existing.tableId;
 
   if (shouldReleaseTable) {
     await prisma.restaurantTable.update({

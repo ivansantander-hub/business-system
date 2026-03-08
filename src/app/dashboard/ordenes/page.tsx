@@ -10,7 +10,7 @@ interface Order {
   id: number; type: string; status: string; subtotal: string; tax: string; total: string; notes: string | null;
   createdAt: string; table: { number: string } | null; customer: { name: string } | null;
   user: { name: string }; waiter: { name: string } | null;
-  items: { id: number; quantity: string; unitPrice: string; total: string; status: string; notes: string | null; product: { name: string; salePrice: string } }[];
+  items: { id: number; productId: number; quantity: string; unitPrice: string; total: string; status: string; notes: string | null; product: { id: number; name: string; salePrice: string } }[];
 }
 interface Product { id: number; name: string; salePrice: string; }
 
@@ -20,9 +20,12 @@ export default function OrdenesPage() {
   const [statusFilter, setStatusFilter] = useState("OPEN");
   const [showDetail, setShowDetail] = useState<Order | null>(null);
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [payForm, setPayForm] = useState({ paymentMethod: "CASH", paidAmount: "" });
   const [itemForm, setItemForm] = useState({ productId: "", quantity: "1", notes: "" });
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [hasCashSession, setHasCashSession] = useState(false);
 
   const load = useCallback(async () => {
     const params = new URLSearchParams();
@@ -34,6 +37,9 @@ export default function OrdenesPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { fetch("/api/products?active=true").then(r => r.ok ? r.json() : []).then(setProducts); }, []);
+  useEffect(() => {
+    fetch("/api/cash?action=current").then(r => r.json()).then(d => setHasCashSession(!!d?.id)).catch(() => setHasCashSession(false));
+  }, []);
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
@@ -69,6 +75,49 @@ export default function OrdenesPage() {
   async function cancelOrder(id: number) {
     if (!confirm("¿Cancelar esta orden?")) return;
     await updateOrderStatus(id, "CANCELLED", "Orden cancelada");
+  }
+
+  function openPayModal() {
+    if (!hasCashSession) {
+      setToast({ message: "Debe abrir una caja antes de cobrar", type: "error" });
+      return;
+    }
+    setPayForm({ paymentMethod: "CASH", paidAmount: "" });
+    setShowPayModal(true);
+  }
+
+  async function handlePayOrder(e: React.FormEvent) {
+    e.preventDefault();
+    if (!showDetail) return;
+    const orderItems = showDetail.items
+      .filter(i => i.status !== "CANCELLED")
+      .map(i => ({
+        productId: i.productId || undefined,
+        productName: i.product.name,
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unitPrice),
+      }));
+
+    const res = await fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        orderId: showDetail.id,
+        items: orderItems,
+        paymentMethod: payForm.paymentMethod,
+        paidAmount: Number(payForm.paidAmount) || undefined,
+        customerId: undefined,
+      }),
+    });
+    if (res.ok) {
+      setShowPayModal(false);
+      setShowDetail(null);
+      load();
+      setToast({ message: "Orden cobrada y facturada", type: "success" });
+    } else {
+      const err = await res.json();
+      setToast({ message: err.error || "Error al facturar", type: "error" });
+    }
   }
 
   const statusColors: Record<string, string> = {
@@ -181,7 +230,7 @@ export default function OrdenesPage() {
 
             {showDetail.status === "READY" && (
               <div className="flex gap-3">
-                <button onClick={() => updateOrderStatus(showDetail.id, "PAID", "Orden cobrada")}
+                <button onClick={openPayModal}
                   className="btn-success flex items-center gap-2 flex-1">
                   <CreditCard className="w-4 h-4" /> Cobrar Orden
                 </button>
@@ -191,6 +240,37 @@ export default function OrdenesPage() {
               </div>
             )}
           </div>
+        )}
+      </Modal>
+
+      <Modal open={showPayModal} onClose={() => setShowPayModal(false)} title="Cobrar Orden" size="md">
+        {showDetail && (
+          <form onSubmit={handlePayOrder} className="space-y-4">
+            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 text-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total a cobrar</p>
+              <p className="text-3xl font-bold text-indigo-700 dark:text-indigo-300">{formatCurrency(showDetail.total)}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago *</label>
+                <select className="input-field" value={payForm.paymentMethod} onChange={e => setPayForm({...payForm, paymentMethod: e.target.value})}>
+                  <option value="CASH">Efectivo</option>
+                  <option value="CARD">Tarjeta</option>
+                  <option value="TRANSFER">Transferencia</option>
+                  <option value="CREDIT">Crédito</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+                <input type="number" min="0" step="100" className="input-field" value={payForm.paidAmount}
+                  onChange={e => setPayForm({...payForm, paidAmount: e.target.value})} placeholder="Total" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={() => setShowPayModal(false)} className="btn-secondary">Cancelar</button>
+              <button type="submit" className="btn-primary">Facturar y Cobrar</button>
+            </div>
+          </form>
         )}
       </Modal>
 

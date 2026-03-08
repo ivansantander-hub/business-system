@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { createJournalEntry } from "@/lib/accounting";
+
+const EXPENSE_CATEGORY_ACCOUNTS: Record<string, string> = {
+  "Personal": "5105",
+  "Honorarios": "5110",
+  "Impuestos": "5115",
+  "Arriendo": "5120",
+  "Seguros": "5130",
+  "Servicios": "5135",
+  "Mantenimiento": "5145",
+  "Diversos": "5195",
+};
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -37,20 +49,41 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
+  const amount = Number(body.amount);
+  const paymentMethod = body.paymentMethod || "CASH";
 
-  const expense = await prisma.expense.create({
-    data: {
+  const expense = await prisma.$transaction(async (tx) => {
+    const exp = await tx.expense.create({
+      data: {
+        companyId,
+        category: body.category,
+        description: body.description,
+        amount,
+        date: body.date ? new Date(body.date) : new Date(),
+        paymentMethod,
+        userId,
+        receiptNumber: body.receiptNumber || null,
+        notes: body.notes || null,
+      },
+      include: { user: { select: { name: true } } },
+    });
+
+    const debitAccountCode = EXPENSE_CATEGORY_ACCOUNTS[body.category] || "5195";
+    const creditAccountCode = (paymentMethod === "TRANSFER" || paymentMethod === "CARD") ? "111005" : "110505";
+
+    await createJournalEntry(
+      tx,
       companyId,
-      category: body.category,
-      description: body.description,
-      amount: Number(body.amount),
-      date: body.date ? new Date(body.date) : new Date(),
-      paymentMethod: body.paymentMethod || "CASH",
-      userId,
-      receiptNumber: body.receiptNumber || null,
-      notes: body.notes || null,
-    },
-    include: { user: { select: { name: true } } },
+      `Gasto: ${body.description}`,
+      exp.receiptNumber || `GASTO-${exp.id}`,
+      [
+        { accountCode: debitAccountCode, debit: amount, credit: 0, description: body.description },
+        { accountCode: creditAccountCode, debit: 0, credit: amount, description: `Pago gasto: ${body.description}` },
+      ]
+    );
+
+    return exp;
   });
+
   return NextResponse.json(expense, { status: 201 });
 }

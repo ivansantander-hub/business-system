@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { createJournalEntry } from "@/lib/accounting";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -19,7 +20,6 @@ export async function GET(request: Request) {
     return NextResponse.json(session);
   }
 
-  // List sessions
   const sessions = await prisma.cashSession.findMany({
     where: { companyId },
     include: { user: { select: { name: true } } },
@@ -68,16 +68,46 @@ export async function POST(request: Request) {
     const closingAmount = Number(body.closingAmount) || 0;
     const difference = closingAmount - expectedAmount;
 
-    const updated = await prisma.cashSession.update({
-      where: { id: session.id },
-      data: {
-        closingAmount,
-        expectedAmount,
-        difference,
-        closedAt: new Date(),
-        status: "CLOSED",
-      },
-      include: { user: { select: { name: true } } },
+    const updated = await prisma.$transaction(async (tx) => {
+      const closed = await tx.cashSession.update({
+        where: { id: session.id },
+        data: {
+          closingAmount,
+          expectedAmount,
+          difference,
+          closedAt: new Date(),
+          status: "CLOSED",
+        },
+        include: { user: { select: { name: true } } },
+      });
+
+      if (Math.abs(difference) > 0.01) {
+        if (difference < 0) {
+          await createJournalEntry(
+            tx,
+            companyId,
+            `Faltante cierre de caja #${session.id}`,
+            `CAJA-${session.id}`,
+            [
+              { accountCode: "5195", debit: Math.abs(difference), credit: 0, description: "Faltante en caja" },
+              { accountCode: "110505", debit: 0, credit: Math.abs(difference), description: "Faltante en caja" },
+            ]
+          );
+        } else {
+          await createJournalEntry(
+            tx,
+            companyId,
+            `Sobrante cierre de caja #${session.id}`,
+            `CAJA-${session.id}`,
+            [
+              { accountCode: "110505", debit: difference, credit: 0, description: "Sobrante en caja" },
+              { accountCode: "4250", debit: 0, credit: difference, description: "Sobrante en caja" },
+            ]
+          );
+        }
+      }
+
+      return closed;
     });
 
     return NextResponse.json(updated);

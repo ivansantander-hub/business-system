@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { createSale } from "@/lib/sale";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
   }
 
   if (action === "create-membership") {
+    const { userId } = getUserFromHeaders(request);
     const plan = await prisma.membershipPlan.findFirst({
       where: { id: body.planId, companyId },
     });
@@ -104,26 +106,44 @@ export async function POST(request: Request) {
     });
     if (!member) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
 
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + plan.durationDays);
-
-    const membership = await prisma.membership.create({
-      data: {
+    try {
+      const saleResult = await createSale({
         companyId,
-        memberId,
-        planId: body.planId,
-        startDate,
-        endDate,
-        status: "ACTIVE",
-        paymentStatus: body.paymentStatus || "PENDING",
-      },
-      include: {
-        member: { include: { customer: true } },
-        plan: true,
-      },
-    });
-    return NextResponse.json(membership, { status: 201 });
+        userId,
+        items: [{ productName: `Membresía: ${plan.name}`, quantity: 1, unitPrice: Number(plan.price) }],
+        paymentMethod: body.paymentMethod || "CASH",
+        paidAmount: body.paidAmount ? Number(body.paidAmount) : undefined,
+        customerId: member.customerId,
+      });
+
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(endDate.getDate() + plan.durationDays);
+
+      const membership = await prisma.membership.create({
+        data: {
+          companyId,
+          memberId,
+          planId: body.planId,
+          startDate,
+          endDate,
+          status: "ACTIVE",
+          paymentStatus: body.paymentMethod === "CREDIT" ? "PENDING" : "PAID",
+          invoiceId: saleResult.invoice.id,
+        },
+        include: {
+          member: { include: { customer: true } },
+          plan: true,
+        },
+      });
+      return NextResponse.json(membership, { status: 201 });
+    } catch (error) {
+      if (error instanceof Error && error.message === "NO_CASH_SESSION") {
+        return NextResponse.json({ error: "Debe abrir una caja antes de vender membresías" }, { status: 400 });
+      }
+      console.error("Create membership error:", error);
+      return NextResponse.json({ error: "Error al crear membresía" }, { status: 500 });
+    }
   }
 
   if (action === "renew") {
