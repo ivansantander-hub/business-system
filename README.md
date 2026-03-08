@@ -5,6 +5,8 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791?logo=postgresql)](https://www.postgresql.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Jotai](https://img.shields.io/badge/Jotai-State_Management-5A67D8)](https://jotai.org/)
+[![Vitest](https://img.shields.io/badge/Vitest-Testing-6E9F18)](https://vitest.dev/)
 
 Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar** y **Gimnasio**. Incluye punto de venta (POS), inventario, facturación, contabilidad colombiana (PUC), membresías, check-in y más.
 
@@ -17,6 +19,9 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Gestión de gimnasio** — Membresías, check-in, tiqueteras, clases, casilleros, medidas corporales
 - **Gestión de restaurante** — Mesas, órdenes, meseros
 - **Modo oscuro/claro** — Soporte completo con toggle manual
+- **Gestión de estado con Jotai** — Atoms para theme, auth y permisos
+- **Concurrencia segura** — Transacciones serializables, reintentos automáticos
+- **Test suite completa** — Concurrencia, API, E2E
 
 ## Requisitos previos
 
@@ -88,10 +93,12 @@ business-system/
 │   │   ├── molecules/  # Componentes compuestos (FormField, DataTable…)
 │   │   ├── organisms/  # Sidebar, Header
 │   │   └── templates/  # DashboardLayout, AuthLayout
-│   ├── context/        # ThemeContext, etc.
+│   ├── store/          # Jotai atoms (theme, auth, permissions)
 │   ├── lib/            # auth, prisma, rbac, accounting, sale
 │   └── quarks/         # Tokens de diseño (colores, espaciado, tipografía)
+├── tests/              # Vitest + Playwright tests
 ├── docs/               # Documentación
+├── vitest.config.ts
 └── tailwind.config.ts
 ```
 
@@ -107,12 +114,19 @@ business-system/
 | `pnpm db:seed` | Ejecuta el seed (datos iniciales) |
 | `pnpm db:studio` | Abre Prisma Studio |
 | `pnpm setup` | `db:generate` + `db:push` + `db:seed` |
+| `pnpm test` | Ejecuta tests (Vitest) |
+| `pnpm test:watch` | Tests en modo watch |
+| `pnpm test:concurrency` | Tests de concurrencia |
+| `pnpm test:api` | Tests de API |
+| `pnpm test:e2e` | Tests E2E |
 
 ## Documentación adicional
 
 - [Arquitectura](docs/ARCHITECTURE.md) — Multi-tenant, autenticación, contabilidad
 - [Componentes](docs/COMPONENTS.md) — Atomic Design, átomos, moléculas, organismos
 - [Sistema de diseño](docs/DESIGN-SYSTEM.md) — Colores, tipografía, clases CSS
+- [Testing](docs/TESTING.md) — Vitest, Playwright, estrategia de pruebas
+- [Concurrencia](docs/CONCURRENCY.md) — Transacciones, aislamiento, reintentos
 
 ## Licencia
 

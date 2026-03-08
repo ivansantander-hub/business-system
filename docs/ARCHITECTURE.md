@@ -5,13 +5,13 @@ This document describes the technical architecture of SGC (Sistema de Gestión C
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SGC — Next.js Application                         │
-├─────────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   Browser   │  │  Middleware  │  │  App Router │  │   API Routes        │ │
-│  │   (React)   │◄─┤  (JWT auth)  │◄─┤  (Pages)    │◄─┤   (REST)             │ │
-│  └─────────────┘  └─────────────┘  └─────────────┘  └──────────┬──────────┘ │
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                           SGC — Next.js Application                               │
+├───────────────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌───────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │   Browser   │  │ Store (Jotai) │  │  Middleware  │  │  App Router │  │   API Routes        │ │
+│  │   (React)   │◄─┤              │  │  (JWT auth)  │◄─┤  (Pages)    │◄─┤   (REST)             │ │
+│  └─────────────┘  └───────────────┘  └─────────────┘  └─────────────┘  └──────────┬──────────┘ │
 │         │                 │                 │                   │            │
 │         │                 │                 │                   │            │
 │  ┌──────▼─────────────────▼─────────────────▼───────────────────▼──────────┐ │
@@ -21,7 +21,7 @@ This document describes the technical architecture of SGC (Sistema de Gestión C
 │  │  │  tenant schema: Category, Product, Order, Invoice, Account, etc.     │  │ │
 │  │  └─────────────────────────────────────────────────────────────────────┘  │ │
 │  └──────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────────────────────────────────────────────┘
                                       │
                                       ▼
                          ┌────────────────────────┐
@@ -206,3 +206,91 @@ When a cash session is closed (`POST /api/cash` with `action: "close"`):
 | Lockers | — | ✓ |
 
 Permissions are filtered by `COMPANY_TYPE_PERMISSIONS` in RBAC so menu items and API access match the company type.
+
+## State Management (Jotai)
+
+The application uses [Jotai](https://jotai.org/) for global state management, replacing the previous React Context approach.
+
+### Atom Structure
+
+Atoms are defined in `src/store/` and exported via barrel:
+
+| Atom | Type | Purpose |
+|------|------|---------|
+| `themeAtom` | Primitive | Current theme ("light" or "dark") |
+| `toggleThemeAtom` | Write-only action | Toggles theme and persists to localStorage |
+| `authUserAtom` | Primitive | Current authenticated user object |
+| `authLoadingAtom` | Primitive | Auth loading state |
+| `fetchAuthAtom` | Write-only async action | Fetches user from `/api/auth/me` |
+| `userNameAtom` | Derived read-only | `authUserAtom.name` |
+| `userRoleAtom` | Derived read-only | `authUserAtom.role` |
+| `companyIdAtom` | Derived read-only | `authUserAtom.companyId` |
+| `companyTypeAtom` | Derived read-only | `authUserAtom.companyType` |
+| `permissionsAtom` | Derived read-only | `authUserAtom.permissions` |
+| `companiesAtom` | Derived read-only | `authUserAtom.companies` |
+
+### Provider
+
+`StoreProvider` (`src/store/Provider.tsx`) wraps the app with JotaiProvider and auto-initializes:
+- `ThemeSync` — Syncs `themeAtom` to `<html>` class and localStorage
+- `AuthSync` — Calls `fetchAuthAtom` on mount to populate auth state
+
+### Hook Usage
+
+Components use granular hooks to minimize re-renders:
+- `useAtomValue(themeAtom)` — Read theme (re-renders only when theme changes)
+- `useSetAtom(toggleThemeAtom)` — Toggle theme (never re-renders)
+- `useAtomValue(permissionsAtom)` — Read permissions (re-renders only when permissions change)
+
+## Concurrency Model
+
+All financial operations use PostgreSQL `Serializable` transaction isolation to prevent race conditions.
+
+### Sales (`src/lib/sale.ts`)
+
+| Concern | Strategy |
+|---------|----------|
+| Invoice number uniqueness | Serializable isolation + compound unique `@@unique([companyId, number])` |
+| Stock decrement | Prisma atomic `{ decrement: quantity }` inside transaction |
+| Cash session salesTotal | Prisma atomic `{ increment: total }` inside transaction |
+| Serialization failures | Retry loop (3 attempts) with exponential backoff + jitter |
+| Retryable errors | `P2034` (serialization failure), `P2002` (unique constraint) |
+
+```
+Sale Request
+    │
+    ▼
+┌─ Serializable Transaction (attempt 1..3) ──────────────────┐
+│  1. Read invoice_next_number setting (locked by Serializable)│
+│  2. Generate unique invoice number                           │
+│  3. Create Invoice + InvoiceItems                           │
+│  4. Update invoice_next_number setting                      │
+│  5. Atomic stock decrement per product                      │
+│  6. Update order status (if orderId)                        │
+│  7. Atomic cashSession.salesTotal increment                 │
+│  8. Create journal entry (debit/credit with atomic balances)│
+└─────────────────────────────────────────────────────────────┘
+    │
+    ├── Success → return invoice + cashSession
+    └── P2034/P2002 → backoff → retry
+```
+
+### Purchases (`src/app/api/purchases/[id]/route.ts`)
+
+| Concern | Strategy |
+|---------|----------|
+| Double-receive prevention | `status: { not: "RECEIVED" }` guard inside Serializable tx |
+| Stock increment | Prisma atomic `{ increment: quantity }` |
+| Accounting | Journal entry created atomically within same tx |
+
+### Cash Sessions (`src/app/api/cash/route.ts`)
+
+| Concern | Strategy |
+|---------|----------|
+| Double-open prevention | Check for existing OPEN session inside Serializable tx |
+| Double-close prevention | Find OPEN session inside Serializable tx; fails if already closed |
+| Difference accounting | Journal entry for surplus/deficit created in same tx |
+
+### Accounting (`src/lib/accounting.ts`)
+
+All account balance updates use Prisma's atomic `{ increment: balanceChange }` to prevent lost-update anomalies. The `createJournalEntry` function validates debit/credit balance before persisting.

@@ -52,8 +52,8 @@ src/
 │   ├── templates/          # Page layouts
 │   │   ├── DashboardLayout.tsx
 │   │   └── AuthLayout.tsx
-│   ├── ui/                 # Shared UI (Modal, Toast)
-│   └── layout/             # Layout components
+│   └── ui/                 # Shared UI (Modal, Toast)
+├── store/                  # Jotai atoms (theme, auth, permissions)
 ```
 
 ---
@@ -388,15 +388,15 @@ Confirmation modal for destructive actions.
 Main application navigation. Composes Avatar patterns and nav links.
 
 - **Props:** `collapsed: boolean`, `onToggle: () => void`
-- **Behavior:** Fetches user/permissions from `/api/auth/me`, filters menu by RBAC permissions and company type. Collapsible on desktop; mobile drawer overlay. Grouped navigation (Principal, Ventas, Gimnasio, Inventario, Finanzas, Sistema).
+- **Behavior:** Reads `permissionsAtom`, `userRoleAtom`, `userNameAtom` from Jotai store; filters menu by RBAC permissions and company type. Collapsible on desktop; mobile drawer overlay. Grouped navigation (Principal, Ventas, Gimnasio, Inventario, Finanzas, Sistema).
 - **Location:** `src/components/organisms/Sidebar.tsx`
 
 ### Header
 
 Application top bar with company switcher, theme toggle, user info.
 
-- **Props:** None (uses `ThemeContext`, fetches `/api/auth/me`)
-- **Behavior:** Company dropdown for users with multiple companies; theme toggle (dark/light); user avatar and name.
+- **Props:** None (uses Jotai atoms: `authUserAtom`, `themeAtom`, `toggleThemeAtom` from `@/store`)
+- **Behavior:** Company dropdown for users with multiple companies; theme toggle via Jotai `toggleThemeAtom`; user avatar and name from `authUserAtom`.
 - **Location:** `src/components/organisms/Header.tsx`
 
 ---

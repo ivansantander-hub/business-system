@@ -180,7 +180,7 @@ Common: `rounded-xl`, `px-4 py-2.5`, `text-sm font-semibold`, `focus-visible:rin
 ## Dark Mode Strategy
 
 - **Method:** Class-based (`darkMode: "class"` in Tailwind)
-- **Toggle:** `ThemeContext` stores preference; `class="dark"` on `<html>` when dark
+- **Toggle:** Jotai `themeAtom` stores preference; `class="dark"` on `<html>` synced by `ThemeSync` component in `StoreProvider`
 - **Design tokens:** All component classes include `dark:` variants for background, text, border
 - **Surface:** `dark:bg-[#0a0e1a]` for body, `dark:bg-[#141925]` for cards
 - **Reduced motion:** `prefers-reduced-motion: reduce` disables animations
