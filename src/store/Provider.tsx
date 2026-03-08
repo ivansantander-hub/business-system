@@ -3,10 +3,15 @@
 import { Provider as JotaiProvider } from "jotai";
 import { useEffect } from "react";
 import { useSetAtom, useAtomValue } from "jotai";
-import { themeAtom, fetchAuthAtom } from ".";
+import { themeAtom, hydrateThemeAtom, fetchAuthAtom } from ".";
 
 function ThemeSync() {
   const theme = useAtomValue(themeAtom);
+  const hydrateTheme = useSetAtom(hydrateThemeAtom);
+
+  useEffect(() => {
+    hydrateTheme();
+  }, [hydrateTheme]);
 
   useEffect(() => {
     const root = document.documentElement;

@@ -91,13 +91,13 @@ export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
   RESTAURANT: [
     "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
-    "users", "settings", "notifications", "rbac",
+    "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs",
   ],
   GYM: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "memberships", "checkin", "day_passes",
-    "classes", "trainers", "body_tracking", "lockers",
+    "classes", "trainers", "body_tracking", "lockers", "logs", "audit", "test_runs",
   ],
 };
 

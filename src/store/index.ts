@@ -1,4 +1,4 @@
-export { themeAtom, toggleThemeAtom } from "./theme";
+export { themeAtom, toggleThemeAtom, hydrateThemeAtom, themeHydratedAtom } from "./theme";
 export type { Theme } from "./theme";
 
 export {

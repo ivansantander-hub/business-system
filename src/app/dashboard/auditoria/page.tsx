@@ -1145,26 +1145,65 @@ function EntityDetailPanel({ data, onClose }: Readonly<{ data: EntityDetailRespo
             <Clock className="w-4 h-4" /> Línea de tiempo de auditoría
           </h4>
           <div className="relative">
-            <div className="absolute left-2.5 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700" />
+            <div className="space-y-3 max-h-[600px] overflow-y-auto">
               {auditLogs.map((log) => (
-                <div key={log.id} className="relative pl-6">
+                <div key={log.id} className="relative pl-8">
                   <div
-                    className={`absolute left-1.5 w-2 h-2 rounded-full ${
+                    className={`absolute left-1.5 w-3 h-3 rounded-full border-2 ${
                       log.action.includes("create")
-                        ? "bg-green-500"
+                        ? "bg-green-500 border-green-300 dark:border-green-700"
                         : log.action.includes("delete") || log.action.includes("cancel")
-                          ? "bg-red-500"
-                          : "bg-blue-500"
+                          ? "bg-red-500 border-red-300 dark:border-red-700"
+                          : "bg-blue-500 border-blue-300 dark:border-blue-700"
                     }`}
-                    style={{ top: "0.35rem" }}
+                    style={{ top: "0.5rem" }}
                   />
-                  <div className="text-xs">
-                    <span className="font-medium">{getActionLabel(log.action)}</span>
-                    <span className="text-slate-500 dark:text-slate-400 ml-1">{log.userName || "Sistema"}</span>
-                    <span className="text-slate-400 dark:text-slate-500 ml-1 font-mono">
-                      {new Date(log.createdAt).toLocaleString("es-CO")}
-                    </span>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                          log.action.includes("create")
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            : log.action.includes("delete") || log.action.includes("cancel")
+                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                              : "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        }`}>
+                          {getActionLabel(log.action)}
+                        </span>
+                        <span className="text-xs text-slate-600 dark:text-slate-400">{log.userName || "Sistema"}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                        {new Date(log.createdAt).toLocaleString("es-CO")}
+                      </span>
+                    </div>
+
+                    {(log.beforeState || log.afterState) && (
+                      <div className="mt-2 border-t border-slate-200 dark:border-slate-600 pt-2">
+                        <div className="grid grid-cols-3 gap-2 text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+                          <span>Campo</span>
+                          <span className="text-red-600 dark:text-red-400">Antes</span>
+                          <span className="text-green-600 dark:text-green-400">Después</span>
+                        </div>
+                        <DiffViewer before={log.beforeState as Record<string, unknown> | null} after={log.afterState as Record<string, unknown> | null} />
+                      </div>
+                    )}
+
+                    {log.details && Object.keys(log.details as object).length > 0 && !log.beforeState && !log.afterState && (
+                      <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                        {Object.entries(log.details as Record<string, unknown>)
+                          .filter(([k]) => !["companyId", "id"].includes(k))
+                          .map(([k, v]) => (
+                            <span key={k} className="mr-3">{k}: <span className="text-slate-700 dark:text-slate-300">{String(v)}</span></span>
+                          ))}
+                      </div>
+                    )}
+
+                    {log.checksum && (
+                      <p className="mt-1 text-[9px] font-mono text-slate-400 dark:text-slate-500 truncate">
+                        SHA-256: {log.checksum}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

@@ -10,7 +10,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Building2, ChevronDown, Check, Sun, Moon } from "lucide-react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { authUserAtom, themeAtom, toggleThemeAtom, fetchAuthAtom } from "@/store";
+import { authUserAtom, themeAtom, toggleThemeAtom, hydrateThemeAtom, themeHydratedAtom, fetchAuthAtom } from "@/store";
 import Avatar from "../atoms/Avatar";
 
 const roleLabels: Record<string, string> = {
@@ -25,11 +25,17 @@ const roleLabels: Record<string, string> = {
 export default function Header() {
   const user = useAtomValue(authUserAtom);
   const theme = useAtomValue(themeAtom);
+  const hydrated = useAtomValue(themeHydratedAtom);
   const toggleTheme = useSetAtom(toggleThemeAtom);
+  const hydrateTheme = useSetAtom(hydrateThemeAtom);
   const fetchAuth = useSetAtom(fetchAuthAtom);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [switching, setSwitching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    hydrateTheme();
+  }, [hydrateTheme]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -121,10 +127,17 @@ export default function Header() {
       <div className="flex items-center gap-1 sm:gap-2">
         <button
           onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+          aria-label={!hydrated ? "Cambiar tema" : theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
           className="p-2.5 min-w-[44px] min-h-[44px] rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.05] transition-all duration-200"
+          suppressHydrationWarning
         >
-          {theme === "dark" ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+          {!hydrated ? (
+            <Moon className="w-[18px] h-[18px]" />
+          ) : theme === "dark" ? (
+            <Sun className="w-[18px] h-[18px]" />
+          ) : (
+            <Moon className="w-[18px] h-[18px]" />
+          )}
         </button>
         {user && (
           <a href="/dashboard/perfil" className="flex items-center gap-2 sm:gap-3 pl-1 sm:pl-2 ml-1 sm:ml-2 border-l border-slate-200 dark:border-slate-800 hover:opacity-80 transition-opacity">
