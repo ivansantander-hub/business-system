@@ -195,9 +195,9 @@ export default function ClasesPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Calendar className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Clases</h1>
+        <div className="page-header">
+          <div className="page-icon"><Calendar className="w-full h-full" /></div>
+          <h1 className="page-title">Clases</h1>
         </div>
         <button
           onClick={() => {
@@ -227,7 +227,7 @@ export default function ClasesPage() {
       <div className="card">
         <div className="space-y-3">
           {displayClasses.length === 0 ? (
-            <p className="text-center text-gray-400 py-12">No hay clases para este día</p>
+            <p className="text-center text-slate-400 py-12">No hay clases para este día</p>
           ) : (
             displayClasses.map((c) => (
               <div
@@ -236,21 +236,21 @@ export default function ClasesPage() {
                 tabIndex={0}
                 onClick={() => openClassDetail(c)}
                 onKeyDown={(e) => e.key === "Enter" && openClassDetail(c)}
-                className="flex items-center justify-between p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-4 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-sm font-mono text-gray-500 dark:text-gray-400">
+                  <div className="text-sm font-mono text-slate-500 dark:text-slate-400">
                     {c.startTime} - {c.endTime}
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="font-semibold text-slate-900 dark:text-white">{c.name}</div>
+                    <div className="text-sm text-slate-500 dark:text-slate-400">
                       {c.trainer?.name || "Sin entrenador"} {c.room && `• ${c.room}`}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  <Users className="w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <span className="text-sm font-medium">
                     {(c.enrollmentCountForDate ?? c._count?.enrollments ?? 0)}/{c.maxCapacity}
                   </span>
@@ -269,7 +269,7 @@ export default function ClasesPage() {
       >
         <form onSubmit={handleCreateClass} className="space-y-4">
           <div>
-            <label htmlFor="class-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+            <label htmlFor="class-name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
             <input
               id="class-name"
               className="input-field"
@@ -279,7 +279,7 @@ export default function ClasesPage() {
             />
           </div>
           <div>
-            <label htmlFor="class-desc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+            <label htmlFor="class-desc" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
             <input
               id="class-desc"
               className="input-field"
@@ -288,7 +288,7 @@ export default function ClasesPage() {
             />
           </div>
           <div>
-            <label htmlFor="class-trainer" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Entrenador</label>
+            <label htmlFor="class-trainer" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Entrenador</label>
             <select
               id="class-trainer"
               className="input-field"
@@ -309,7 +309,7 @@ export default function ClasesPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="class-day" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Día de la semana</label>
+            <label htmlFor="class-day" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Día de la semana</label>
             <select
               id="class-day"
               className="input-field"
@@ -325,7 +325,7 @@ export default function ClasesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="class-start" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora inicio</label>
+              <label htmlFor="class-start" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hora inicio</label>
               <input
                 id="class-start"
                 type="time"
@@ -335,7 +335,7 @@ export default function ClasesPage() {
               />
             </div>
             <div>
-              <label htmlFor="class-end" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hora fin</label>
+              <label htmlFor="class-end" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hora fin</label>
               <input
                 id="class-end"
                 type="time"
@@ -347,7 +347,7 @@ export default function ClasesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="class-capacity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Capacidad máxima</label>
+              <label htmlFor="class-capacity" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Capacidad máxima</label>
               <input
                 id="class-capacity"
                 type="number"
@@ -358,7 +358,7 @@ export default function ClasesPage() {
               />
             </div>
             <div>
-              <label htmlFor="class-room" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sala</label>
+              <label htmlFor="class-room" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sala</label>
               <input
                 id="class-room"
                 className="input-field"
@@ -389,7 +389,7 @@ export default function ClasesPage() {
       >
         {selectedClass && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
               <span>
                 {selectedClass.startTime} - {selectedClass.endTime} • {selectedClass.trainer?.name || "Sin entrenador"}{" "}
                 {selectedClass.room && `• ${selectedClass.room}`}
@@ -407,22 +407,22 @@ export default function ClasesPage() {
               </button>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Inscritos</h3>
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Inscritos</h3>
               {enrollments.length === 0 ? (
-                <p className="text-sm text-gray-400">Sin inscritos para esta fecha</p>
+                <p className="text-sm text-slate-400">Sin inscritos para esta fecha</p>
               ) : (
                 <div className="space-y-2">
                   {enrollments.map((e) => (
                     <div
                       key={e.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50"
+                      className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-white/[0.03]"
                     >
                       <span className="font-medium">{e.member.customer.name}</span>
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleAttendance(e.id, "ATTENDED")}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            e.status === "ATTENDED" ? "btn-success" : "bg-gray-200 dark:bg-gray-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
+                            e.status === "ATTENDED" ? "btn-success" : "bg-slate-200 dark:bg-slate-700 hover:bg-emerald-100 dark:hover:bg-emerald-900/30"
                           }`}
                           title="Asistió"
                         >
@@ -431,7 +431,7 @@ export default function ClasesPage() {
                         <button
                           onClick={() => handleAttendance(e.id, "ABSENT")}
                           className={`p-1.5 rounded-lg transition-colors ${
-                            e.status === "ABSENT" ? "btn-danger" : "bg-gray-200 hover:bg-red-100"
+                            e.status === "ABSENT" ? "btn-danger" : "bg-slate-200 hover:bg-red-100"
                           }`}
                           title="Ausente"
                         >
@@ -457,7 +457,7 @@ export default function ClasesPage() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
             <input
               className="input-field pl-9"
               placeholder="Buscar por nombre o email..."
@@ -469,11 +469,11 @@ export default function ClasesPage() {
             {members.map((m) => (
               <div
                 key={m.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-white/[0.03]"
               >
                 <div>
                   <div className="font-medium">{m.customer.name}</div>
-                  <div className="text-sm text-gray-500">{m.customer.email}</div>
+                  <div className="text-sm text-slate-500">{m.customer.email}</div>
                 </div>
                 <button
                   onClick={() => handleEnroll(m.id)}
@@ -484,7 +484,7 @@ export default function ClasesPage() {
               </div>
             ))}
             {members.length === 0 && (
-              <p className="text-center text-gray-400 dark:text-gray-500 py-4">Sin resultados</p>
+              <p className="text-center text-slate-400 dark:text-slate-500 py-4">Sin resultados</p>
             )}
           </div>
         </div>

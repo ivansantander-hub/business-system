@@ -67,9 +67,9 @@ export default function MesasPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <UtensilsCrossed className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mesas</h1>
+        <div className="page-header">
+          <div className="page-icon"><UtensilsCrossed className="w-full h-full" /></div>
+          <h1 className="page-title">Mesas</h1>
         </div>
         <button onClick={() => { setForm({ number: "", capacity: "4", section: "" }); setShowCreate(true); }} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nueva Mesa
@@ -77,26 +77,26 @@ export default function MesasPage() {
       </div>
 
       <div className="flex gap-4 flex-wrap">
-        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-300 dark:bg-emerald-600" /><span className="text-sm text-gray-700 dark:text-gray-300">Disponible</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-red-300 dark:bg-red-600" /><span className="text-sm text-gray-700 dark:text-gray-300">Ocupada</span></div>
-        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-amber-300 dark:bg-amber-600" /><span className="text-sm text-gray-700 dark:text-gray-300">Reservada</span></div>
+        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-300 dark:bg-emerald-600" /><span className="text-sm text-slate-700 dark:text-slate-300">Disponible</span></div>
+        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-red-300 dark:bg-red-600" /><span className="text-sm text-slate-700 dark:text-slate-300">Ocupada</span></div>
+        <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-amber-300 dark:bg-amber-600" /><span className="text-sm text-slate-700 dark:text-slate-300">Reservada</span></div>
       </div>
 
       {(sections.length > 0 ? sections : [null]).map(section => (
         <div key={section || "all"}>
-          {section && <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">{section}</h3>}
+          {section && <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">{section}</h3>}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {tables.filter(t => section ? t.section === section : true).map(table => (
               <button key={table.id} onClick={() => setShowOrder(table)}
                 className={`rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${statusColors[table.status]}`}>
-                <p className="text-3xl font-bold text-gray-800">{table.number}</p>
-                <p className="text-xs text-gray-500 mt-1">{statusLabels[table.status]}</p>
-                <div className="flex items-center justify-center gap-1 mt-2 text-gray-400">
+                <p className="text-3xl font-bold text-slate-800">{table.number}</p>
+                <p className="text-xs text-slate-500 mt-1">{statusLabels[table.status]}</p>
+                <div className="flex items-center justify-center gap-1 mt-2 text-slate-400">
                   <Users className="w-3 h-3" />
                   <span className="text-xs">{table.capacity}</span>
                 </div>
                 {table.orders.length > 0 && (
-                  <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 mt-2">
+                  <p className="text-sm font-semibold text-violet-600 dark:text-violet-400 mt-2">
                     {formatCurrency(table.orders[0].total)}
                   </p>
                 )}
@@ -110,15 +110,15 @@ export default function MesasPage() {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nueva Mesa" size="sm">
         <form onSubmit={createTable} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Número *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número *</label>
             <input className="input-field" value={form.number} onChange={e => setForm({...form, number: e.target.value})} required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Capacidad</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Capacidad</label>
             <input type="number" className="input-field" value={form.capacity} onChange={e => setForm({...form, capacity: e.target.value})} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sección</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sección</label>
             <input className="input-field" value={form.section} onChange={e => setForm({...form, section: e.target.value})} placeholder="Ej: Interior, Terraza" />
           </div>
           <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Crear</button></div>
@@ -129,17 +129,17 @@ export default function MesasPage() {
       <Modal open={!!showOrder} onClose={() => setShowOrder(null)} title={showOrder ? `Mesa ${showOrder.number}` : ""} size="md">
         {showOrder && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
+            <div className="flex items-center justify-between bg-slate-50 dark:bg-white/[0.03] rounded-lg p-3">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Estado: <span className="font-semibold">{statusLabels[showOrder.status]}</span></p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Capacidad: {showOrder.capacity} personas</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Estado: <span className="font-semibold">{statusLabels[showOrder.status]}</span></p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Capacidad: {showOrder.capacity} personas</p>
               </div>
             </div>
 
             {showOrder.orders.length > 0 ? (
               <div>
-                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Orden Activa</h4>
-                {showOrder.orders[0].waiter && <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Mesero: {showOrder.orders[0].waiter.name}</p>}
+                <h4 className="font-medium text-slate-700 dark:text-slate-300 mb-2">Orden Activa</h4>
+                {showOrder.orders[0].waiter && <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">Mesero: {showOrder.orders[0].waiter.name}</p>}
                 <div className="space-y-1">
                   {showOrder.orders[0].items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm py-1">
@@ -148,7 +148,7 @@ export default function MesasPage() {
                     </div>
                   ))}
                 </div>
-                <div className="border-t dark:border-gray-600 pt-2 mt-2 flex justify-between font-bold">
+                <div className="border-t dark:border-slate-700 pt-2 mt-2 flex justify-between font-bold">
                   <span>Total</span>
                   <span>{formatCurrency(showOrder.orders[0].total)}</span>
                 </div>
@@ -158,10 +158,10 @@ export default function MesasPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Sin orden activa</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Sin orden activa</p>
                 {waiters.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignar Mesero</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Asignar Mesero</label>
                     <select className="input-field" value={selectedWaiter} onChange={e => setSelectedWaiter(e.target.value)}>
                       <option value="">Sin mesero</option>
                       {waiters.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}

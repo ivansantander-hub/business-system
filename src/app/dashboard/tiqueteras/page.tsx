@@ -28,7 +28,7 @@ interface DayPass {
 function statusBadgeClass(status: string) {
   if (status === "ACTIVE") return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
   if (status === "USED") return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400";
-  return "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400";
+  return "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400";
 }
 
 function statusLabel(status: string) {
@@ -117,9 +117,9 @@ export default function TiqueterasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Ticket className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tiqueteras</h1>
+        <div className="page-header">
+          <div className="page-icon"><Ticket className="w-full h-full" /></div>
+          <h1 className="page-title">Tiqueteras</h1>
         </div>
         <button
           onClick={() => {
@@ -139,19 +139,19 @@ export default function TiqueterasPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Total</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Activas</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Activas</p>
           <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.active}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Agotadas</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Agotadas</p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.used}</p>
         </div>
         <div className="card">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Entradas restantes</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Entradas restantes</p>
           <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.totalEntriesRemaining}</p>
         </div>
       </div>
@@ -170,14 +170,14 @@ export default function TiqueterasPage() {
           </thead>
           <tbody>
             {dayPasses.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                 <td className="table-cell">{formatDate(p.date)}</td>
                 <td className="table-cell font-medium">{displayName(p)}</td>
                 <td className="table-cell font-mono text-sm">{p.member?.customer?.nit || "-"}</td>
                 <td className="table-cell text-center">
                   <span className="font-semibold">{p.usedEntries}</span>
-                  <span className="text-gray-400"> / </span>
-                  <span className="text-gray-600 dark:text-gray-300">{p.totalEntries}</span>
+                  <span className="text-slate-400"> / </span>
+                  <span className="text-slate-600 dark:text-slate-300">{p.totalEntries}</span>
                   {p.status === "ACTIVE" && (
                     <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">({p.totalEntries - p.usedEntries} restantes)</span>
                   )}
@@ -192,7 +192,7 @@ export default function TiqueterasPage() {
             ))}
             {dayPasses.length === 0 && (
               <tr>
-                <td colSpan={6} className="table-cell text-center text-gray-400 py-12">
+                <td colSpan={6} className="table-cell text-center text-slate-400 py-12">
                   Sin tiqueteras
                 </td>
               </tr>
@@ -204,9 +204,9 @@ export default function TiqueterasPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Nueva Tiquetera" size="md">
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Buscar cliente</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Buscar cliente</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 className="input-field pl-9"
                 placeholder="Nombre, documento, teléfono..."
@@ -214,9 +214,9 @@ export default function TiqueterasPage() {
                 onChange={(e) => { setCustomerSearch(e.target.value); setForm({...form, customerId: ""}); }}
               />
             </div>
-            <div className="mt-1 max-h-36 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+            <div className="mt-1 max-h-36 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg">
               {customers.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-3">
+                <p className="text-sm text-slate-400 text-center py-3">
                   {customerSearch ? "Sin resultados" : "Cargando clientes..."}
                 </p>
               ) : (
@@ -225,15 +225,15 @@ export default function TiqueterasPage() {
                     key={c.id}
                     type="button"
                     onClick={() => { setForm({...form, customerId: String(c.id), guestName: ""}); setCustomerSearch(c.name); }}
-                    className={`w-full text-left px-3 py-2 text-sm border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors ${
+                    className={`w-full text-left px-3 py-2 text-sm border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors ${
                       form.customerId === String(c.id)
-                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        ? "bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300"
+                        : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"
                     }`}
                   >
                     <span className="font-medium">{c.name}</span>
-                    {c.nit && <span className="text-gray-400 ml-2">Doc: {c.nit}</span>}
-                    {c.phone && <span className="text-gray-400 ml-2">Tel: {c.phone}</span>}
+                    {c.nit && <span className="text-slate-400 ml-2">Doc: {c.nit}</span>}
+                    {c.phone && <span className="text-slate-400 ml-2">Tel: {c.phone}</span>}
                   </button>
                 ))
               )}
@@ -241,7 +241,7 @@ export default function TiqueterasPage() {
             {form.customerId && <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Cliente seleccionado</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre invitado (si no es cliente)</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre invitado (si no es cliente)</label>
             <input
               className="input-field"
               placeholder="Nombre del invitado"
@@ -252,7 +252,7 @@ export default function TiqueterasPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Número de entradas *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de entradas *</label>
               <input
                 type="number"
                 min="1"
@@ -263,7 +263,7 @@ export default function TiqueterasPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio *</label>
               <input
                 type="number"
                 step="100"
@@ -277,7 +277,7 @@ export default function TiqueterasPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Método de pago *</label>
               <select
                 className="input-field"
                 value={form.paymentMethod}
@@ -290,7 +290,7 @@ export default function TiqueterasPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monto recibido</label>
               <input
                 type="number"
                 min="0"

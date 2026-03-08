@@ -60,9 +60,9 @@ export default function FacturasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center gap-3">
-        <FileText className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Facturas</h1>
+      <div className="page-header">
+        <div className="page-icon"><FileText className="w-full h-full" /></div>
+        <h1 className="page-title">Facturas</h1>
       </div>
 
       <div className="card">
@@ -86,7 +86,7 @@ export default function FacturasPage() {
             </thead>
             <tbody>
               {invoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                   <td className="table-cell font-medium">{inv.number}</td>
                   <td className="table-cell">{inv.customer?.name || "C/F"}</td>
                   <td className="table-cell">{paymentLabels[inv.paymentMethod]}</td>
@@ -94,11 +94,11 @@ export default function FacturasPage() {
                   <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[inv.status]}`}>{statusLabels[inv.status]}</span></td>
                   <td className="table-cell">{formatDate(inv.date)}</td>
                   <td className="table-cell">
-                    <button onClick={() => setShowDetail(inv)} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg"><Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /></button>
+                    <button onClick={() => setShowDetail(inv)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button>
                   </td>
                 </tr>
               ))}
-              {invoices.length === 0 && <tr><td colSpan={7} className="table-cell text-center text-gray-400 dark:text-gray-500 py-12">Sin facturas</td></tr>}
+              {invoices.length === 0 && <tr><td colSpan={7} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">Sin facturas</td></tr>}
             </tbody>
           </table>
         </div>
@@ -108,10 +108,10 @@ export default function FacturasPage() {
         {showDetail && (
           <div className="space-y-4" id="invoice-print">
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><p className="text-gray-500 dark:text-gray-400">Cliente: <span className="font-medium text-gray-900 dark:text-white">{showDetail.customer?.name || "Consumidor Final"}</span></p>
-                <p className="text-gray-500 dark:text-gray-400">NIT: <span className="font-medium">{showDetail.customer?.nit || "CF"}</span></p></div>
-              <div className="text-right"><p className="text-gray-500 dark:text-gray-400">Fecha: <span className="font-medium">{formatDate(showDetail.date)}</span></p>
-                <p className="text-gray-500 dark:text-gray-400">Pago: <span className="font-medium">{paymentLabels[showDetail.paymentMethod]}</span></p></div>
+              <div><p className="text-slate-500 dark:text-slate-400">Cliente: <span className="font-medium text-slate-900 dark:text-white">{showDetail.customer?.name || "Consumidor Final"}</span></p>
+                <p className="text-slate-500 dark:text-slate-400">NIT: <span className="font-medium">{showDetail.customer?.nit || "CF"}</span></p></div>
+              <div className="text-right"><p className="text-slate-500 dark:text-slate-400">Fecha: <span className="font-medium">{formatDate(showDetail.date)}</span></p>
+                <p className="text-slate-500 dark:text-slate-400">Pago: <span className="font-medium">{paymentLabels[showDetail.paymentMethod]}</span></p></div>
             </div>
 
             <table className="w-full">
@@ -123,11 +123,11 @@ export default function FacturasPage() {
               </tbody>
             </table>
 
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-1 text-sm">
+            <div className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-4 space-y-1 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(showDetail.subtotal)}</span></div>
               {Number(showDetail.discount) > 0 && <div className="flex justify-between text-red-600 dark:text-red-400"><span>Descuento</span><span>-{formatCurrency(showDetail.discount)}</span></div>}
               <div className="flex justify-between"><span>IVA ({(Number(showDetail.taxRate) * 100).toFixed(0)}%)</span><span>{formatCurrency(showDetail.tax)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t dark:border-gray-600 pt-2"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
+              <div className="flex justify-between font-bold text-lg border-t dark:border-slate-700 pt-2"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
               {showDetail.paymentMethod === "CASH" && (
                 <>
                   <div className="flex justify-between"><span>Recibido</span><span>{formatCurrency(showDetail.paidAmount)}</span></div>

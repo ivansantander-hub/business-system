@@ -54,7 +54,7 @@ const STATUS_BADGE: Record<string, string> = {
   EXPIRED: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   SUSPENDED: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   FROZEN: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-  CANCELLED: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300",
+  CANCELLED: "bg-slate-100 text-slate-700 dark:bg-white/[0.05] dark:text-slate-300",
 };
 
 const PAYMENT_BADGE: Record<string, string> = {
@@ -260,19 +260,19 @@ export default function MembresiasPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <CreditCard className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Membresías</h1>
+        <div className="page-header">
+          <div className="page-icon"><CreditCard className="w-full h-full" /></div>
+          <h1 className="page-title">Membresías</h1>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800">
         <button
           onClick={() => setTab("plans")}
           className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
             tab === "plans"
-              ? "bg-white dark:bg-gray-800 border border-b-0 border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              ? "bg-white dark:bg-[#141925] border border-b-0 border-slate-200 dark:border-slate-800 text-violet-600 dark:text-violet-400"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
           Planes
@@ -281,8 +281,8 @@ export default function MembresiasPage() {
           onClick={() => setTab("memberships")}
           className={`px-4 py-2 font-medium rounded-t-lg transition-colors ${
             tab === "memberships"
-              ? "bg-white dark:bg-gray-800 border border-b-0 border-gray-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-400"
-              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+              ? "bg-white dark:bg-[#141925] border border-b-0 border-slate-200 dark:border-slate-800 text-violet-600 dark:text-violet-400"
+              : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
           Membresías Activas
@@ -291,7 +291,7 @@ export default function MembresiasPage() {
 
       {loading ? (
         <div className="card flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
         </div>
       ) : (
         <>
@@ -306,15 +306,15 @@ export default function MembresiasPage() {
                 {plans.map((p) => (
                   <div key={p.id} className={`card p-5 ${p.isActive ? "" : "opacity-60"}`}>
                     <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-semibold text-lg text-gray-900 dark:text-white">{p.name}</h3>
-                      <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                      <h3 className="font-semibold text-lg text-slate-900 dark:text-white">{p.name}</h3>
+                      <span className="text-xl font-bold text-violet-600 dark:text-violet-400">
                         {formatCurrency(p.price)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{p.durationDays} días</p>
-                    {p.description && <p className="text-sm text-gray-600 dark:text-gray-300 mb-2 line-clamp-2">{p.description}</p>}
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">{p.durationDays} días</p>
+                    {p.description && <p className="text-sm text-slate-600 dark:text-slate-300 mb-2 line-clamp-2">{p.description}</p>}
                     {p._count !== undefined && (
-                      <p className="text-xs text-gray-400 mb-3">{p._count.memberships} membresías</p>
+                      <p className="text-xs text-slate-400 mb-3">{p._count.memberships} membresías</p>
                     )}
                     <div className="flex gap-2">
                       {p.isActive && (
@@ -331,7 +331,7 @@ export default function MembresiasPage() {
                   </div>
                 ))}
                 {plans.length === 0 && (
-                  <div className="col-span-full card text-center text-gray-400 py-12">
+                  <div className="col-span-full card text-center text-slate-400 py-12">
                     No hay planes. Crea uno para comenzar.
                   </div>
                 )}
@@ -361,18 +361,18 @@ export default function MembresiasPage() {
                   </thead>
                   <tbody>
                     {memberships.map((m) => (
-                      <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                         <td className="table-cell font-medium">{m.member.customer.name}</td>
                         <td className="table-cell">{m.plan.name}</td>
                         <td className="table-cell">{formatDate(m.startDate)}</td>
                         <td className="table-cell">{formatDate(m.endDate)}</td>
                         <td className="table-cell">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[m.status] || "bg-gray-100 text-gray-700"}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_BADGE[m.status] || "bg-slate-100 text-slate-700"}`}>
                             {m.status}
                           </span>
                         </td>
                         <td className="table-cell">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_BADGE[m.paymentStatus] || "bg-gray-100 text-gray-700"}`}>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PAYMENT_BADGE[m.paymentStatus] || "bg-slate-100 text-slate-700"}`}>
                             {m.paymentStatus}
                           </span>
                         </td>
@@ -399,7 +399,7 @@ export default function MembresiasPage() {
                     ))}
                     {memberships.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="table-cell text-center text-gray-400 py-12">
+                        <td colSpan={7} className="table-cell text-center text-slate-400 py-12">
                           No hay membresías
                         </td>
                       </tr>
@@ -415,25 +415,25 @@ export default function MembresiasPage() {
       <Modal open={showPlanModal} onClose={() => setShowPlanModal(false)} title={editingPlan ? "Editar Plan" : "Crear Plan"} size="md">
         <form onSubmit={handlePlanSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
             <input className="input-field" value={planForm.name} onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Duración (días) *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Duración (días) *</label>
               <input type="number" min="1" className="input-field" value={planForm.durationDays} onChange={(e) => setPlanForm({ ...planForm, durationDays: e.target.value })} required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Precio *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Precio *</label>
               <input type="number" min="0" step="100" className="input-field" value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })} required />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción</label>
             <input className="input-field" value={planForm.description} onChange={(e) => setPlanForm({ ...planForm, description: e.target.value })} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Características</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Características</label>
             <textarea className="input-field min-h-[80px]" value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="Una por línea" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -446,9 +446,9 @@ export default function MembresiasPage() {
       <Modal open={showMembershipModal} onClose={() => setShowMembershipModal(false)} title="Nueva Membresía" size="md">
         <form onSubmit={handleMembershipSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Buscar cliente</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Buscar cliente</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 className="input-field pl-10"
                 placeholder="Nombre, documento, teléfono..."
@@ -458,10 +458,10 @@ export default function MembresiasPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente *</label>
-            <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-600 rounded-lg">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cliente *</label>
+            <div className="max-h-40 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-lg">
               {customers.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">
+                <p className="text-sm text-slate-400 text-center py-4">
                   {customerSearch ? "Sin resultados" : "Buscando clientes..."}
                 </p>
               ) : (
@@ -470,15 +470,15 @@ export default function MembresiasPage() {
                     key={c.id}
                     type="button"
                     onClick={() => setMembershipForm({ ...membershipForm, customerId: String(c.id) })}
-                    className={`w-full text-left px-3 py-2.5 text-sm border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors ${
+                    className={`w-full text-left px-3 py-2.5 text-sm border-b border-slate-100 dark:border-slate-800 last:border-0 transition-colors ${
                       membershipForm.customerId === String(c.id)
-                        ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                        ? "bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300"
+                        : "hover:bg-slate-50 dark:hover:bg-white/[0.03]"
                     }`}
                   >
                     <span className="font-medium">{c.name}</span>
-                    {c.nit && <span className="text-gray-400 ml-2">Doc: {c.nit}</span>}
-                    {c.phone && <span className="text-gray-400 ml-2">Tel: {c.phone}</span>}
+                    {c.nit && <span className="text-slate-400 ml-2">Doc: {c.nit}</span>}
+                    {c.phone && <span className="text-slate-400 ml-2">Tel: {c.phone}</span>}
                   </button>
                 ))
               )}
@@ -488,7 +488,7 @@ export default function MembresiasPage() {
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Plan *</label>
             <select
               className="input-field"
               value={membershipForm.planId}
@@ -505,7 +505,7 @@ export default function MembresiasPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Método de pago *</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Método de pago *</label>
               <select
                 className="input-field"
                 value={membershipForm.paymentMethod}
@@ -518,7 +518,7 @@ export default function MembresiasPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monto recibido</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Monto recibido</label>
               <input
                 type="number"
                 min="0"
@@ -531,12 +531,12 @@ export default function MembresiasPage() {
             </div>
           </div>
           {membershipForm.planId && (
-            <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-3 text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Total a cobrar: </span>
-              <span className="font-bold text-indigo-700 dark:text-indigo-300">
+            <div className="bg-violet-50 dark:bg-violet-500/10 rounded-lg p-3 text-sm">
+              <span className="text-slate-600 dark:text-slate-400">Total a cobrar: </span>
+              <span className="font-bold text-violet-700 dark:text-violet-300">
                 {formatCurrency(activePlans.find(p => String(p.id) === membershipForm.planId)?.price || 0)}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(+ IVA según configuración)</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">(+ IVA según configuración)</span>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">

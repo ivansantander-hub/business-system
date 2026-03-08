@@ -43,7 +43,7 @@ export default function ComprasPage() {
       const items = [...prev.items];
       items[index] = { ...items[index], [field]: value };
       if (field === "productId") {
-        const product = products.find(p => p.id === Number(value));
+        const product = products.find(p => p.id === value);
         if (product) items[index].unitPrice = product.costPrice;
       }
       return { ...prev, items };
@@ -79,7 +79,7 @@ export default function ComprasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3"><ShoppingBag className="w-7 h-7 text-indigo-600 dark:text-indigo-400" /><h1 className="text-2xl font-bold text-gray-900 dark:text-white">Compras</h1></div>
+        <div className="page-header"><div className="page-icon"><ShoppingBag className="w-full h-full" /></div><h1 className="page-title">Compras</h1></div>
         <button onClick={() => { setForm({ supplierId: "", notes: "", items: [{ productId: "", quantity: "1", unitPrice: "" }] }); setShowCreate(true); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nueva Orden</button>
       </div>
 
@@ -88,12 +88,12 @@ export default function ComprasPage() {
           <thead><tr><th className="table-header">Número</th><th className="table-header">Proveedor</th><th className="table-header text-right">Total</th><th className="table-header">Estado</th><th className="table-header">Fecha</th><th className="table-header">Acciones</th></tr></thead>
           <tbody>
             {purchases.map(p => (
-              <tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                 <td className="table-cell font-medium">{p.number}</td><td className="table-cell">{p.supplier.name}</td>
                 <td className="table-cell text-right font-semibold">{formatCurrency(p.total)}</td>
                 <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status]}`}>{statusLabels[p.status]}</span></td>
                 <td className="table-cell">{formatDate(p.date)}</td>
-                <td className="table-cell"><button onClick={() => setShowDetail(p)} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg"><Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /></button></td>
+                <td className="table-cell"><button onClick={() => setShowDetail(p)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button></td>
               </tr>
             ))}
           </tbody>
@@ -104,14 +104,14 @@ export default function ComprasPage() {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nueva Orden de Compra" size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proveedor *</label>
+            <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Proveedor *</label>
               <select className="input-field" value={form.supplierId} onChange={e => setForm({...form, supplierId: e.target.value})} required>
                 <option value="">Seleccionar...</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select></div>
-            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label><input className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
+            <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas</label><input className="input-field" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} /></div>
           </div>
 
-          <div><h4 className="font-medium text-gray-700 mb-2">Productos</h4>
+          <div><h4 className="font-medium text-slate-700 mb-2">Productos</h4>
             {form.items.map((item, i) => (
               <div key={i} className="flex gap-2 mb-2">
                 <select className="input-field flex-1" value={item.productId} onChange={e => updateItem(i, "productId", e.target.value)}>
@@ -119,14 +119,14 @@ export default function ComprasPage() {
                 </select>
                 <input type="number" min="1" className="input-field w-24" placeholder="Cant" value={item.quantity} onChange={e => updateItem(i, "quantity", e.target.value)} />
                 <input type="number" step="0.01" className="input-field w-32" placeholder="P/U" value={item.unitPrice} onChange={e => updateItem(i, "unitPrice", e.target.value)} />
-                <span className="input-field w-32 bg-gray-50 dark:bg-gray-700/50 flex items-center">{formatCurrency(Number(item.quantity) * Number(item.unitPrice) || 0)}</span>
+                <span className="input-field w-32 bg-slate-50 dark:bg-white/[0.03] flex items-center">{formatCurrency(Number(item.quantity) * Number(item.unitPrice) || 0)}</span>
                 {form.items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-500 px-2"><XCircle className="w-5 h-5" /></button>}
               </div>
             ))}
-            <button type="button" onClick={addItemRow} className="text-indigo-600 text-sm font-medium hover:underline">+ Agregar producto</button>
+            <button type="button" onClick={addItemRow} className="text-violet-600 text-sm font-medium hover:underline">+ Agregar producto</button>
           </div>
 
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-right">
+          <div className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-3 text-right">
             <p className="font-bold text-lg">Subtotal: {formatCurrency(form.items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0))}</p>
           </div>
 
@@ -141,7 +141,7 @@ export default function ComprasPage() {
             <div className="text-sm grid grid-cols-2 gap-2"><div>Proveedor: <b>{showDetail.supplier.name}</b></div><div>Estado: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[showDetail.status]}`}>{statusLabels[showDetail.status]}</span></div></div>
             <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
               <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>))}</tbody></table>
-            <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 text-right font-bold text-lg">Total: {formatCurrency(showDetail.total)}</div>
+            <div className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-3 text-right font-bold text-lg">Total: {formatCurrency(showDetail.total)}</div>
             {showDetail.status === "PENDING" && (
               <div className="flex gap-3"><button onClick={() => updateStatus(showDetail.id, "RECEIVED")} className="btn-success flex items-center gap-2 flex-1"><CheckCircle className="w-4 h-4" /> Marcar Recibida</button><button onClick={() => updateStatus(showDetail.id, "CANCELLED")} className="btn-danger flex items-center gap-2"><XCircle className="w-4 h-4" /> Cancelar</button></div>
             )}

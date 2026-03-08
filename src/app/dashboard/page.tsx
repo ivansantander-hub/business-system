@@ -68,49 +68,70 @@ export default function DashboardPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  if (!data) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>;
+  if (!data) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-[3px] border-violet-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   const isGym = data.companyType === "GYM";
 
   const gymCards = isGym && data.gym ? [
-    { label: "Ventas Hoy", value: formatCurrency(data.todaySales), icon: DollarSign, color: "bg-emerald-500" },
-    { label: "Miembros Activos", value: data.gym.activeMembers, icon: Users, color: "bg-indigo-500" },
-    { label: "Entradas Hoy", value: data.gym.todayCheckIns, icon: UserCheck, color: "bg-blue-500" },
-    { label: "Membresías Activas", value: data.gym.activeMemberships, icon: Dumbbell, color: "bg-purple-500" },
-    { label: "Tiqueteras Activas", value: data.gym.activeDayPasses, icon: Ticket, color: "bg-amber-500" },
-    { label: "Total Miembros", value: data.gym.totalMembers, icon: Users, color: "bg-gray-500" },
+    { label: "Ventas Hoy", value: formatCurrency(data.todaySales), icon: DollarSign, gradient: "from-emerald-500 to-emerald-600" },
+    { label: "Miembros Activos", value: String(data.gym.activeMembers), icon: Users, gradient: "from-violet-500 to-indigo-600" },
+    { label: "Entradas Hoy", value: String(data.gym.todayCheckIns), icon: UserCheck, gradient: "from-blue-500 to-blue-600" },
+    { label: "Membresías Activas", value: String(data.gym.activeMemberships), icon: Dumbbell, gradient: "from-purple-500 to-purple-600" },
+    { label: "Tiqueteras Activas", value: String(data.gym.activeDayPasses), icon: Ticket, gradient: "from-amber-500 to-orange-600" },
+    { label: "Total Miembros", value: String(data.gym.totalMembers), icon: Users, gradient: "from-slate-500 to-slate-600" },
   ] : [];
 
   const restaurantCards = [
-    { label: "Ventas Hoy", value: formatCurrency(data.todaySales), icon: DollarSign, color: "bg-emerald-500" },
-    { label: "Transacciones", value: data.todayTransactions, icon: ShoppingCart, color: "bg-blue-500" },
-    { label: "Órdenes Abiertas", value: data.openOrders ?? 0, icon: ClipboardList, color: "bg-amber-500" },
-    { label: "Stock Bajo", value: data.lowStockCount, icon: AlertTriangle, color: "bg-red-500" },
+    { label: "Ventas Hoy", value: formatCurrency(data.todaySales), icon: DollarSign, gradient: "from-emerald-500 to-emerald-600" },
+    { label: "Transacciones", value: String(data.todayTransactions), icon: ShoppingCart, gradient: "from-blue-500 to-blue-600" },
+    { label: "Órdenes Abiertas", value: String(data.openOrders ?? 0), icon: ClipboardList, gradient: "from-amber-500 to-orange-600" },
+    { label: "Stock Bajo", value: String(data.lowStockCount), icon: AlertTriangle, gradient: "from-red-500 to-red-600" },
   ];
 
   const cards = isGym ? gymCards : restaurantCards;
 
+  const chartColors = {
+    bar: "#7c3aed",
+    barGym: "#10b981",
+    grid: "var(--chart-grid, #f1f5f9)",
+    text: "var(--chart-text, #64748b)",
+  };
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-        {isGym ? "Dashboard del Gimnasio" : "Dashboard"}
-      </h1>
+    <div className="space-y-8 animate-fade-in">
+      <div className="page-header">
+        <div className="page-icon">
+          <TrendingUp className="w-full h-full" />
+        </div>
+        <h1 className="page-title">
+          {isGym ? "Dashboard del Gimnasio" : "Dashboard"}
+        </h1>
+      </div>
 
       {error && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:border-amber-800 dark:text-amber-300 px-4 py-3 rounded-lg text-sm">
+        <div className="bg-amber-50 border border-amber-200/80 text-amber-800 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300 px-4 py-3 rounded-xl text-sm font-medium">
           {error}
         </div>
       )}
 
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${isGym ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}>
-        {cards.map((card) => (
-          <div key={card.label} className="card flex items-center gap-4">
-            <div className={`${card.color} p-3 rounded-xl`}>
-              <card.icon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{card.label}</p>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{card.value}</p>
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGym ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}>
+        {cards.map((card, idx) => (
+          <div key={card.label} className={`relative overflow-hidden rounded-2xl p-5 ${idx === 0 ? "text-white bg-gradient-to-br " + card.gradient + " shadow-glow-sm" : "stat-card"}`}>
+            {idx === 0 && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />}
+            <div className="flex items-center justify-between relative">
+              <div>
+                <p className={`text-[13px] font-medium ${idx === 0 ? "text-white/80" : "text-muted"}`}>{card.label}</p>
+                <p className={`text-2xl font-bold mt-1 ${idx === 0 ? "text-white" : "text-slate-900 dark:text-white"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
+                  {card.value}
+                </p>
+              </div>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${idx === 0 ? "bg-white/20" : "bg-gradient-to-br " + card.gradient + " shadow-sm"}`}>
+                <card.icon className={`w-5 h-5 ${idx === 0 ? "text-white" : "text-white"}`} />
+              </div>
             </div>
           </div>
         ))}
@@ -120,38 +141,41 @@ export default function DashboardPage() {
         {isGym && data.gym ? (
           <>
             <div className="card">
-              <div className="flex items-center gap-2 mb-4">
-                <UserCheck className="w-5 h-5 text-indigo-600" />
-                <h2 className="font-semibold text-gray-900 dark:text-white">Entradas - Últimos 7 días</h2>
+              <div className="flex items-center gap-2.5 mb-5">
+                <UserCheck className="w-5 h-5 text-violet-500" aria-hidden="true" />
+                <h2 className="section-title">Entradas &mdash; Últimos 7 Días</h2>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={data.gym.checkInsByDay}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => [value, "Entradas"]} />
-                  <Bar dataKey="entries" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(value: number) => [value, "Entradas"]}
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                  />
+                  <Bar dataKey="entries" fill={chartColors.bar} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             <div className="card">
-              <div className="flex items-center gap-2 mb-4">
-                <CalendarClock className="w-5 h-5 text-amber-500" />
-                <h2 className="font-semibold text-gray-900 dark:text-white">Membresías por Vencer (7 días)</h2>
+              <div className="flex items-center gap-2.5 mb-5">
+                <CalendarClock className="w-5 h-5 text-amber-500" aria-hidden="true" />
+                <h2 className="section-title">Membresías por Vencer (7 Días)</h2>
               </div>
               {data.gym.expiringMemberships.length === 0 ? (
-                <p className="text-sm text-gray-500 py-8 text-center">No hay membresías próximas a vencer</p>
+                <p className="text-sm text-muted py-12 text-center">No hay membresías próximas a vencer</p>
               ) : (
                 <div className="space-y-2">
                   {data.gym.expiringMemberships.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between py-2 px-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <div key={m.id} className="flex items-center justify-between py-2.5 px-4 bg-amber-50 dark:bg-amber-500/[0.06] rounded-xl border border-amber-100 dark:border-amber-500/10">
                       <div>
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{m.memberName}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({m.planName})</span>
+                        <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{m.memberName}</span>
+                        <span className="text-xs text-muted ml-2">({m.planName})</span>
                       </div>
-                      <span className="text-sm text-amber-600 dark:text-amber-400 font-semibold">
-                        Vence: {formatDate(m.endDate)}
+                      <span className="text-sm text-amber-600 dark:text-amber-400 font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>
+                        {formatDate(m.endDate)}
                       </span>
                     </div>
                   ))}
@@ -162,34 +186,37 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="card">
-              <div className="flex items-center gap-2 mb-4">
-                <TrendingUp className="w-5 h-5 text-indigo-600" />
-                <h2 className="font-semibold text-gray-900 dark:text-white">Ventas - Últimos 7 días</h2>
+              <div className="flex items-center gap-2.5 mb-5">
+                <TrendingUp className="w-5 h-5 text-violet-500" aria-hidden="true" />
+                <h2 className="section-title">Ventas &mdash; Últimos 7 Días</h2>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={data.salesByDay}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => [formatCurrency(value), "Ventas"]} />
-                  <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    formatter={(value: number) => [formatCurrency(value), "Ventas"]}
+                    contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                  />
+                  <Bar dataKey="total" fill={chartColors.bar} radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
             <div className="card">
-              <div className="flex items-center gap-2 mb-4">
-                <AlertTriangle className="w-5 h-5 text-amber-500" />
-                <h2 className="font-semibold text-gray-900 dark:text-white">Alertas de Stock Bajo</h2>
+              <div className="flex items-center gap-2.5 mb-5">
+                <AlertTriangle className="w-5 h-5 text-amber-500" aria-hidden="true" />
+                <h2 className="section-title">Alertas de Stock Bajo</h2>
               </div>
               {data.lowStockProducts.length === 0 ? (
-                <p className="text-sm text-gray-500 py-8 text-center">No hay alertas de stock bajo</p>
+                <p className="text-sm text-muted py-12 text-center">No hay alertas de stock bajo</p>
               ) : (
                 <div className="space-y-2">
                   {data.lowStockProducts.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between py-2 px-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{p.name}</span>
-                      <span className="text-sm text-red-600 font-semibold">
+                    <div key={p.id} className="flex items-center justify-between py-2.5 px-4 bg-amber-50 dark:bg-amber-500/[0.06] rounded-xl border border-amber-100 dark:border-amber-500/10">
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{p.name}</span>
+                      <span className="text-sm text-red-600 dark:text-red-400 font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>
                         {Number(p.stock).toFixed(0)} / {Number(p.min_stock).toFixed(0)}
                       </span>
                     </div>
@@ -203,45 +230,48 @@ export default function DashboardPage() {
 
       {isGym && data.salesByDay.length > 0 && (
         <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-indigo-600" />
-            <h2 className="font-semibold text-gray-900 dark:text-white">Ventas - Últimos 7 días</h2>
+          <div className="flex items-center gap-2.5 mb-5">
+            <TrendingUp className="w-5 h-5 text-emerald-500" aria-hidden="true" />
+            <h2 className="section-title">Ventas &mdash; Últimos 7 Días</h2>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={data.salesByDay}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value: number) => [formatCurrency(value), "Ventas"]} />
-              <Bar dataKey="total" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: chartColors.text }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), "Ventas"]}
+                contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+              />
+              <Bar dataKey="total" fill={chartColors.barGym} radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
       <div className="card">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Ventas Recientes</h2>
-        <div className="overflow-x-auto">
+        <h2 className="section-title mb-5">Ventas Recientes</h2>
+        <div className="overflow-x-auto -mx-6 px-6">
           <table className="w-full">
             <thead>
               <tr>
-                <th className="table-header">Factura</th>
+                <th className="table-header rounded-l-lg">Factura</th>
                 <th className="table-header">Cliente</th>
-                <th className="table-header">Total</th>
-                <th className="table-header">Fecha</th>
+                <th className="table-header text-right">Total</th>
+                <th className="table-header rounded-r-lg text-right">Fecha</th>
               </tr>
             </thead>
             <tbody>
               {data.recentInvoices.map((inv) => (
-                <tr key={inv.id}>
-                  <td className="table-cell font-medium">{inv.number}</td>
+                <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                  <td className="table-cell font-semibold text-violet-600 dark:text-violet-400">{inv.number}</td>
                   <td className="table-cell">{inv.customer?.name || "Consumidor Final"}</td>
-                  <td className="table-cell font-semibold">{formatCurrency(Number(inv.total))}</td>
-                  <td className="table-cell">{formatDate(inv.date)}</td>
+                  <td className="table-cell text-right font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(Number(inv.total))}</td>
+                  <td className="table-cell text-right text-muted">{formatDate(inv.date)}</td>
                 </tr>
               ))}
               {data.recentInvoices.length === 0 && (
-                <tr><td colSpan={4} className="table-cell text-center text-gray-400 py-8">Sin ventas recientes</td></tr>
+                <tr><td colSpan={4} className="table-cell text-center text-muted py-12">Sin ventas recientes</td></tr>
               )}
             </tbody>
           </table>

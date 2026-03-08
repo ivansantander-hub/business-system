@@ -88,19 +88,19 @@ export default function CheckInPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="flex items-center gap-3">
-        <UserCheck className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Control de Acceso</h1>
+      <div className="page-header">
+        <div className="page-icon"><UserCheck className="w-full h-full" /></div>
+        <h1 className="page-title">Control de Acceso</h1>
       </div>
 
       <div className="card max-w-2xl mx-auto">
         <div className="text-center mb-6">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Ingrese el documento del cliente</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Se validará automáticamente si tiene membresía o tiquetera activa</p>
+          <h2 className="text-lg font-semibold text-slate-700 dark:text-slate-300">Ingrese el documento del cliente</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Se validará automáticamente si tiene membresía o tiquetera activa</p>
         </div>
 
         <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 dark:text-gray-500" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 dark:text-slate-500" />
           <input
             className="input-field pl-14 text-2xl py-4 text-center font-mono tracking-wider"
             placeholder="Número de documento..."
@@ -132,8 +132,8 @@ export default function CheckInPage() {
 
         {loading && (
           <div className="text-center py-4">
-            <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto" />
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Validando...</p>
+            <div className="animate-spin w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full mx-auto" />
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Validando...</p>
           </div>
         )}
 
@@ -167,8 +167,8 @@ export default function CheckInPage() {
       </div>
 
       <div className="card">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-          <Clock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Clock className="w-5 h-5 text-slate-400 dark:text-slate-500" />
           Registros de hoy
         </h3>
         <div className="overflow-x-auto">
@@ -184,7 +184,7 @@ export default function CheckInPage() {
             </thead>
             <tbody>
               {checkIns.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                   <td className="table-cell">{formatDateTime(c.timestamp)}</td>
                   <td className="table-cell font-mono text-sm">{c.member.customer.nit || "-"}</td>
                   <td className="table-cell font-medium">{c.member.customer.name}</td>
@@ -196,9 +196,9 @@ export default function CheckInPage() {
                   </td>
                   <td className="table-cell">
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      c.method === "MEMBERSHIP" ? "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400" :
+                      c.method === "MEMBERSHIP" ? "bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400" :
                       c.method === "DAY_PASS" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400" :
-                      "bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400"
+                      "bg-slate-100 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400"
                     }`}>
                       {c.method === "MEMBERSHIP" ? "Membresía" : c.method === "DAY_PASS" ? "Tiquetera" : "Manual"}
                     </span>
@@ -207,7 +207,7 @@ export default function CheckInPage() {
               ))}
               {checkIns.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="table-cell text-center text-gray-400 dark:text-gray-500 py-12">
+                  <td colSpan={5} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">
                     Sin registros hoy
                   </td>
                 </tr>

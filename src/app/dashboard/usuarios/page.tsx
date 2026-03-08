@@ -180,9 +180,9 @@ export default function UsuariosPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios</h1>
+        <div className="page-header">
+          <div className="page-icon"><Shield className="w-full h-full" /></div>
+          <h1 className="page-title">Usuarios</h1>
         </div>
         <button onClick={openCreate} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo Usuario
@@ -204,11 +204,11 @@ export default function UsuariosPage() {
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                 <td className="table-cell font-medium">{u.name}</td>
                 <td className="table-cell">{u.email}</td>
                 <td className="table-cell">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[u.role] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[u.role] || "bg-slate-100 text-slate-700 dark:bg-[#141925] dark:text-slate-300"}`}>
                     {roleLabels[u.role] || u.role}
                   </span>
                 </td>
@@ -216,13 +216,13 @@ export default function UsuariosPage() {
                   <td className="table-cell">
                     <div className="flex flex-wrap gap-1">
                       {(u.companies || []).map((c) => (
-                        <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 text-xs rounded-full">
+                        <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 text-xs rounded-full">
                           <Building2 className="w-3 h-3" />
                           {c.name}
                         </span>
                       ))}
                       {(!u.companies || u.companies.length === 0) && (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">Sin empresa</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-500">Sin empresa</span>
                       )}
                     </div>
                   </td>
@@ -231,7 +231,7 @@ export default function UsuariosPage() {
                   <button
                     onClick={() => toggleActive(u)}
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      u.isActive ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                      u.isActive ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-slate-100 text-slate-500 dark:bg-[#141925] dark:text-slate-400"
                     }`}
                   >
                     {u.isActive ? "Activo" : "Inactivo"}
@@ -239,8 +239,8 @@ export default function UsuariosPage() {
                 </td>
                 <td className="table-cell">{formatDate(u.createdAt)}</td>
                 <td className="table-cell">
-                  <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg">
-                    <Pencil className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg">
+                    <Pencil className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                   </button>
                 </td>
               </tr>
@@ -254,22 +254,22 @@ export default function UsuariosPage() {
           <div className={isSuperAdmin ? "grid grid-cols-2 gap-4" : ""}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
                 <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Email *</label>
                 <input type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                   {editing ? "Nueva Contraseña (dejar vacío para no cambiar)" : "Contraseña *"}
                 </label>
                 <input type="password" className="input-field" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} />
               </div>
               {!isSuperAdmin && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol *</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rol *</label>
                   <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="ADMIN">Administrador</option>
                     <option value="CASHIER">Cajero</option>
@@ -284,7 +284,7 @@ export default function UsuariosPage() {
             {isSuperAdmin && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol global</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Rol global</label>
                   <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="ADMIN">Administrador</option>
                     <option value="CASHIER">Cajero</option>
@@ -295,14 +295,14 @@ export default function UsuariosPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empresas asignadas</label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Empresas asignadas</label>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {formAssignments.map((a) => (
-                      <div key={a.companyId} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
-                        <Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
-                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{a.companyName}</span>
+                      <div key={a.companyId} className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.03] rounded-lg px-3 py-2">
+                        <Building2 className="w-4 h-4 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                        <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{a.companyName}</span>
                         <select
-                          className="text-xs border border-gray-300 rounded px-1.5 py-1"
+                          className="text-xs border border-slate-300 rounded px-1.5 py-1"
                           value={a.role}
                           onChange={(e) => updateAssignmentRole(a.companyId, e.target.value)}
                         >
@@ -318,7 +318,7 @@ export default function UsuariosPage() {
                       </div>
                     ))}
                     {formAssignments.length === 0 && (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">Sin empresas asignadas</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-2">Sin empresas asignadas</p>
                     )}
                   </div>
                 </div>

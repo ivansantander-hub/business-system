@@ -60,9 +60,9 @@ export default function InventarioPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Warehouse className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventario</h1>
+        <div className="page-header">
+          <div className="page-icon"><Warehouse className="w-full h-full" /></div>
+          <h1 className="page-title">Inventario</h1>
         </div>
         <button onClick={() => { setForm({ productId: "", type: "IN", quantity: "", reason: "", newStock: "" }); setShowModal(true); }} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo Movimiento
@@ -75,7 +75,7 @@ export default function InventarioPage() {
           <h3 className="font-semibold text-amber-800 dark:text-amber-400 mb-2">Productos con stock bajo</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {products.filter(p => Number(p.stock) <= Number(p.minStock)).map(p => (
-              <div key={p.id} className="flex justify-between bg-white dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+              <div key={p.id} className="flex justify-between bg-white dark:bg-[#141925]/50 px-3 py-2 rounded-xl">
                 <span className="text-sm">{p.name}</span>
                 <span className="text-sm font-bold text-red-600">{Number(p.stock).toFixed(0)} {p.unit}</span>
               </div>
@@ -86,7 +86,7 @@ export default function InventarioPage() {
 
       {/* Movements history */}
       <div className="card">
-        <h2 className="font-semibold text-gray-900 dark:text-white mb-4">Historial de Movimientos</h2>
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Historial de Movimientos</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -103,19 +103,19 @@ export default function InventarioPage() {
             </thead>
             <tbody>
               {movements.map(m => (
-                <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                   <td className="table-cell"><div className="flex items-center gap-2">{typeIcons[m.type]} {typeLabels[m.type]}</div></td>
                   <td className="table-cell font-medium">{m.product.name}</td>
                   <td className="table-cell text-right font-semibold">{Number(m.quantity).toFixed(0)}</td>
                   <td className="table-cell text-right">{Number(m.previousStock).toFixed(0)}</td>
                   <td className="table-cell text-right">{Number(m.newStock).toFixed(0)}</td>
-                  <td className="table-cell text-gray-500 dark:text-gray-400">{m.reason || "-"}</td>
+                  <td className="table-cell text-slate-500 dark:text-slate-400">{m.reason || "-"}</td>
                   <td className="table-cell">{m.user.name}</td>
                   <td className="table-cell">{formatDateTime(m.createdAt)}</td>
                 </tr>
               ))}
               {movements.length === 0 && (
-                <tr><td colSpan={8} className="table-cell text-center text-gray-400 dark:text-gray-500 py-12">Sin movimientos</td></tr>
+                <tr><td colSpan={8} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">Sin movimientos</td></tr>
               )}
             </tbody>
           </table>
@@ -125,14 +125,14 @@ export default function InventarioPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Nuevo Movimiento de Inventario">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Producto *</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Producto *</label>
             <select className="input-field" value={form.productId} onChange={e => setForm({...form, productId: e.target.value})} required>
               <option value="">Seleccionar...</option>
               {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stock: {Number(p.stock).toFixed(0)})</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo *</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo *</label>
             <select className="input-field" value={form.type} onChange={e => setForm({...form, type: e.target.value})}>
               <option value="IN">Entrada</option>
               <option value="OUT">Salida</option>
@@ -140,7 +140,7 @@ export default function InventarioPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               {form.type === "ADJUSTMENT" ? "Nuevo Stock" : "Cantidad"} *
             </label>
             <input type="number" step="1" className="input-field"
@@ -150,7 +150,7 @@ export default function InventarioPage() {
                 : setForm({...form, quantity: e.target.value})} required />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Razón</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Razón</label>
             <input className="input-field" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
