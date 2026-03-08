@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Building2, Plus, Pencil, Ban, Search } from "lucide-react";
+import { Building2, Plus, Pencil, Ban } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader, SearchInput, EmptyState } from "@/components/molecules";
+import { Spinner, Button } from "@/components/atoms";
 
 interface Company {
   id: string;
@@ -121,31 +123,43 @@ export default function EmpresasPage() {
   );
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600 dark:border-violet-400" /></div>;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Empresas</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Gestión de empresas del sistema</p>
+      <PageHeader
+        icon={<Building2 className="w-full h-full" />}
+        title="Empresas"
+        subtitle="Gestión de empresas del sistema"
+        actions={
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <SearchInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar por nombre o NIT..."
+              className="w-full sm:w-auto sm:min-w-[300px]"
+            />
+            <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>
+              Nueva Empresa
+            </Button>
+          </div>
+        }
+      />
+
+      {filtered.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            icon={<Building2 className="w-8 h-8" />}
+            title="No se encontraron empresas"
+          />
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nueva Empresa
-        </button>
-      </div>
-
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
-        <input
-          type="text" placeholder="Buscar por nombre o NIT..."
-          value={search} onChange={(e) => setSearch(e.target.value)}
-          className="input-field pl-10"
-        />
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtered.map((c) => (
           <div key={c.id} className={`card p-5 ${!c.isActive ? "opacity-60" : ""}`}>
             <div className="flex items-start justify-between">
@@ -168,29 +182,31 @@ export default function EmpresasPage() {
               {c.taxRegime && <p className="text-xs">{c.taxRegime}</p>}
               <p className="text-xs text-slate-400 dark:text-slate-500">{c._count.userCompanies} usuario(s)</p>
             </div>
-            <div className="mt-4 flex gap-2">
-              <button onClick={() => openEdit(c)} className="btn-secondary text-xs flex items-center gap-1">
-                <Pencil className="w-3 h-3" /> Editar
-              </button>
-              <button onClick={() => toggleActive(c)} className={`text-xs flex items-center gap-1 px-3 py-1.5 rounded-lg ${c.isActive ? "btn-danger" : "btn-success"}`}>
-                <Ban className="w-3 h-3" /> {c.isActive ? "Desactivar" : "Activar"}
-              </button>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2">
+              <Button variant="secondary" size="sm" onClick={() => openEdit(c)} icon={<Pencil className="w-3 h-3" />}>
+                Editar
+              </Button>
+              <Button
+                variant={c.isActive ? "danger" : "success"}
+                size="sm"
+                onClick={() => toggleActive(c)}
+                icon={<Ban className="w-3 h-3" />}
+              >
+                {c.isActive ? "Desactivar" : "Activar"}
+              </Button>
             </div>
           </div>
         ))}
-      </div>
-
-      {filtered.length === 0 && (
-        <div className="text-center py-12 text-slate-500 dark:text-slate-400">No se encontraron empresas</div>
+        </div>
       )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editingCompany ? "Editar Empresa" : "Nueva Empresa"} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {!editingCompany && (
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de empresa *</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     { value: "RESTAURANT", label: "Restaurante / Bar", desc: "Mesas, órdenes, meseros, cocina" },
                     { value: "GYM", label: "Gimnasio", desc: "Membresías, check-in, clases, entrenadores" },
@@ -234,7 +250,7 @@ export default function EmpresasPage() {
                 {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Dirección</label>
               <input className="input-field" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
             </div>
@@ -247,9 +263,9 @@ export default function EmpresasPage() {
               <input type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">{editingCompany ? "Actualizar" : "Crear Empresa"}</button>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+            <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
+            <Button type="submit">{editingCompany ? "Actualizar" : "Crear Empresa"}</Button>
           </div>
         </form>
       </Modal>

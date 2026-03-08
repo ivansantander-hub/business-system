@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { FileText, Search, Eye, XCircle, Printer } from "lucide-react";
+import { FileText, Eye, XCircle, Printer } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PageHeader, EmptyState } from "@/components/molecules";
 
 interface Invoice {
   id: string; number: string; date: string; subtotal: string; tax: string; taxRate: string;
@@ -60,54 +61,54 @@ export default function FacturasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="page-header">
-        <div className="page-icon"><FileText className="w-full h-full" /></div>
-        <h1 className="page-title">Facturas</h1>
-      </div>
+      <PageHeader icon={<FileText className="w-full h-full" />} title="Facturas" />
 
       <div className="card">
-        <div className="flex flex-wrap gap-3 mb-4">
-          <select className="input-field w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mb-4">
+          <select className="input-field w-full sm:w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
             <option value="">Todos los estados</option>
             <option value="PAID">Pagada</option><option value="PENDING">Pendiente</option><option value="CANCELLED">Anulada</option>
           </select>
-          <input type="date" className="input-field w-auto" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <input type="date" className="input-field w-auto" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <input type="date" className="input-field w-full sm:w-auto" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+          <input type="date" className="input-field w-full sm:w-auto" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {invoices.length === 0 ? (
+          <EmptyState icon={<FileText className="w-7 h-7" />} title="Sin facturas" />
+        ) : (
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr>
-                <th className="table-header">Número</th><th className="table-header">Cliente</th><th className="table-header">Pago</th>
-                <th className="table-header text-right">Total</th><th className="table-header">Estado</th>
-                <th className="table-header">Fecha</th><th className="table-header">Acciones</th>
+                <th className="table-header rounded-l-lg">Número</th><th className="table-header hidden sm:table-cell">Cliente</th><th className="table-header hidden md:table-cell">Pago</th>
+                <th className="table-header text-right">Total</th><th className="table-header hidden sm:table-cell">Estado</th>
+                <th className="table-header hidden sm:table-cell">Fecha</th><th className="table-header rounded-r-lg">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {invoices.map(inv => (
                 <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
-                  <td className="table-cell font-medium">{inv.number}</td>
-                  <td className="table-cell">{inv.customer?.name || "C/F"}</td>
-                  <td className="table-cell">{paymentLabels[inv.paymentMethod]}</td>
+                  <td className="table-cell font-medium truncate max-w-[100px]">{inv.number}</td>
+                  <td className="table-cell hidden sm:table-cell truncate max-w-[120px]">{inv.customer?.name || "C/F"}</td>
+                  <td className="table-cell hidden md:table-cell">{paymentLabels[inv.paymentMethod]}</td>
                   <td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td>
-                  <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[inv.status]}`}>{statusLabels[inv.status]}</span></td>
-                  <td className="table-cell">{formatDate(inv.date)}</td>
+                  <td className="table-cell hidden sm:table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[inv.status]}`}>{statusLabels[inv.status]}</span></td>
+                  <td className="table-cell hidden sm:table-cell">{formatDate(inv.date)}</td>
                   <td className="table-cell">
-                    <button onClick={() => setShowDetail(inv)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button>
+                    <button onClick={() => setShowDetail(inv)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg" title="Ver detalle"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button>
                   </td>
                 </tr>
               ))}
-              {invoices.length === 0 && <tr><td colSpan={7} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">Sin facturas</td></tr>}
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       <Modal open={!!showDetail} onClose={() => setShowDetail(null)} title={showDetail ? `Factura ${showDetail.number}` : ""} size="lg">
         {showDetail && (
           <div className="space-y-4" id="invoice-print">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div><p className="text-slate-500 dark:text-slate-400">Cliente: <span className="font-medium text-slate-900 dark:text-white">{showDetail.customer?.name || "Consumidor Final"}</span></p>
                 <p className="text-slate-500 dark:text-slate-400">NIT: <span className="font-medium">{showDetail.customer?.nit || "CF"}</span></p></div>
               <div className="text-right"><p className="text-slate-500 dark:text-slate-400">Fecha: <span className="font-medium">{formatDate(showDetail.date)}</span></p>

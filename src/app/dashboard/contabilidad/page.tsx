@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Calculator, Plus, BookOpen, Receipt } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { Button } from "@/components/atoms";
+import { PageHeader, EmptyState } from "@/components/molecules";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Account { id: string; code: string; name: string; type: string; balance: string; }
@@ -72,26 +74,33 @@ export default function ContabilidadPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div className="page-header"><div className="page-icon"><Calculator className="w-full h-full" /></div><h1 className="page-title">Contabilidad</h1></div>
-        <div className="flex gap-2">
-          {tab === "journal" && <button onClick={() => setShowJournalModal(true)} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nueva Partida</button>}
-          {tab === "expenses" && <button onClick={() => { setExpenseForm({ category: "", description: "", amount: "", date: new Date().toISOString().split("T")[0], paymentMethod: "CASH", receiptNumber: "", notes: "" }); setShowExpenseModal(true); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nuevo Gasto</button>}
-        </div>
-      </div>
+      <PageHeader
+        icon={<Calculator className="w-full h-full" />}
+        title="Contabilidad"
+        actions={
+          <div className="flex flex-col sm:flex-row gap-2">
+            {tab === "journal" && <Button onClick={() => setShowJournalModal(true)} icon={<Plus className="w-4 h-4" />}>Nueva Partida</Button>}
+            {tab === "expenses" && <Button onClick={() => { setExpenseForm({ category: "", description: "", amount: "", date: new Date().toISOString().split("T")[0], paymentMethod: "CASH", receiptNumber: "", notes: "" }); setShowExpenseModal(true); }} icon={<Plus className="w-4 h-4" />}>Nuevo Gasto</Button>}
+          </div>
+        }
+      />
 
-      <div className="flex gap-2">
+      <div className="flex overflow-x-auto gap-1 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
         {tabs.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${tab === t.key ? "bg-violet-600 text-white" : "bg-white text-slate-600 dark:text-slate-300 border hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}>
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${tab === t.key ? "bg-violet-600 text-white" : "bg-white text-slate-600 dark:text-slate-300 border hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}>
             <t.icon className="w-4 h-4" /> {t.label}
           </button>
         ))}
       </div>
 
       {tab === "accounts" && (
-        <div className="card overflow-x-auto">
-          <table className="w-full">
+        <div className="card w-full">
+          {accounts.length === 0 ? (
+            <EmptyState icon={<BookOpen className="w-8 h-8" />} title="Sin cuentas" description="El plan de cuentas está vacío" />
+          ) : (
+          <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead><tr><th className="table-header">Código</th><th className="table-header">Nombre</th><th className="table-header">Tipo</th><th className="table-header text-right">Saldo</th></tr></thead>
             <tbody>
               {accounts.map(a => (
@@ -104,18 +113,21 @@ export default function ContabilidadPage() {
               ))}
             </tbody>
           </table>
+          </div>
+          )}
         </div>
       )}
 
       {tab === "journal" && (
         <div className="space-y-4">
           {entries.map(entry => (
-            <div key={entry.id} className="card">
-              <div className="flex justify-between mb-3">
+            <div key={entry.id} className="card w-full">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-2 mb-3">
                 <div><span className="font-semibold">{entry.description}</span>{entry.reference && <span className="text-slate-400 dark:text-slate-500 ml-2">Ref: {entry.reference}</span>}</div>
                 <span className="text-sm text-slate-500">{formatDate(entry.date)}</span>
               </div>
-              <table className="w-full">
+              <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-0">
+              <table className="w-full min-w-[400px]">
                 <thead><tr><th className="table-header">Cuenta</th><th className="table-header text-right">Debe</th><th className="table-header text-right">Haber</th></tr></thead>
                 <tbody>
                   {entry.lines.map(l => (
@@ -125,15 +137,20 @@ export default function ContabilidadPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           ))}
-          {entries.length === 0 && <div className="card text-center text-slate-400 dark:text-slate-500 py-12">Sin partidas de diario</div>}
+          {entries.length === 0 && <div className="card w-full"><EmptyState icon={<Calculator className="w-8 h-8" />} title="Sin partidas de diario" description="Registra tu primera partida" /></div>}
         </div>
       )}
 
       {tab === "expenses" && (
-        <div className="card overflow-x-auto">
-          <table className="w-full">
+        <div className="card w-full">
+          {expenses.length === 0 ? (
+            <EmptyState icon={<Receipt className="w-8 h-8" />} title="Sin gastos" description="Registra tu primer gasto" />
+          ) : (
+          <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead><tr><th className="table-header">Categoría</th><th className="table-header">Descripción</th><th className="table-header text-right">Monto</th><th className="table-header">Pago</th><th className="table-header">Fecha</th><th className="table-header">Usuario</th></tr></thead>
             <tbody>
               {expenses.map(exp => (
@@ -146,9 +163,10 @@ export default function ContabilidadPage() {
                   <td className="table-cell">{exp.user.name}</td>
                 </tr>
               ))}
-              {expenses.length === 0 && <tr><td colSpan={6} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">Sin gastos</td></tr>}
             </tbody>
           </table>
+          </div>
+          )}
         </div>
       )}
 
@@ -173,14 +191,14 @@ export default function ContabilidadPage() {
             ))}
             <button type="button" onClick={() => setJournalForm({...journalForm, lines: [...journalForm.lines, { accountId: "", debit: "", credit: "", description: "" }]})} className="text-violet-600 dark:text-violet-400 text-sm font-medium hover:underline">+ Agregar línea</button>
           </div>
-          <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowJournalModal(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Registrar</button></div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowJournalModal(false)}>Cancelar</Button><Button type="submit">Registrar</Button></div>
         </form>
       </Modal>
 
       {/* Expense modal */}
       <Modal open={showExpenseModal} onClose={() => setShowExpenseModal(false)} title="Registrar Gasto">
         <form onSubmit={createExpense} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-slate-700 mb-1">Categoría *</label>
               <select className="input-field" value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} required>
                 <option value="">Seleccionar...</option>{expenseCategories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -194,7 +212,7 @@ export default function ContabilidadPage() {
           </div>
           <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Descripción *</label><input className="input-field" value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} required /></div>
           <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">No. Recibo</label><input className="input-field" value={expenseForm.receiptNumber} onChange={e => setExpenseForm({...expenseForm, receiptNumber: e.target.value})} /></div>
-          <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowExpenseModal(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Registrar</button></div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowExpenseModal(false)}>Cancelar</Button><Button type="submit">Registrar</Button></div>
         </form>
       </Modal>
     </div>

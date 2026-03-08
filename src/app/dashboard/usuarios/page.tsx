@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Plus, Pencil, Shield, Building2, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader } from "@/components/molecules";
+import { Button } from "@/components/atoms";
 import { formatDate } from "@/lib/utils";
 
 interface CompanyAssignment {
@@ -179,18 +181,19 @@ export default function UsuariosPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Shield className="w-full h-full" /></div>
-          <h1 className="page-title">Usuarios</h1>
-        </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nuevo Usuario
-        </button>
-      </div>
+      <PageHeader
+        icon={<Shield className="w-full h-full" />}
+        title="Usuarios"
+        actions={
+          <Button onClick={openCreate} icon={<Plus className="w-4 h-4" />}>
+            Nuevo Usuario
+          </Button>
+        }
+      />
 
-      <div className="card overflow-x-auto">
-        <table className="w-full">
+      <div className="card">
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
           <thead>
             <tr>
               <th className="table-header">Nombre</th>
@@ -247,11 +250,12 @@ export default function UsuariosPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? "Editar Usuario" : "Nuevo Usuario"} size={isSuperAdmin ? "lg" : "md"}>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className={isSuperAdmin ? "grid grid-cols-2 gap-4" : ""}>
+          <div className={isSuperAdmin ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "space-y-4"}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
@@ -324,7 +328,7 @@ export default function UsuariosPage() {
                 </div>
 
                 {availableCompanies.length > 0 && (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <select
                       className="input-field flex-1 text-sm"
                       value={selectedCompanyToAdd}
@@ -359,9 +363,9 @@ export default function UsuariosPage() {
             )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">{editing ? "Actualizar" : "Crear"}</button>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
+            <Button type="submit">{editing ? "Actualizar" : "Crear"}</Button>
           </div>
         </form>
       </Modal>

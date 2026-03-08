@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Package, Plus, Wrench, User, Search } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader, SearchInput, EmptyState } from "@/components/molecules";
+import { Button } from "@/components/atoms";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Customer {
@@ -175,24 +177,23 @@ export default function CasillerosPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Package className="w-full h-full" /></div>
-          <h1 className="page-title">Casilleros</h1>
-        </div>
-        <button
-          onClick={() => {
-            setCreateForm({ number: "", section: "" });
-            setShowCreate(true);
-          }}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Casillero
-        </button>
-      </div>
+      <PageHeader
+        icon={<Package className="w-full h-full" />}
+        title="Casilleros"
+        actions={
+          <Button
+            onClick={() => {
+              setCreateForm({ number: "", section: "" });
+              setShowCreate(true);
+            }}
+            icon={<Plus className="w-4 h-4" />}
+          >
+            Nuevo Casillero
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card">
           <p className="text-sm text-slate-500 dark:text-slate-400">Total</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
@@ -211,7 +212,7 @@ export default function CasillerosPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row gap-2 flex-wrap">
         <button
           onClick={() => setSectionFilter(null)}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -236,7 +237,7 @@ export default function CasillerosPage() {
       {(sections.length > 0 ? sections : [null]).map((section) => (
         <div key={section || "all"}>
           {section && <h3 className="font-semibold text-slate-700 mb-3">{section}</h3>}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {filteredLockers
               .filter((l) => (section ? l.section === section : true))
               .map((locker) => (
@@ -267,8 +268,12 @@ export default function CasillerosPage() {
       ))}
 
       {filteredLockers.length === 0 && (
-        <div className="card text-center text-slate-400 dark:text-slate-500 py-12">
-          {sectionFilter ? "No hay casilleros en esta sección" : "No hay casilleros. Crea uno para comenzar."}
+        <div className="card">
+          <EmptyState
+            icon={<Package className="w-8 h-8" />}
+            title={sectionFilter ? "No hay casilleros en esta sección" : "No hay casilleros"}
+            description={sectionFilter ? undefined : "Crea uno para comenzar"}
+          />
         </div>
       )}
 
@@ -297,13 +302,13 @@ export default function CasillerosPage() {
               placeholder="Ej: A, B, Vestuario"
             />
           </div>
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">
+          <div className="flex flex-col sm:flex-row justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>
               Cancelar
-            </button>
-            <button type="submit" className="btn-primary">
+            </Button>
+            <Button type="submit">
               Crear
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
@@ -351,15 +356,11 @@ export default function CasillerosPage() {
                 <h4 className="font-medium text-slate-700 dark:text-slate-300">Asignar a miembro</h4>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Buscar miembro</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <input
-                      className="input-field pl-10"
-                      placeholder="Nombre, email o teléfono..."
-                      value={memberSearch}
-                      onChange={(e) => setMemberSearch(e.target.value)}
-                    />
-                  </div>
+                  <SearchInput
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Nombre, email o teléfono..."
+                  />
                 </div>
                 {memberSearch && (
                   <div className="max-h-40 overflow-y-auto space-y-1">
@@ -397,14 +398,15 @@ export default function CasillerosPage() {
                     onChange={(e) => setAssignFee(e.target.value)}
                   />
                 </div>
-                <button
+                <Button
                   onClick={handleAssign}
                   disabled={!assignMemberId}
-                  className="btn-success w-full flex items-center justify-center gap-2"
+                  variant="success"
+                  className="w-full"
+                  icon={<User className="w-4 h-4" />}
                 >
-                  <User className="w-4 h-4" />
                   Asignar
-                </button>
+                </Button>
               </div>
             )}
 
@@ -424,25 +426,25 @@ export default function CasillerosPage() {
                     {formatCurrency(selectedLocker.currentAssignment.monthlyFee)}
                   </p>
                 </div>
-                <button
+                <Button
                   onClick={handleRelease}
-                  className="btn-danger w-full flex items-center justify-center gap-2"
+                  variant="danger"
+                  className="w-full"
                 >
                   Liberar
-                </button>
+                </Button>
               </div>
             )}
 
             <div className="pt-3 border-t">
-              <button
+              <Button
                 onClick={toggleMaintenance}
-                className={`w-full flex items-center justify-center gap-2 ${
-                  selectedLocker.status === "MAINTENANCE" ? "btn-success" : "btn-secondary"
-                }`}
+                variant={selectedLocker.status === "MAINTENANCE" ? "success" : "secondary"}
+                className="w-full"
+                icon={<Wrench className="w-4 h-4" />}
               >
-                <Wrench className="w-4 h-4" />
                 {selectedLocker.status === "MAINTENANCE" ? "Finalizar mantenimiento" : "Enviar a mantenimiento"}
-              </button>
+              </Button>
             </div>
           </div>
         )}

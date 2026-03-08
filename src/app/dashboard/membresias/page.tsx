@@ -10,10 +10,11 @@ import {
   Ban,
   XCircle,
   Search,
-  Loader2,
 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader, EmptyState } from "@/components/molecules";
+import { Spinner, Button } from "@/components/atoms";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type TabType = "plans" | "memberships";
@@ -291,18 +292,18 @@ export default function MembresiasPage() {
 
       {loading ? (
         <div className="card flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 animate-spin text-violet-600" />
+          <Spinner size="lg" />
         </div>
       ) : (
         <>
           {tab === "plans" && (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button onClick={openCreatePlan} className="btn-primary flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Crear Plan
-                </button>
+                <Button onClick={openCreatePlan} icon={<Plus className="w-4 h-4" />}>
+                  Crear Plan
+                </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {plans.map((p) => (
                   <div key={p.id} className={`card p-5 ${p.isActive ? "" : "opacity-60"}`}>
                     <div className="flex justify-between items-start mb-3">
@@ -316,23 +317,28 @@ export default function MembresiasPage() {
                     {p._count !== undefined && (
                       <p className="text-xs text-slate-400 mb-3">{p._count.memberships} membresías</p>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       {p.isActive && (
                         <>
-                          <button onClick={() => openEditPlan(p)} className="btn-secondary text-xs flex items-center gap-1">
-                            <Pencil className="w-3.5 h-3.5" /> Editar
-                          </button>
-                          <button onClick={() => handleDeactivatePlan(p)} className="btn-danger text-xs flex items-center gap-1">
-                            <PowerOff className="w-3.5 h-3.5" /> Desactivar
-                          </button>
+                          <Button variant="secondary" size="sm" onClick={() => openEditPlan(p)} icon={<Pencil className="w-3.5 h-3.5" />}>
+                            Editar
+                          </Button>
+                          <Button variant="danger" size="sm" onClick={() => handleDeactivatePlan(p)} icon={<PowerOff className="w-3.5 h-3.5" />}>
+                            Desactivar
+                          </Button>
                         </>
                       )}
                     </div>
                   </div>
                 ))}
                 {plans.length === 0 && (
-                  <div className="col-span-full card text-center text-slate-400 py-12">
-                    No hay planes. Crea uno para comenzar.
+                  <div className="col-span-full card">
+                    <EmptyState
+                      icon={<CreditCard className="w-8 h-8" />}
+                      title="No hay planes"
+                      description="Crea uno para comenzar"
+                      action={<Button onClick={openCreatePlan} icon={<Plus className="w-4 h-4" />}>Crear Plan</Button>}
+                    />
                   </div>
                 )}
               </div>
@@ -342,12 +348,13 @@ export default function MembresiasPage() {
           {tab === "memberships" && (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button onClick={openCreateMembership} className="btn-primary flex items-center gap-2">
-                  <Plus className="w-4 h-4" /> Nueva Membresía
-                </button>
+                <Button onClick={openCreateMembership} icon={<Plus className="w-4 h-4" />}>
+                  Nueva Membresía
+                </Button>
               </div>
-              <div className="card overflow-x-auto">
-                <table className="w-full">
+              <div className="card">
+                <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+                <table className="w-full min-w-[600px]">
                   <thead>
                     <tr>
                       <th className="table-header">Cliente</th>
@@ -377,21 +384,21 @@ export default function MembresiasPage() {
                           </span>
                         </td>
                         <td className="table-cell">
-                          <div className="flex gap-1">
+                          <div className="flex flex-col sm:flex-row gap-1">
                             {m.status === "ACTIVE" && (
-                              <button onClick={() => handleRenew(m)} className="btn-success text-xs flex items-center gap-1">
-                                <RefreshCw className="w-3.5 h-3.5" /> Renovar
-                              </button>
+                              <Button variant="success" size="sm" onClick={() => handleRenew(m)} icon={<RefreshCw className="w-3.5 h-3.5" />}>
+                                Renovar
+                              </Button>
                             )}
                             {m.status === "ACTIVE" && (
-                              <button onClick={() => handleUpdateStatus(m, "SUSPENDED")} className="btn-secondary text-xs flex items-center gap-1">
-                                <Ban className="w-3.5 h-3.5" /> Suspender
-                              </button>
+                              <Button variant="secondary" size="sm" onClick={() => handleUpdateStatus(m, "SUSPENDED")} icon={<Ban className="w-3.5 h-3.5" />}>
+                                Suspender
+                              </Button>
                             )}
                             {m.status !== "CANCELLED" && (
-                              <button onClick={() => handleUpdateStatus(m, "CANCELLED")} className="btn-danger text-xs flex items-center gap-1">
-                                <XCircle className="w-3.5 h-3.5" /> Cancelar
-                              </button>
+                              <Button variant="danger" size="sm" onClick={() => handleUpdateStatus(m, "CANCELLED")} icon={<XCircle className="w-3.5 h-3.5" />}>
+                                Cancelar
+                              </Button>
                             )}
                           </div>
                         </td>
@@ -406,6 +413,7 @@ export default function MembresiasPage() {
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -418,7 +426,7 @@ export default function MembresiasPage() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre *</label>
             <input className="input-field" value={planForm.name} onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })} required />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Duración (días) *</label>
               <input type="number" min="1" className="input-field" value={planForm.durationDays} onChange={(e) => setPlanForm({ ...planForm, durationDays: e.target.value })} required />
@@ -436,9 +444,9 @@ export default function MembresiasPage() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Características</label>
             <textarea className="input-field min-h-[80px]" value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="Una por línea" />
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowPlanModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">{editingPlan ? "Actualizar" : "Crear Plan"}</button>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowPlanModal(false)}>Cancelar</Button>
+            <Button type="submit">{editingPlan ? "Actualizar" : "Crear Plan"}</Button>
           </div>
         </form>
       </Modal>
@@ -503,7 +511,7 @@ export default function MembresiasPage() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Método de pago *</label>
               <select
@@ -539,9 +547,9 @@ export default function MembresiasPage() {
               <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">(+ IVA según configuración)</span>
             </div>
           )}
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowMembershipModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">Vender Membresía</button>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowMembershipModal(false)}>Cancelar</Button>
+            <Button type="submit">Vender Membresía</Button>
           </div>
         </form>
       </Modal>

@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, Loader2, ArrowRight } from "lucide-react";
+import { Lock, Mail, ArrowRight } from "lucide-react";
+import AuthLayout from "@/components/templates/AuthLayout";
+import { Button } from "@/components/atoms";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,15 +41,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#0a0e1a]">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-violet-600/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="w-full max-w-md relative z-10 px-4">
-        <div className="bg-[#141925]/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/30 border border-slate-800/60 p-8">
+    <AuthLayout>
+      <div className="bg-[#141925]/90 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/30 border border-slate-800/60 p-6 sm:p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-accent rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-glow">
               <Lock className="w-7 h-7 text-white" />
@@ -77,7 +72,7 @@ export default function LoginPage() {
                   spellCheck={false}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input-field pl-11"
+                  className="input-field pl-11 min-h-[44px]"
                   placeholder="usuario@empresa.com"
                   required
                 />
@@ -95,26 +90,22 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input-field pl-11"
+                  className="input-field pl-11 min-h-[44px]"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary w-full py-3">
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Ingresando…
-                </>
-              ) : (
-                <>
-                  Iniciar Sesión
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 min-h-[44px]"
+              loading={loading}
+              icon={!loading ? <ArrowRight className="w-4 h-4" /> : undefined}
+            >
+              {loading ? "Ingresando…" : "Iniciar Sesión"}
+            </Button>
           </form>
 
           <div className="mt-6 p-4 bg-white/[0.03] rounded-xl border border-slate-800/60">
@@ -126,7 +117,6 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </AuthLayout>
   );
 }

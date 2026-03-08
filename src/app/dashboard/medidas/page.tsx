@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Ruler, Search, Plus, ArrowDown, ArrowUp } from "lucide-react";
+import { Ruler, Plus, ArrowDown, ArrowUp } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader, SearchInput } from "@/components/molecules";
+import { Button } from "@/components/atoms";
 import { formatDate } from "@/lib/utils";
 
 interface Customer {
@@ -155,21 +157,18 @@ export default function MedidasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="page-header">
-        <div className="page-icon"><Ruler className="w-full h-full" /></div>
-        <h1 className="page-title">Medidas Corporales</h1>
-      </div>
+      <PageHeader
+        icon={<Ruler className="w-full h-full" />}
+        title="Medidas Corporales"
+      />
 
       <div className="card">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-slate-500" />
-          <input
-            className="input-field pl-12 text-lg py-3"
-            placeholder="Buscar miembro por nombre, email o teléfono..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar miembro por nombre, email o teléfono..."
+          className="text-base"
+        />
         {loading && <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Buscando...</p>}
         {search.trim() && members.length > 0 && !selectedMember && (
           <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
@@ -200,28 +199,27 @@ export default function MedidasPage() {
                   {selectedMember.gender && <span>Género: {selectedMember.gender}</span>}
                 </div>
               </div>
-              <div className="flex gap-3">
-                <button
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
                   onClick={() => {
                     setForm({});
                     setShowNewModal(true);
                   }}
-                  className="btn-primary flex items-center gap-2"
+                  icon={<Plus className="w-4 h-4" />}
                 >
-                  <Plus className="w-4 h-4" />
                   Nueva Medición
-                </button>
-                <button onClick={() => setSelectedMember(null)} className="btn-secondary">
+                </Button>
+                <Button variant="secondary" onClick={() => setSelectedMember(null)}>
                   Cambiar miembro
-                </button>
+                </Button>
               </div>
             </div>
           </div>
 
           {lastTwo.length >= 2 && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Progreso (últimas 2 mediciones)</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Progreso (últimas 2 mediciones)</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500 mb-1">Peso</p>
                   <MetricChange
@@ -264,8 +262,8 @@ export default function MedidasPage() {
 
           <div className="card">
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">Historial de mediciones</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr>
                     <th className="table-header">Fecha</th>
@@ -301,7 +299,7 @@ export default function MedidasPage() {
 
       <Modal open={showNewModal} onClose={() => setShowNewModal(false)} title="Nueva Medición" size="lg">
         <form onSubmit={handleSubmitMeasurement} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {measurementFields.map(({ key, label, type }) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
@@ -315,13 +313,13 @@ export default function MedidasPage() {
               </div>
             ))}
           </div>
-          <div className="flex justify-end gap-3">
-            <button type="button" onClick={() => setShowNewModal(false)} className="btn-secondary">
+          <div className="flex flex-col sm:flex-row justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setShowNewModal(false)}>
               Cancelar
-            </button>
-            <button type="submit" className="btn-primary">
+            </Button>
+            <Button type="submit">
               Guardar medición
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

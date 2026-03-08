@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Ticket, Plus, Search } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader } from "@/components/molecules";
+import { Button } from "@/components/atoms";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Customer {
@@ -116,28 +118,28 @@ export default function TiqueterasPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Ticket className="w-full h-full" /></div>
-          <h1 className="page-title">Tiqueteras</h1>
-        </div>
-        <button
-          onClick={() => {
-            if (!hasCashSession) {
-              setToast({ message: "Debe abrir una caja antes de vender tiqueteras", type: "error" });
-              return;
-            }
-            setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10", paymentMethod: "CASH", paidAmount: "" });
-            setCustomerSearch("");
-            setShowModal(true);
-          }}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Nueva Tiquetera
-        </button>
-      </div>
+      <PageHeader
+        icon={<Ticket className="w-full h-full" />}
+        title="Tiqueteras"
+        actions={
+          <Button
+            onClick={() => {
+              if (!hasCashSession) {
+                setToast({ message: "Debe abrir una caja antes de vender tiqueteras", type: "error" });
+                return;
+              }
+              setForm({ customerId: "", guestName: "", price: "15000", totalEntries: "10", paymentMethod: "CASH", paidAmount: "" });
+              setCustomerSearch("");
+              setShowModal(true);
+            }}
+            icon={<Plus className="w-4 h-4" />}
+          >
+            Nueva Tiquetera
+          </Button>
+        }
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="card">
           <p className="text-sm text-slate-500 dark:text-slate-400">Total</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.total}</p>
@@ -156,8 +158,9 @@ export default function TiqueterasPage() {
         </div>
       </div>
 
-      <div className="card overflow-x-auto">
-        <table className="w-full">
+      <div className="card">
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+        <table className="w-full min-w-[600px]">
           <thead>
             <tr>
               <th className="table-header">Fecha</th>
@@ -199,6 +202,7 @@ export default function TiqueterasPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Nueva Tiquetera" size="md">
@@ -250,7 +254,7 @@ export default function TiqueterasPage() {
               disabled={!!form.customerId}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de entradas *</label>
               <input
@@ -275,7 +279,7 @@ export default function TiqueterasPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Método de pago *</label>
               <select
@@ -302,9 +306,9 @@ export default function TiqueterasPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
-            <button type="submit" className="btn-primary">Vender Tiquetera</button>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowModal(false)}>Cancelar</Button>
+            <Button type="submit">Vender Tiquetera</Button>
           </div>
         </form>
       </Modal>

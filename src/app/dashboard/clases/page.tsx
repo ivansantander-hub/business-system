@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Calendar, Plus, Users, Search, UserPlus, Check, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { PageHeader, EmptyState } from "@/components/molecules";
+import { Button } from "@/components/atoms";
 
 const DAYS = [
   { label: "Lunes", dayOfWeek: 1 },
@@ -194,21 +196,21 @@ export default function ClasesPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Calendar className="w-full h-full" /></div>
-          <h1 className="page-title">Clases</h1>
-        </div>
-        <button
-          onClick={() => {
-            setClassForm({ ...emptyClassForm, dayOfWeek: String(selectedDay) });
-            setShowNewClassModal(true);
-          }}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Nueva Clase
-        </button>
-      </div>
+      <PageHeader
+        icon={<Calendar className="w-full h-full" />}
+        title="Clases"
+        actions={
+          <Button
+            onClick={() => {
+              setClassForm({ ...emptyClassForm, dayOfWeek: String(selectedDay) });
+              setShowNewClassModal(true);
+            }}
+            icon={<Plus className="w-4 h-4" />}
+          >
+            Nueva Clase
+          </Button>
+        }
+      />
 
       <div className="flex gap-2 overflow-x-auto pb-2">
         {DAYS.map((d) => (
@@ -227,7 +229,10 @@ export default function ClasesPage() {
       <div className="card">
         <div className="space-y-3">
           {displayClasses.length === 0 ? (
-            <p className="text-center text-slate-400 py-12">No hay clases para este día</p>
+            <EmptyState
+              icon={<Calendar className="w-8 h-8" />}
+              title="No hay clases para este día"
+            />
           ) : (
             displayClasses.map((c) => (
               <div
@@ -323,7 +328,7 @@ export default function ClasesPage() {
               ))}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="class-start" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Hora inicio</label>
               <input
@@ -345,7 +350,7 @@ export default function ClasesPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="class-capacity" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Capacidad máxima</label>
               <input
@@ -367,13 +372,13 @@ export default function ClasesPage() {
               />
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <button type="button" onClick={() => setShowNewClassModal(false)} className="btn-secondary">
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button type="button" variant="secondary" onClick={() => setShowNewClassModal(false)}>
               Cancelar
-            </button>
-            <button type="submit" className="btn-primary">
+            </Button>
+            <Button type="submit">
               Crear Clase
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>
@@ -399,12 +404,12 @@ export default function ClasesPage() {
               </span>
             </div>
             <div className="flex justify-end">
-              <button
+              <Button
                 onClick={() => setShowEnrollModal(true)}
-                className="btn-primary flex items-center gap-2"
+                icon={<UserPlus className="w-4 h-4" />}
               >
-                <UserPlus className="w-4 h-4" /> Inscribir miembro
-              </button>
+                Inscribir miembro
+              </Button>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Inscritos</h3>
@@ -475,12 +480,12 @@ export default function ClasesPage() {
                   <div className="font-medium">{m.customer.name}</div>
                   <div className="text-sm text-slate-500">{m.customer.email}</div>
                 </div>
-                <button
+                <Button
                   onClick={() => handleEnroll(m.id)}
-                  className="btn-primary text-sm py-1.5 px-3"
+                  size="sm"
                 >
                   Inscribir
-                </button>
+                </Button>
               </div>
             ))}
             {members.length === 0 && (

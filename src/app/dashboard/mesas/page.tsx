@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { UtensilsCrossed, Plus, Users } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { Button } from "@/components/atoms";
+import { PageHeader } from "@/components/molecules";
 import { formatCurrency } from "@/lib/utils";
 
 interface TableData {
@@ -66,15 +68,15 @@ export default function MesasPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><UtensilsCrossed className="w-full h-full" /></div>
-          <h1 className="page-title">Mesas</h1>
-        </div>
-        <button onClick={() => { setForm({ number: "", capacity: "4", section: "" }); setShowCreate(true); }} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nueva Mesa
-        </button>
-      </div>
+      <PageHeader
+        icon={<UtensilsCrossed className="w-full h-full" />}
+        title="Mesas"
+        actions={
+          <Button onClick={() => { setForm({ number: "", capacity: "4", section: "" }); setShowCreate(true); }} icon={<Plus className="w-4 h-4" />}>
+            Nueva Mesa
+          </Button>
+        }
+      />
 
       <div className="flex gap-4 flex-wrap">
         <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-emerald-300 dark:bg-emerald-600" /><span className="text-sm text-slate-700 dark:text-slate-300">Disponible</span></div>
@@ -85,7 +87,7 @@ export default function MesasPage() {
       {(sections.length > 0 ? sections : [null]).map(section => (
         <div key={section || "all"}>
           {section && <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-3">{section}</h3>}
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
             {tables.filter(t => section ? t.section === section : true).map(table => (
               <button key={table.id} onClick={() => setShowOrder(table)}
                 className={`rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${statusColors[table.status]}`}>
@@ -121,7 +123,7 @@ export default function MesasPage() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sección</label>
             <input className="input-field" value={form.section} onChange={e => setForm({...form, section: e.target.value})} placeholder="Ej: Interior, Terraza" />
           </div>
-          <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Crear</button></div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancelar</Button><Button type="submit">Crear</Button></div>
         </form>
       </Modal>
 
@@ -168,9 +170,9 @@ export default function MesasPage() {
                     </select>
                   </div>
                 )}
-                <button onClick={() => { createOrder(showOrder.id); setShowOrder(null); }} className="btn-success w-full">
+                <Button variant="success" onClick={() => { createOrder(showOrder.id); setShowOrder(null); }} className="w-full">
                   Abrir Orden
-                </button>
+                </Button>
               </div>
             )}
           </div>

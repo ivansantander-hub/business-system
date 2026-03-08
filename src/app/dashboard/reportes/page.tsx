@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { BarChart3, TrendingUp, Package, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { Spinner } from "@/components/atoms";
+import { PageHeader, StatCard } from "@/components/molecules";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type ReportType = "sales" | "inventory" | "income-expense" | "top-products";
@@ -38,44 +40,43 @@ export default function ReportesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="page-header">
-        <div className="page-icon"><BarChart3 className="w-full h-full" /></div>
-        <h1 className="page-title">Reportes</h1>
-      </div>
+      <PageHeader icon={<BarChart3 className="w-full h-full" />} title="Reportes" />
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex overflow-x-auto gap-1 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
         {reports.map(r => (
           <button key={r.key} onClick={() => setReportType(r.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${reportType === r.key ? "bg-violet-600 text-white" : "bg-white text-slate-600 dark:text-slate-300 border hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}>
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${reportType === r.key ? "bg-violet-600 text-white" : "bg-white text-slate-600 dark:text-slate-300 border hover:bg-slate-50 dark:hover:bg-white/[0.03]"}`}>
             <r.icon className="w-4 h-4" /> {r.label}
           </button>
         ))}
       </div>
 
       {reportType !== "inventory" && (
-        <div className="flex gap-3 items-center">
-          <input type="date" className="input-field w-auto" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <input type="date" className="input-field w-full sm:w-auto" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           <span className="text-slate-400 dark:text-slate-500">a</span>
-          <input type="date" className="input-field w-auto" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+          <input type="date" className="input-field w-full sm:w-auto" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
       )}
 
       {!data ? (
-        <div className="flex justify-center py-20"><div className="animate-spin w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full" /></div>
+        <div className="flex justify-center py-20"><Spinner /></div>
       ) : (
         <>
           {reportType === "sales" && (() => {
             const d = data as { summary: { total: number; tax: number; count: number }; invoices: { id: string; number: string; total: string; date: string; customer: { name: string } | null }[] };
             return (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="card"><p className="text-sm text-slate-500">Total Ventas</p><p className="text-2xl font-bold text-emerald-600">{formatCurrency(d.summary.total)}</p></div>
-                  <div className="card"><p className="text-sm text-slate-500">IVA Generado</p><p className="text-2xl font-bold text-blue-600">{formatCurrency(d.summary.tax)}</p></div>
-                  <div className="card"><p className="text-sm text-slate-500">Transacciones</p><p className="text-2xl font-bold text-slate-900">{d.summary.count}</p></div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <StatCard label="Total Ventas" value={formatCurrency(d.summary.total)} icon={<TrendingUp className="w-6 h-6" />} gradient="from-emerald-500 to-emerald-600" />
+                  <StatCard label="IVA Generado" value={formatCurrency(d.summary.tax)} icon={<DollarSign className="w-6 h-6" />} gradient="from-blue-500 to-blue-600" />
+                  <StatCard label="Transacciones" value={d.summary.count} icon={<BarChart3 className="w-6 h-6" />} />
                 </div>
-                <div className="card overflow-x-auto">
-                  <table className="w-full"><thead><tr><th className="table-header">Factura</th><th className="table-header">Cliente</th><th className="table-header text-right">Total</th><th className="table-header">Fecha</th></tr></thead>
+                <div className="card w-full">
+                  <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+                  <table className="w-full min-w-[600px]"><thead><tr><th className="table-header">Factura</th><th className="table-header">Cliente</th><th className="table-header text-right">Total</th><th className="table-header">Fecha</th></tr></thead>
                     <tbody>{d.invoices.map(inv => (<tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]"><td className="table-cell font-medium">{inv.number}</td><td className="table-cell">{inv.customer?.name || "C/F"}</td><td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td><td className="table-cell">{formatDate(inv.date)}</td></tr>))}</tbody></table>
+                  </div>
                 </div>
               </div>
             );
@@ -109,7 +110,7 @@ export default function ReportesPage() {
                   <div className="card"><p className="text-sm text-slate-500">Utilidad</p><p className={`text-2xl font-bold ${d.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(d.profit)}</p></div>
                 </div>
                 {chartData.length > 0 && (
-                  <div className="card">
+                  <div className="card w-full">
                     <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Gastos por Categoría</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
@@ -130,7 +131,7 @@ export default function ReportesPage() {
             const chartData = d.map(p => ({ name: p.productName, total: Number(p._sum.total), qty: Number(p._sum.quantity) }));
             return (
               <div className="space-y-4">
-                <div className="card">
+                <div className="card w-full">
                   <h3 className="font-semibold mb-4">Productos Más Vendidos</h3>
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={chartData} layout="vertical">
@@ -139,9 +140,11 @@ export default function ReportesPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="card overflow-x-auto">
-                  <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cantidad</th><th className="table-header text-right">Total</th></tr></thead>
+                <div className="card w-full">
+                  <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+                  <table className="w-full min-w-[400px]"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cantidad</th><th className="table-header text-right">Total</th></tr></thead>
                     <tbody>{(d || []).map((p, i) => (<tr key={i} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]"><td className="table-cell font-medium">{p.productName}</td><td className="table-cell text-right">{Number(p._sum.quantity).toFixed(0)}</td><td className="table-cell text-right font-semibold">{formatCurrency(p._sum.total)}</td></tr>))}</tbody></table>
+                  </div>
                 </div>
               </div>
             );

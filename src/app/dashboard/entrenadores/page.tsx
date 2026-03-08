@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Dumbbell, Calendar, Mail, User } from "lucide-react";
 import Link from "next/link";
+import { PageHeader, EmptyState } from "@/components/molecules";
 
 interface UserItem {
   id: string;
@@ -64,22 +65,21 @@ export default function EntrenadoresPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Dumbbell className="w-full h-full" /></div>
-          <h1 className="page-title">Entrenadores</h1>
-        </div>
-      </div>
+      <PageHeader
+        icon={<Dumbbell className="w-full h-full" />}
+        title="Entrenadores"
+      />
 
       {trainers.length === 0 ? (
-        <div className="card text-center py-12">
-          <p className="text-slate-400 dark:text-slate-500">No hay entrenadores registrados</p>
-          <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">
-            Los entrenadores son usuarios con rol TRAINER asignado en la empresa
-          </p>
+        <div className="card">
+          <EmptyState
+            icon={<Dumbbell className="w-8 h-8" />}
+            title="No hay entrenadores registrados"
+            description="Los entrenadores son usuarios con rol TRAINER asignado en la empresa"
+          />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {trainers.map((trainer) => {
             const trainerClasses = getClassesForTrainer(trainer.id);
             return (

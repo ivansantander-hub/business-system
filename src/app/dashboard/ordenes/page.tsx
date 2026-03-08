@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ClipboardList, Search, Plus, Eye, CheckCircle, CreditCard, XCircle } from "lucide-react";
+import { ClipboardList, Plus, Eye, CheckCircle, CreditCard, XCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { Button } from "@/components/atoms";
+import { PageHeader, EmptyState, SearchInput } from "@/components/molecules";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface Order {
@@ -134,25 +136,23 @@ export default function OrdenesPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><ClipboardList className="w-full h-full" /></div>
-          <h1 className="page-title">Órdenes</h1>
-        </div>
-      </div>
+      <PageHeader icon={<ClipboardList className="w-full h-full" />} title="Órdenes" />
 
-      <div className="card">
-        <div className="flex gap-2 mb-4">
+      <div className="card w-full">
+        <div className="flex overflow-x-auto gap-1 pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 mb-4">
           {["OPEN", "READY", "PAID", "CANCELLED", ""].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"}`}>
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-violet-600 text-white" : "bg-slate-100 dark:bg-white/[0.05] text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"}`}>
               {s ? statusLabels[s] : "Todas"}
             </button>
           ))}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {orders.length === 0 ? (
+          <EmptyState icon={<ClipboardList className="w-8 h-8" />} title="Sin órdenes" description="No hay órdenes con este filtro" />
+        ) : (
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr>
                 <th className="table-header">#</th>
@@ -183,19 +183,20 @@ export default function OrdenesPage() {
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       <Modal open={!!showDetail} onClose={() => setShowDetail(null)} title={showDetail ? `Orden #${showDetail.id}` : ""} size="lg">
         {showDetail && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
               <div><span className="text-slate-500">Tipo:</span> <span className="font-medium">{typeLabels[showDetail.type]}</span></div>
               <div><span className="text-slate-500">Mesa:</span> <span className="font-medium">{showDetail.table?.number || "-"}</span></div>
               <div><span className="text-slate-500">Mesero:</span> <span className="font-medium">{showDetail.waiter?.name || "-"}</span></div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-0">
+              <table className="w-full min-w-[500px]">
                 <thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">Precio</th><th className="table-header text-right">Total</th><th className="table-header">Estado</th></tr></thead>
                 <tbody>
                   {showDetail.items.map(item => (
@@ -212,31 +213,19 @@ export default function OrdenesPage() {
             </div>
 
             {showDetail.status === "OPEN" && (
-              <div className="flex gap-3">
-                <button onClick={() => setShowAddItem(true)} className="btn-primary flex items-center gap-2 flex-1">
-                  <Plus className="w-4 h-4" /> Agregar Producto
-                </button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <Button onClick={() => setShowAddItem(true)} icon={<Plus className="w-4 h-4" />} className="flex-1">Agregar Producto</Button>
                 {hasItems && (
-                  <button onClick={() => updateOrderStatus(showDetail.id, "READY", "Orden marcada como lista")}
-                    className="btn-success flex items-center gap-2 flex-1">
-                    <CheckCircle className="w-4 h-4" /> Marcar Lista
-                  </button>
+                  <Button variant="success" onClick={() => updateOrderStatus(showDetail.id, "READY", "Orden marcada como lista")} icon={<CheckCircle className="w-4 h-4" />} className="flex-1">Marcar Lista</Button>
                 )}
-                <button onClick={() => cancelOrder(showDetail.id)} className="btn-danger flex items-center gap-2">
-                  <XCircle className="w-4 h-4" /> Cancelar
-                </button>
+                <Button variant="danger" onClick={() => cancelOrder(showDetail.id)} icon={<XCircle className="w-4 h-4" />}>Cancelar</Button>
               </div>
             )}
 
             {showDetail.status === "READY" && (
-              <div className="flex gap-3">
-                <button onClick={openPayModal}
-                  className="btn-success flex items-center gap-2 flex-1">
-                  <CreditCard className="w-4 h-4" /> Cobrar Orden
-                </button>
-                <button onClick={() => cancelOrder(showDetail.id)} className="btn-danger flex items-center gap-2">
-                  <XCircle className="w-4 h-4" /> Cancelar
-                </button>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <Button variant="success" onClick={openPayModal} icon={<CreditCard className="w-4 h-4" />} className="flex-1">Cobrar Orden</Button>
+                <Button variant="danger" onClick={() => cancelOrder(showDetail.id)} icon={<XCircle className="w-4 h-4" />}>Cancelar</Button>
               </div>
             )}
           </div>
@@ -250,7 +239,7 @@ export default function OrdenesPage() {
               <p className="text-sm text-slate-600 dark:text-slate-400">Total a cobrar</p>
               <p className="text-3xl font-bold text-violet-700 dark:text-violet-300">{formatCurrency(showDetail.total)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Método de pago *</label>
                 <select className="input-field" value={payForm.paymentMethod} onChange={e => setPayForm({...payForm, paymentMethod: e.target.value})}>
@@ -266,9 +255,9 @@ export default function OrdenesPage() {
                   onChange={e => setPayForm({...payForm, paidAmount: e.target.value})} placeholder="Total" />
               </div>
             </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setShowPayModal(false)} className="btn-secondary">Cancelar</button>
-              <button type="submit" className="btn-primary">Facturar y Cobrar</button>
+            <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
+              <Button type="button" variant="secondary" onClick={() => setShowPayModal(false)}>Cancelar</Button>
+              <Button type="submit">Facturar y Cobrar</Button>
             </div>
           </form>
         )}
@@ -276,10 +265,7 @@ export default function OrdenesPage() {
 
       <Modal open={showAddItem} onClose={() => setShowAddItem(false)} title="Agregar Producto a Orden" size="md">
         <form onSubmit={addItem} className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input className="input-field pl-9" placeholder="Buscar producto..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
+          <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar producto..." />
           <div className="max-h-48 overflow-y-auto space-y-1">
             {filteredProducts.slice(0, 20).map(p => (
               <button key={p.id} type="button" onClick={() => setItemForm({...itemForm, productId: String(p.id)})}
@@ -292,7 +278,7 @@ export default function OrdenesPage() {
             <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Cantidad</label><input type="number" min="1" className="input-field" value={itemForm.quantity} onChange={e => setItemForm({...itemForm, quantity: e.target.value})} /></div>
             <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas</label><input className="input-field" value={itemForm.notes} onChange={e => setItemForm({...itemForm, notes: e.target.value})} /></div>
           </div>
-          <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddItem(false)} className="btn-secondary">Cancelar</button><button type="submit" disabled={!itemForm.productId} className="btn-primary">Agregar</button></div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowAddItem(false)}>Cancelar</Button><Button type="submit" disabled={!itemForm.productId}>Agregar</Button></div>
         </form>
       </Modal>
     </div>

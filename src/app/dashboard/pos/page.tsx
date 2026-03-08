@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ShoppingCart, Search, Plus, Minus, CreditCard, Banknote, Building2, X, Dumbbell, Ticket } from "lucide-react";
+import { ShoppingCart, Plus, Minus, CreditCard, Banknote, Building2, X, Dumbbell, Ticket } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
+import { SearchInput } from "@/components/molecules";
 
 interface Product { id: string; name: string; salePrice: string; stock: string; category: { name: string } | null; barcode: string | null; }
 interface CartItem { product: Product; quantity: number; unitPrice: number; total: number; }
@@ -268,12 +269,12 @@ export default function POSPage() {
   ];
 
   return (
-    <div className="flex gap-4 h-[calc(100vh-120px)]">
+    <div className="flex flex-col lg:flex-row gap-4 h-auto lg:h-[calc(100vh-120px)] min-h-[calc(100vh-120px)]">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 order-1">
         {isGym && (
-          <div className="flex gap-2 mb-3">
+          <div className="flex flex-wrap gap-2 mb-3">
             {tabs.map(t => (
               <button key={t.id} onClick={() => setActiveTab(t.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
@@ -287,23 +288,20 @@ export default function POSPage() {
 
         {activeTab === "products" && (
           <>
-            <div className="flex gap-2 mb-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                <input className="input-field pl-9" placeholder="Buscar producto o escanear código..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
-              </div>
-              <select className="input-field w-auto" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+            <div className="flex flex-col sm:flex-row gap-3 mb-3">
+              <SearchInput value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar producto o escanear código..." className="w-full sm:w-auto sm:min-w-[300px] sm:flex-1" />
+              <select className="input-field w-full sm:w-auto" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
                 <option value="">Todas</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="flex-1 overflow-y-auto min-h-[200px]">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {products.filter(p => Number(p.stock) > 0).map(p => (
                   <button key={p.id} onClick={() => addToCart(p)}
                     className="bg-white dark:bg-[#141925] rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-left hover:border-violet-300 hover:shadow-card transition-all">
-                    <p className="font-medium text-slate-900 text-sm truncate">{p.name}</p>
-                    <p className="text-xs text-slate-400 mt-1">{p.category?.name}</p>
+                    <p className="font-medium text-slate-900 dark:text-white text-sm truncate text-balance">{p.name}</p>
+                    <p className="text-xs text-slate-400 mt-1 truncate">{p.category?.name}</p>
                     <div className="flex items-center justify-between mt-3">
                       <span className="text-lg font-bold text-violet-600">{formatCurrency(Number(p.salePrice))}</span>
                       <span className="text-xs text-slate-400">Stock: {Number(p.stock).toFixed(0)}</span>
@@ -318,8 +316,8 @@ export default function POSPage() {
         {activeTab === "memberships" && (
           <div className="flex-1 overflow-y-auto">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-700 mb-1">Buscar miembro</label>
-              <input className="input-field" placeholder="Nombre o email del miembro..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Buscar miembro</label>
+              <SearchInput value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Nombre o email del miembro..." className="w-full" />
               {gymMembers.length > 0 && memberSearch.length >= 2 && (
                 <div className="mt-1 bg-white dark:bg-[#141925] border border-slate-200 dark:border-slate-800 rounded-xl max-h-32 overflow-y-auto">
                   {gymMembers.map(m => (
@@ -333,7 +331,7 @@ export default function POSPage() {
               {selectedMemberId && <p className="text-xs text-green-600 mt-1">Miembro seleccionado</p>}
             </div>
             <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Planes disponibles</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {plans.filter(p => Boolean((p as unknown as Record<string, unknown>).isActive !== false)).map(plan => (
                 <button key={plan.id} onClick={() => { if (selectedMemberId) addPlanToCart(plan); else setToast({ message: "Seleccione un miembro primero", type: "error" }); }}
                   className="bg-white dark:bg-[#141925] rounded-xl border border-slate-200 dark:border-slate-800 p-4 text-left hover:border-violet-300 hover:shadow-card transition-all">
@@ -352,8 +350,7 @@ export default function POSPage() {
             <div className="max-w-md space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Miembro (opcional)</label>
-                <input className="input-field" placeholder="Buscar miembro..." value={memberSearch}
-                  onChange={e => setMemberSearch(e.target.value)} />
+                <SearchInput value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Buscar miembro..." className="w-full" />
                 {gymMembers.length > 0 && memberSearch.length >= 2 && (
                   <div className="mt-1 bg-white dark:bg-[#141925] border border-slate-200 dark:border-slate-800 rounded-xl max-h-32 overflow-y-auto">
                     {gymMembers.map(m => (
@@ -381,7 +378,7 @@ export default function POSPage() {
         )}
       </div>
 
-      <div className="w-96 bg-white dark:bg-[#141925] rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col shadow-card">
+      <div className="w-full lg:w-96 bg-white dark:bg-[#141925] rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col shadow-card order-2 lg:order-2 shrink-0">
         <div className="p-4 border-b border-slate-100 dark:border-slate-800">
           <h2 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" /> Carrito ({cart.length})
@@ -430,7 +427,7 @@ export default function POSPage() {
 
       <Modal open={showPayment} onClose={() => setShowPayment(false)} title="Procesar Pago" size="md">
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Cliente</label>
               <input className="input-field" value={customerName} onChange={e => setCustomerName(e.target.value)} />
@@ -441,8 +438,8 @@ export default function POSPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Método de Pago</label>
-            <div className="grid grid-cols-3 gap-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Método de Pago</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {[
                 { value: "CASH", label: "Efectivo", icon: Banknote },
                 { value: "CARD", label: "Tarjeta", icon: CreditCard },
@@ -477,7 +474,7 @@ export default function POSPage() {
               </>
             )}
           </div>
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col sm:flex-row gap-2 pt-2">
             <button onClick={() => setShowPayment(false)} className="btn-secondary flex-1">Cancelar</button>
             <button onClick={handlePayment} className="btn-success flex-1 py-3 text-lg">Confirmar Pago</button>
           </div>

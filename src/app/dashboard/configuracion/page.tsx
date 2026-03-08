@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Settings, Save, DollarSign, Banknote } from "lucide-react";
 import Toast from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
+import { Button } from "@/components/atoms";
+import { PageHeader } from "@/components/molecules";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 export default function ConfiguracionPage() {
@@ -49,12 +51,9 @@ export default function ConfiguracionPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="page-header">
-        <div className="page-icon"><Settings className="w-full h-full" /></div>
-        <h1 className="page-title">Configuración</h1>
-      </div>
+      <PageHeader icon={<Settings className="w-full h-full" />} title="Configuración" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {/* Business info */}
         <div className="card">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Información del Negocio</h2>
@@ -84,12 +83,12 @@ export default function ConfiguracionPage() {
                 <input type="number" step="0.01" className="input-field" value={settings.tax_rate || ""} onChange={e => setSettings({...settings, tax_rate: e.target.value})} /></div>
               <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Moneda (símbolo)</label>
                 <input className="input-field" value={settings.currency || ""} onChange={e => setSettings({...settings, currency: e.target.value})} /></div>
-              <button type="submit" className="btn-primary flex items-center gap-2"><Save className="w-4 h-4" /> Guardar</button>
+              <Button type="submit" icon={<Save className="w-4 h-4" />}>Guardar</Button>
             </form>
           </div>
 
           {/* Cash session */}
-          <div className="card">
+          <div className="card w-full">
             <h2 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Banknote className="w-5 h-5" /> Caja Actual</h2>
             {cashSession ? (
               <div className="space-y-3">
@@ -97,11 +96,11 @@ export default function ConfiguracionPage() {
                   <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">Caja Abierta</p>
                   <p className="text-xs text-emerald-600 dark:text-emerald-400">Desde: {formatDateTime(cashSession.openedAt)}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                   <div><span className="text-slate-500 dark:text-slate-400">Monto Inicial:</span> <span className="font-semibold">{formatCurrency(cashSession.openingAmount)}</span></div>
                   <div><span className="text-slate-500 dark:text-slate-400">Ventas:</span> <span className="font-semibold text-emerald-600">{formatCurrency(cashSession.salesTotal)}</span></div>
                 </div>
-                <button onClick={() => setShowCashClose(true)} className="btn-danger w-full">Cerrar Caja</button>
+                <Button variant="danger" onClick={() => setShowCashClose(true)} className="w-full">Cerrar Caja</Button>
               </div>
             ) : (
               <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No hay caja abierta. Abra una desde el Punto de Venta.</p>
@@ -127,7 +126,7 @@ export default function ConfiguracionPage() {
                 Diferencia: {formatCurrency(Number(closingAmount) - (Number(cashSession.openingAmount) + Number(cashSession.salesTotal)))}
               </div>
             )}
-            <div className="flex gap-3"><button type="button" onClick={() => setShowCashClose(false)} className="btn-secondary flex-1">Cancelar</button><button type="submit" className="btn-danger flex-1">Cerrar Caja</button></div>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowCashClose(false)} className="flex-1">Cancelar</Button><Button type="submit" variant="danger" className="flex-1">Cerrar Caja</Button></div>
           </form>
         )}
       </Modal>

@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { UserCheck, LogIn, LogOut, Search, Clock, ShieldCheck, ShieldX } from "lucide-react";
 import Toast from "@/components/ui/Toast";
+import { PageHeader } from "@/components/molecules";
+import { Spinner } from "@/components/atoms";
 import { formatDateTime } from "@/lib/utils";
 
 interface CheckInRecord {
@@ -88,10 +90,10 @@ export default function CheckInPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="page-header">
-        <div className="page-icon"><UserCheck className="w-full h-full" /></div>
-        <h1 className="page-title">Control de Acceso</h1>
-      </div>
+      <PageHeader
+        icon={<UserCheck className="w-full h-full" />}
+        title="Control de Acceso"
+      />
 
       <div className="card max-w-2xl mx-auto">
         <div className="text-center mb-6">
@@ -102,7 +104,7 @@ export default function CheckInPage() {
         <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400 dark:text-slate-500" />
           <input
-            className="input-field pl-14 text-2xl py-4 text-center font-mono tracking-wider"
+            className="input-field pl-14 text-xl sm:text-2xl py-4 min-h-[44px] text-center font-mono tracking-wider"
             placeholder="Número de documento..."
             value={document}
             onChange={(e) => { setDocument(e.target.value); setResult(null); }}
@@ -111,11 +113,11 @@ export default function CheckInPage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <button
             onClick={() => handleAction("ENTRY")}
             disabled={loading || !document.trim()}
-            className="btn-success flex items-center justify-center gap-3 py-5 text-xl disabled:opacity-50"
+            className="btn-success flex items-center justify-center gap-3 py-5 min-h-[44px] text-lg sm:text-xl disabled:opacity-50"
           >
             <LogIn className="w-7 h-7" />
             ENTRADA
@@ -123,7 +125,7 @@ export default function CheckInPage() {
           <button
             onClick={() => handleAction("EXIT")}
             disabled={loading || !document.trim()}
-            className="btn-danger flex items-center justify-center gap-3 py-5 text-xl disabled:opacity-50"
+            className="btn-danger flex items-center justify-center gap-3 py-5 min-h-[44px] text-lg sm:text-xl disabled:opacity-50"
           >
             <LogOut className="w-7 h-7" />
             SALIDA
@@ -132,7 +134,7 @@ export default function CheckInPage() {
 
         {loading && (
           <div className="text-center py-4">
-            <div className="animate-spin w-8 h-8 border-4 border-violet-600 border-t-transparent rounded-full mx-auto" />
+            <Spinner size="lg" className="mx-auto" />
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Validando...</p>
           </div>
         )}
@@ -171,8 +173,8 @@ export default function CheckInPage() {
           <Clock className="w-5 h-5 text-slate-400 dark:text-slate-500" />
           Registros de hoy
         </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr>
                 <th className="table-header">Hora</th>

@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { ShoppingBag, Plus, Eye, CheckCircle, XCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { Button } from "@/components/atoms";
+import { PageHeader, EmptyState } from "@/components/molecules";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Purchase {
@@ -78,32 +80,43 @@ export default function ComprasPage() {
   return (
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-      <div className="flex items-center justify-between">
-        <div className="page-header"><div className="page-icon"><ShoppingBag className="w-full h-full" /></div><h1 className="page-title">Compras</h1></div>
-        <button onClick={() => { setForm({ supplierId: "", notes: "", items: [{ productId: "", quantity: "1", unitPrice: "" }] }); setShowCreate(true); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nueva Orden</button>
-      </div>
+      <PageHeader
+        icon={<ShoppingBag className="w-full h-full" />}
+        title="Compras"
+        actions={
+          <Button onClick={() => { setForm({ supplierId: "", notes: "", items: [{ productId: "", quantity: "1", unitPrice: "" }] }); setShowCreate(true); }} icon={<Plus className="w-4 h-4" />}>
+            Nueva Orden
+          </Button>
+        }
+      />
 
-      <div className="card overflow-x-auto">
-        <table className="w-full">
-          <thead><tr><th className="table-header">Número</th><th className="table-header">Proveedor</th><th className="table-header text-right">Total</th><th className="table-header">Estado</th><th className="table-header">Fecha</th><th className="table-header">Acciones</th></tr></thead>
-          <tbody>
-            {purchases.map(p => (
-              <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
-                <td className="table-cell font-medium">{p.number}</td><td className="table-cell">{p.supplier.name}</td>
-                <td className="table-cell text-right font-semibold">{formatCurrency(p.total)}</td>
-                <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status]}`}>{statusLabels[p.status]}</span></td>
-                <td className="table-cell">{formatDate(p.date)}</td>
-                <td className="table-cell"><button onClick={() => setShowDetail(p)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="card w-full">
+        {purchases.length === 0 ? (
+          <EmptyState icon={<ShoppingBag className="w-8 h-8" />} title="Sin órdenes de compra" description="Crea tu primera orden de compra" action={<Button onClick={() => { setForm({ supplierId: "", notes: "", items: [{ productId: "", quantity: "1", unitPrice: "" }] }); setShowCreate(true); }} icon={<Plus className="w-4 h-4" />}>Nueva Orden</Button>} />
+        ) : (
+          <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <table className="w-full min-w-[600px]">
+              <thead><tr><th className="table-header">Número</th><th className="table-header">Proveedor</th><th className="table-header text-right">Total</th><th className="table-header">Estado</th><th className="table-header">Fecha</th><th className="table-header">Acciones</th></tr></thead>
+              <tbody>
+                {purchases.map(p => (
+                  <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
+                    <td className="table-cell font-medium">{p.number}</td><td className="table-cell">{p.supplier.name}</td>
+                    <td className="table-cell text-right font-semibold">{formatCurrency(p.total)}</td>
+                    <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status]}`}>{statusLabels[p.status]}</span></td>
+                    <td className="table-cell">{formatDate(p.date)}</td>
+                    <td className="table-cell"><button onClick={() => setShowDetail(p)} className="p-1.5 hover:bg-violet-100 dark:hover:bg-violet-500/10 rounded-lg"><Eye className="w-4 h-4 text-violet-600 dark:text-violet-400" /></button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Create purchase */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Nueva Orden de Compra" size="xl">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Proveedor *</label>
               <select className="input-field" value={form.supplierId} onChange={e => setForm({...form, supplierId: e.target.value})} required>
                 <option value="">Seleccionar...</option>{suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -130,7 +143,7 @@ export default function ComprasPage() {
             <p className="font-bold text-lg">Subtotal: {formatCurrency(form.items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0))}</p>
           </div>
 
-          <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Crear Orden</button></div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3"><Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancelar</Button><Button type="submit">Crear Orden</Button></div>
         </form>
       </Modal>
 
@@ -138,12 +151,12 @@ export default function ComprasPage() {
       <Modal open={!!showDetail} onClose={() => setShowDetail(null)} title={showDetail ? `Compra ${showDetail.number}` : ""} size="lg">
         {showDetail && (
           <div className="space-y-4">
-            <div className="text-sm grid grid-cols-2 gap-2"><div>Proveedor: <b>{showDetail.supplier.name}</b></div><div>Estado: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[showDetail.status]}`}>{statusLabels[showDetail.status]}</span></div></div>
-            <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
-              <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>))}</tbody></table>
+            <div className="text-sm grid grid-cols-1 sm:grid-cols-2 gap-2"><div>Proveedor: <b>{showDetail.supplier.name}</b></div><div>Estado: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[showDetail.status]}`}>{statusLabels[showDetail.status]}</span></div></div>
+            <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-0"><table className="w-full min-w-[400px]"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
+              <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>))}</tbody></table></div>
             <div className="bg-slate-50 dark:bg-white/[0.03] rounded-lg p-3 text-right font-bold text-lg">Total: {formatCurrency(showDetail.total)}</div>
             {showDetail.status === "PENDING" && (
-              <div className="flex gap-3"><button onClick={() => updateStatus(showDetail.id, "RECEIVED")} className="btn-success flex items-center gap-2 flex-1"><CheckCircle className="w-4 h-4" /> Marcar Recibida</button><button onClick={() => updateStatus(showDetail.id, "CANCELLED")} className="btn-danger flex items-center gap-2"><XCircle className="w-4 h-4" /> Cancelar</button></div>
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3"><Button variant="success" onClick={() => updateStatus(showDetail.id, "RECEIVED")} icon={<CheckCircle className="w-4 h-4" />} className="flex-1">Marcar Recibida</Button><Button variant="danger" onClick={() => updateStatus(showDetail.id, "CANCELLED")} icon={<XCircle className="w-4 h-4" />}>Cancelar</Button></div>
             )}
           </div>
         )}

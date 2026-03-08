@@ -4,6 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { DollarSign, ShoppingCart, AlertTriangle, ClipboardList, TrendingUp, Users, UserCheck, Dumbbell, Ticket, CalendarClock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { Spinner } from "@/components/atoms";
+import { PageHeader, StatCard, EmptyState } from "@/components/molecules";
 
 interface DashboardData {
   companyType: string;
@@ -70,7 +72,7 @@ export default function DashboardPage() {
 
   if (!data) return (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-[3px] border-violet-600 border-t-transparent rounded-full animate-spin" />
+      <Spinner />
     </div>
   );
 
@@ -103,14 +105,7 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="page-header">
-        <div className="page-icon">
-          <TrendingUp className="w-full h-full" />
-        </div>
-        <h1 className="page-title">
-          {isGym ? "Dashboard del Gimnasio" : "Dashboard"}
-        </h1>
-      </div>
+      <PageHeader icon={<TrendingUp className="w-full h-full" />} title={isGym ? "Dashboard del Gimnasio" : "Dashboard"} />
 
       {error && (
         <div className="bg-amber-50 border border-amber-200/80 text-amber-800 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-300 px-4 py-3 rounded-xl text-sm font-medium">
@@ -120,20 +115,7 @@ export default function DashboardPage() {
 
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${isGym ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}>
         {cards.map((card, idx) => (
-          <div key={card.label} className={`relative overflow-hidden rounded-2xl p-5 ${idx === 0 ? "text-white bg-gradient-to-br " + card.gradient + " shadow-glow-sm" : "stat-card"}`}>
-            {idx === 0 && <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-8 translate-x-8" />}
-            <div className="flex items-center justify-between relative">
-              <div>
-                <p className={`text-[13px] font-medium ${idx === 0 ? "text-white/80" : "text-muted"}`}>{card.label}</p>
-                <p className={`text-2xl font-bold mt-1 ${idx === 0 ? "text-white" : "text-slate-900 dark:text-white"}`} style={{ fontVariantNumeric: "tabular-nums" }}>
-                  {card.value}
-                </p>
-              </div>
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${idx === 0 ? "bg-white/20" : "bg-gradient-to-br " + card.gradient + " shadow-sm"}`}>
-                <card.icon className={`w-5 h-5 ${idx === 0 ? "text-white" : "text-white"}`} />
-              </div>
-            </div>
-          </div>
+          <StatCard key={card.label} label={card.label} value={card.value} icon={<card.icon className="w-5 h-5 text-white" />} gradient={card.gradient} accent={idx === 0} />
         ))}
       </div>
 
@@ -250,32 +232,33 @@ export default function DashboardPage() {
       )}
 
       <div className="card">
-        <h2 className="section-title mb-5">Ventas Recientes</h2>
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="table-header rounded-l-lg">Factura</th>
-                <th className="table-header">Cliente</th>
-                <th className="table-header text-right">Total</th>
-                <th className="table-header rounded-r-lg text-right">Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.recentInvoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
-                  <td className="table-cell font-semibold text-violet-600 dark:text-violet-400">{inv.number}</td>
-                  <td className="table-cell">{inv.customer?.name || "Consumidor Final"}</td>
-                  <td className="table-cell text-right font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(Number(inv.total))}</td>
-                  <td className="table-cell text-right text-muted">{formatDate(inv.date)}</td>
+        <h2 className="section-title mb-5 text-balance">Ventas Recientes</h2>
+        {data.recentInvoices.length === 0 ? (
+          <EmptyState icon={<ClipboardList className="w-7 h-7" />} title="Sin ventas recientes" />
+        ) : (
+          <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr>
+                  <th className="table-header rounded-l-lg">Factura</th>
+                  <th className="table-header hidden sm:table-cell">Cliente</th>
+                  <th className="table-header text-right">Total</th>
+                  <th className="table-header rounded-r-lg text-right hidden sm:table-cell">Fecha</th>
                 </tr>
-              ))}
-              {data.recentInvoices.length === 0 && (
-                <tr><td colSpan={4} className="table-cell text-center text-muted py-12">Sin ventas recientes</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {data.recentInvoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors">
+                    <td className="table-cell font-semibold text-violet-600 dark:text-violet-400 truncate max-w-[120px]">{inv.number}</td>
+                    <td className="table-cell hidden sm:table-cell">{inv.customer?.name || "Consumidor Final"}</td>
+                    <td className="table-cell text-right font-semibold" style={{ fontVariantNumeric: "tabular-nums" }}>{formatCurrency(Number(inv.total))}</td>
+                    <td className="table-cell text-right text-muted hidden sm:table-cell">{formatDate(inv.date)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

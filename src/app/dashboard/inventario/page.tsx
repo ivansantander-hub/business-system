@@ -5,6 +5,7 @@ import { Warehouse, Plus, ArrowDownCircle, ArrowUpCircle, RotateCcw } from "luci
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
+import { PageHeader, EmptyState } from "@/components/molecules";
 
 interface Product { id: string; name: string; stock: string; minStock: string; unit: string; }
 interface Movement {
@@ -59,20 +60,12 @@ export default function InventarioPage() {
     <div className="space-y-6">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      <div className="flex items-center justify-between">
-        <div className="page-header">
-          <div className="page-icon"><Warehouse className="w-full h-full" /></div>
-          <h1 className="page-title">Inventario</h1>
-        </div>
-        <button onClick={() => { setForm({ productId: "", type: "IN", quantity: "", reason: "", newStock: "" }); setShowModal(true); }} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Nuevo Movimiento
-        </button>
-      </div>
+      <PageHeader icon={<Warehouse className="w-full h-full" />} title="Inventario" actions={<button onClick={() => { setForm({ productId: "", type: "IN", quantity: "", reason: "", newStock: "" }); setShowModal(true); }} className="btn-primary flex items-center gap-2"><Plus className="w-4 h-4" /> Nuevo Movimiento</button>} />
 
       {/* Low stock */}
       {products.filter(p => Number(p.stock) <= Number(p.minStock)).length > 0 && (
         <div className="card border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20">
-          <h3 className="font-semibold text-amber-800 dark:text-amber-400 mb-2">Productos con stock bajo</h3>
+          <h3 className="font-semibold text-amber-800 dark:text-amber-400 mb-2 text-balance">Productos con stock bajo</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {products.filter(p => Number(p.stock) <= Number(p.minStock)).map(p => (
               <div key={p.id} className="flex justify-between bg-white dark:bg-[#141925]/50 px-3 py-2 rounded-xl">
@@ -86,44 +79,46 @@ export default function InventarioPage() {
 
       {/* Movements history */}
       <div className="card">
-        <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Historial de Movimientos</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-4 text-balance">Historial de Movimientos</h2>
+        {movements.length === 0 ? (
+          <EmptyState icon={<Warehouse className="w-7 h-7" />} title="Sin movimientos" />
+        ) : (
+        <div className="overflow-x-auto -mx-4 px-4 sm:-mx-6 sm:px-6">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr>
-                <th className="table-header">Tipo</th>
+                <th className="table-header rounded-l-lg">Tipo</th>
                 <th className="table-header">Producto</th>
                 <th className="table-header text-right">Cantidad</th>
-                <th className="table-header text-right">Stock Anterior</th>
-                <th className="table-header text-right">Stock Nuevo</th>
-                <th className="table-header">Razón</th>
-                <th className="table-header">Usuario</th>
-                <th className="table-header">Fecha</th>
+                <th className="table-header text-right hidden md:table-cell">Stock Anterior</th>
+                <th className="table-header text-right hidden md:table-cell">Stock Nuevo</th>
+                <th className="table-header hidden sm:table-cell">Razón</th>
+                <th className="table-header hidden lg:table-cell">Usuario</th>
+                <th className="table-header rounded-r-lg hidden sm:table-cell">Fecha</th>
               </tr>
             </thead>
             <tbody>
               {movements.map(m => (
                 <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-white/[0.03]">
                   <td className="table-cell"><div className="flex items-center gap-2">{typeIcons[m.type]} {typeLabels[m.type]}</div></td>
-                  <td className="table-cell font-medium">{m.product.name}</td>
+                  <td className="table-cell font-medium truncate max-w-[140px]">{m.product.name}</td>
                   <td className="table-cell text-right font-semibold">{Number(m.quantity).toFixed(0)}</td>
-                  <td className="table-cell text-right">{Number(m.previousStock).toFixed(0)}</td>
-                  <td className="table-cell text-right">{Number(m.newStock).toFixed(0)}</td>
-                  <td className="table-cell text-slate-500 dark:text-slate-400">{m.reason || "-"}</td>
-                  <td className="table-cell">{m.user.name}</td>
-                  <td className="table-cell">{formatDateTime(m.createdAt)}</td>
+                  <td className="table-cell text-right hidden md:table-cell">{Number(m.previousStock).toFixed(0)}</td>
+                  <td className="table-cell text-right hidden md:table-cell">{Number(m.newStock).toFixed(0)}</td>
+                  <td className="table-cell text-slate-500 dark:text-slate-400 hidden sm:table-cell truncate max-w-[120px]">{m.reason || "-"}</td>
+                  <td className="table-cell hidden lg:table-cell">{m.user.name}</td>
+                  <td className="table-cell hidden sm:table-cell">{formatDateTime(m.createdAt)}</td>
                 </tr>
               ))}
-              {movements.length === 0 && (
-                <tr><td colSpan={8} className="table-cell text-center text-slate-400 dark:text-slate-500 py-12">Sin movimientos</td></tr>
-              )}
             </tbody>
           </table>
         </div>
+        )}
       </div>
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title="Nuevo Movimiento de Inventario">
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Producto *</label>
             <select className="input-field" value={form.productId} onChange={e => setForm({...form, productId: e.target.value})} required>
@@ -153,7 +148,8 @@ export default function InventarioPage() {
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Razón</label>
             <input className="input-field" value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} />
           </div>
-          <div className="flex justify-end gap-3 pt-2">
+          </div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
             <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancelar</button>
             <button type="submit" className="btn-primary">Registrar</button>
           </div>
