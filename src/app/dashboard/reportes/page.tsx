@@ -39,14 +39,14 @@ export default function ReportesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <BarChart3 className="w-7 h-7 text-indigo-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Reportes</h1>
+        <BarChart3 className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reportes</h1>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {reports.map(r => (
           <button key={r.key} onClick={() => setReportType(r.key)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${reportType === r.key ? "bg-indigo-600 text-white" : "bg-white text-gray-600 border hover:bg-gray-50"}`}>
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors ${reportType === r.key ? "bg-indigo-600 text-white" : "bg-white text-gray-600 dark:text-gray-300 border hover:bg-gray-50 dark:hover:bg-gray-700/50"}`}>
             <r.icon className="w-4 h-4" /> {r.label}
           </button>
         ))}
@@ -55,7 +55,7 @@ export default function ReportesPage() {
       {reportType !== "inventory" && (
         <div className="flex gap-3 items-center">
           <input type="date" className="input-field w-auto" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <span className="text-gray-400">a</span>
+          <span className="text-gray-400 dark:text-gray-500">a</span>
           <input type="date" className="input-field w-auto" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         </div>
       )}
@@ -75,7 +75,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Factura</th><th className="table-header">Cliente</th><th className="table-header text-right">Total</th><th className="table-header">Fecha</th></tr></thead>
-                    <tbody>{d.invoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{inv.number}</td><td className="table-cell">{inv.customer?.name || "C/F"}</td><td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td><td className="table-cell">{formatDate(inv.date)}</td></tr>))}</tbody></table>
+                    <tbody>{d.invoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="table-cell font-medium">{inv.number}</td><td className="table-cell">{inv.customer?.name || "C/F"}</td><td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td><td className="table-cell">{formatDate(inv.date)}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );
@@ -92,7 +92,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header">Categoría</th><th className="table-header text-right">Stock</th><th className="table-header text-right">Costo</th><th className="table-header text-right">Precio</th><th className="table-header text-right">Valor</th></tr></thead>
-                    <tbody>{d.products.map(p => (<tr key={p.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(p.costPrice)}</td><td className="table-cell text-right">{formatCurrency(p.salePrice)}</td><td className="table-cell text-right font-semibold">{formatCurrency(Number(p.stock) * Number(p.salePrice))}</td></tr>))}</tbody></table>
+                    <tbody>{d.products.map(p => (<tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(p.costPrice)}</td><td className="table-cell text-right">{formatCurrency(p.salePrice)}</td><td className="table-cell text-right font-semibold">{formatCurrency(Number(p.stock) * Number(p.salePrice))}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );
@@ -110,7 +110,7 @@ export default function ReportesPage() {
                 </div>
                 {chartData.length > 0 && (
                   <div className="card">
-                    <h3 className="font-semibold mb-4">Gastos por Categoría</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Gastos por Categoría</h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
                         <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -141,7 +141,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cantidad</th><th className="table-header text-right">Total</th></tr></thead>
-                    <tbody>{d.map((p, i) => (<tr key={i} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.productName}</td><td className="table-cell text-right">{Number(p._sum.quantity).toFixed(0)}</td><td className="table-cell text-right font-semibold">{formatCurrency(p._sum.total)}</td></tr>))}</tbody></table>
+                    <tbody>{d.map((p, i) => (<tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="table-cell font-medium">{p.productName}</td><td className="table-cell text-right">{Number(p._sum.quantity).toFixed(0)}</td><td className="table-cell text-right font-semibold">{formatCurrency(p._sum.total)}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );

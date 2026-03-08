@@ -17,9 +17,9 @@ export default function Toast({ message, type = "success", onClose }: ToastProps
 
   const icons = { success: CheckCircle, error: XCircle, info: AlertCircle };
   const colors = {
-    success: "bg-emerald-50 border-emerald-200 text-emerald-800",
-    error: "bg-red-50 border-red-200 text-red-800",
-    info: "bg-blue-50 border-blue-200 text-blue-800",
+    success: "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300",
+    error: "bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300",
+    info: "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300",
   };
   const Icon = icons[type];
 

@@ -80,8 +80,27 @@ export async function POST(request: Request) {
     });
     if (!plan) return NextResponse.json({ error: "Plan no encontrado" }, { status: 404 });
 
+    let memberId = body.memberId ? Number(body.memberId) : null;
+
+    if (body.customerId && !memberId) {
+      const customerId = Number(body.customerId);
+      let gymMember = await prisma.gymMember.findFirst({
+        where: { companyId, customerId },
+      });
+      if (!gymMember) {
+        gymMember = await prisma.gymMember.create({
+          data: { companyId, customerId },
+        });
+      }
+      memberId = gymMember.id;
+    }
+
+    if (!memberId) {
+      return NextResponse.json({ error: "Se requiere customerId o memberId" }, { status: 400 });
+    }
+
     const member = await prisma.gymMember.findFirst({
-      where: { id: body.memberId, companyId },
+      where: { id: memberId, companyId },
     });
     if (!member) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
 
@@ -92,7 +111,7 @@ export async function POST(request: Request) {
     const membership = await prisma.membership.create({
       data: {
         companyId,
-        memberId: body.memberId,
+        memberId,
         planId: body.planId,
         startDate,
         endDate,

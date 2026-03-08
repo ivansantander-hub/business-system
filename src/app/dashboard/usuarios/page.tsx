@@ -161,13 +161,15 @@ export default function UsuariosPage() {
     CASHIER: "Cajero",
     WAITER: "Mesero",
     ACCOUNTANT: "Contador",
+    TRAINER: "Entrenador",
   };
   const roleColors: Record<string, string> = {
-    SUPER_ADMIN: "bg-red-100 text-red-700",
-    ADMIN: "bg-purple-100 text-purple-700",
-    CASHIER: "bg-blue-100 text-blue-700",
-    WAITER: "bg-amber-100 text-amber-700",
-    ACCOUNTANT: "bg-emerald-100 text-emerald-700",
+    SUPER_ADMIN: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    ADMIN: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    CASHIER: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    WAITER: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    ACCOUNTANT: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    TRAINER: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
   };
 
   const availableCompanies = allCompanies.filter(
@@ -179,8 +181,8 @@ export default function UsuariosPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Shield className="w-7 h-7 text-indigo-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Usuarios</h1>
+          <Shield className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Usuarios</h1>
         </div>
         <button onClick={openCreate} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nuevo Usuario
@@ -202,11 +204,11 @@ export default function UsuariosPage() {
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50">
+              <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                 <td className="table-cell font-medium">{u.name}</td>
                 <td className="table-cell">{u.email}</td>
                 <td className="table-cell">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[u.role] || "bg-gray-100 text-gray-700"}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${roleColors[u.role] || "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"}`}>
                     {roleLabels[u.role] || u.role}
                   </span>
                 </td>
@@ -220,7 +222,7 @@ export default function UsuariosPage() {
                         </span>
                       ))}
                       {(!u.companies || u.companies.length === 0) && (
-                        <span className="text-xs text-gray-400">Sin empresa</span>
+                        <span className="text-xs text-gray-400 dark:text-gray-500">Sin empresa</span>
                       )}
                     </div>
                   </td>
@@ -229,7 +231,7 @@ export default function UsuariosPage() {
                   <button
                     onClick={() => toggleActive(u)}
                     className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      u.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                      u.isActive ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
                     }`}
                   >
                     {u.isActive ? "Activo" : "Inactivo"}
@@ -237,8 +239,8 @@ export default function UsuariosPage() {
                 </td>
                 <td className="table-cell">{formatDate(u.createdAt)}</td>
                 <td className="table-cell">
-                  <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-indigo-50 rounded-lg">
-                    <Pencil className="w-4 h-4 text-indigo-600" />
+                  <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg">
+                    <Pencil className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                   </button>
                 </td>
               </tr>
@@ -252,27 +254,28 @@ export default function UsuariosPage() {
           <div className={isSuperAdmin ? "grid grid-cols-2 gap-4" : ""}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre *</label>
                 <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email *</label>
                 <input type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {editing ? "Nueva Contraseña (dejar vacío para no cambiar)" : "Contraseña *"}
                 </label>
                 <input type="password" className="input-field" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required={!editing} />
               </div>
               {!isSuperAdmin && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol *</label>
                   <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="ADMIN">Administrador</option>
                     <option value="CASHIER">Cajero</option>
                     <option value="WAITER">Mesero</option>
                     <option value="ACCOUNTANT">Contador</option>
+                    <option value="TRAINER">Entrenador</option>
                   </select>
                 </div>
               )}
@@ -281,22 +284,23 @@ export default function UsuariosPage() {
             {isSuperAdmin && (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Rol global</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol global</label>
                   <select className="input-field" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
                     <option value="ADMIN">Administrador</option>
                     <option value="CASHIER">Cajero</option>
                     <option value="WAITER">Mesero</option>
                     <option value="ACCOUNTANT">Contador</option>
+                    <option value="TRAINER">Entrenador</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Empresas asignadas</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Empresas asignadas</label>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {formAssignments.map((a) => (
-                      <div key={a.companyId} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
-                        <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-700 flex-1 truncate">{a.companyName}</span>
+                      <div key={a.companyId} className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+                        <Building2 className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                        <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{a.companyName}</span>
                         <select
                           className="text-xs border border-gray-300 rounded px-1.5 py-1"
                           value={a.role}
@@ -306,6 +310,7 @@ export default function UsuariosPage() {
                           <option value="CASHIER">Cajero</option>
                           <option value="WAITER">Mesero</option>
                           <option value="ACCOUNTANT">Contador</option>
+                          <option value="TRAINER">Entrenador</option>
                         </select>
                         <button type="button" onClick={() => removeAssignment(a.companyId)} className="text-red-400 hover:text-red-600">
                           <X className="w-4 h-4" />
@@ -313,7 +318,7 @@ export default function UsuariosPage() {
                       </div>
                     ))}
                     {formAssignments.length === 0 && (
-                      <p className="text-xs text-gray-400 text-center py-2">Sin empresas asignadas</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 text-center py-2">Sin empresas asignadas</p>
                     )}
                   </div>
                 </div>
@@ -339,6 +344,7 @@ export default function UsuariosPage() {
                       <option value="CASHIER">Cajero</option>
                       <option value="WAITER">Mesero</option>
                       <option value="ACCOUNTANT">Contador</option>
+                      <option value="TRAINER">Entrenador</option>
                     </select>
                     <button
                       type="button"

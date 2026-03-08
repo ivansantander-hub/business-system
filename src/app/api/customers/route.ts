@@ -18,7 +18,29 @@ export async function GET(request: Request) {
     ];
   }
 
-  const customers = await prisma.customer.findMany({ where, orderBy: { name: "asc" } });
+  const customers = await prisma.customer.findMany({
+    where,
+    include: {
+      gymMember: {
+        select: {
+          id: true,
+          status: true,
+          memberships: {
+            where: { status: "ACTIVE" },
+            orderBy: { endDate: "desc" },
+            take: 1,
+            include: { plan: { select: { name: true } } },
+          },
+          dayPasses: {
+            where: { status: "ACTIVE" },
+            take: 5,
+            orderBy: { createdAt: "desc" },
+          },
+        },
+      },
+    },
+    orderBy: { name: "asc" },
+  });
   return NextResponse.json(customers);
 }
 
@@ -38,5 +60,26 @@ export async function POST(request: Request) {
       creditLimit: Number(body.creditLimit) || 0,
     },
   });
+
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { type: true },
+  });
+
+  if (company?.type === "GYM") {
+    await prisma.gymMember.create({
+      data: {
+        companyId,
+        customerId: customer.id,
+        emergencyContact: body.emergencyContact || null,
+        emergencyPhone: body.emergencyPhone || null,
+        birthDate: body.birthDate ? new Date(body.birthDate) : null,
+        gender: body.gender || null,
+        bloodType: body.bloodType || null,
+        medicalNotes: body.medicalNotes || null,
+      },
+    });
+  }
+
   return NextResponse.json(customer, { status: 201 });
 }

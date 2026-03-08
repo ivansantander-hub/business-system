@@ -72,11 +72,11 @@ function MetricChange({
   lowerIsBetter: boolean;
 }) {
   const diff = curr - prev;
-  if (diff === 0) return <span className="text-gray-500">—</span>;
+  if (diff === 0) return <span className="text-gray-500 dark:text-gray-400">—</span>;
   const improved = lowerIsBetter ? diff < 0 : diff > 0;
   const Icon = diff < 0 ? ArrowDown : ArrowUp;
   return (
-    <div className={`flex items-center gap-1 ${improved ? "text-emerald-600" : "text-red-600"}`}>
+    <div className={`flex items-center gap-1 ${improved ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
       <Icon className="w-4 h-4" />
       <span>
         {diff > 0 ? "+" : ""}
@@ -156,13 +156,13 @@ export default function MedidasPage() {
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
       <div className="flex items-center gap-3">
-        <Ruler className="w-7 h-7 text-indigo-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Medidas Corporales</h1>
+        <Ruler className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Medidas Corporales</h1>
       </div>
 
       <div className="card">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             className="input-field pl-12 text-lg py-3"
             placeholder="Buscar miembro por nombre, email o teléfono..."
@@ -170,17 +170,17 @@ export default function MedidasPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {loading && <p className="text-sm text-gray-500 mt-2">Buscando...</p>}
+        {loading && <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Buscando...</p>}
         {search.trim() && members.length > 0 && !selectedMember && (
           <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
             {members.map((m) => (
               <button
                 key={m.id}
                 onClick={() => setSelectedMember(m)}
-                className="w-full text-left p-4 rounded-lg border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 transition-colors"
+                className="w-full text-left p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors"
               >
-                <div className="font-medium text-gray-900">{m.customer.name}</div>
-                <div className="text-sm text-gray-500">{m.customer.email || m.customer.phone || "-"}</div>
+                <div className="font-medium text-gray-900 dark:text-white">{m.customer.name}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{m.customer.email || m.customer.phone || "-"}</div>
               </button>
             ))}
           </div>
@@ -189,11 +189,11 @@ export default function MedidasPage() {
 
       {selectedMember && (
         <>
-          <div className="card border-2 border-indigo-200 bg-indigo-50/30">
+          <div className="card border-2 border-indigo-200 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/20">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{selectedMember.customer.name}</h2>
-                <div className="flex gap-4 mt-1 text-sm text-gray-600">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedMember.customer.name}</h2>
+                <div className="flex gap-4 mt-1 text-sm text-gray-600 dark:text-gray-300">
                   {selectedMember.birthDate && (
                     <span>Edad: {getAge(selectedMember.birthDate) ?? "-"} años</span>
                   )}
@@ -263,7 +263,7 @@ export default function MedidasPage() {
           )}
 
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Historial de mediciones</h3>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Historial de mediciones</h3>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -277,7 +277,7 @@ export default function MedidasPage() {
                 </thead>
                 <tbody>
                   {measurements.map((m) => (
-                    <tr key={m.id} className="hover:bg-gray-50">
+                    <tr key={m.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                       <td className="table-cell font-medium">{formatDate(m.date)}</td>
                       <td className="table-cell">{m.weight ?? "-"}</td>
                       <td className="table-cell">{m.bodyFat ?? "-"}</td>
@@ -287,7 +287,7 @@ export default function MedidasPage() {
                   ))}
                   {measurements.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="table-cell text-center text-gray-400 py-12">
+                      <td colSpan={5} className="table-cell text-center text-gray-400 dark:text-gray-500 py-12">
                         Sin mediciones registradas
                       </td>
                     </tr>
@@ -304,7 +304,7 @@ export default function MedidasPage() {
           <div className="grid grid-cols-2 gap-4">
             {measurementFields.map(({ key, label, type }) => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
                 <input
                   type={type}
                   step={type === "number" ? "0.1" : undefined}

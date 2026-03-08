@@ -691,17 +691,19 @@ model CheckIn {
 }
 
 model DayPass {
-  id        Int           @id @default(autoincrement())
-  companyId Int           @map("company_id")
-  company   Company       @relation(fields: [companyId], references: [id])
-  memberId  Int?          @map("member_id")
-  member    GymMember?    @relation(fields: [memberId], references: [id])
-  guestName String?       @map("guest_name")
-  date      DateTime      @default(now())
-  price     Decimal
-  status    DayPassStatus @default(ACTIVE)
-  invoiceId Int?          @map("invoice_id")
-  createdAt DateTime      @default(now()) @map("created_at")
+  id           Int           @id @default(autoincrement())
+  companyId    Int           @map("company_id")
+  company      Company       @relation(fields: [companyId], references: [id])
+  memberId     Int?          @map("member_id")
+  member       GymMember?    @relation(fields: [memberId], references: [id])
+  guestName    String?       @map("guest_name")
+  date         DateTime      @default(now())
+  price        Decimal
+  totalEntries Int           @default(1) @map("total_entries")
+  usedEntries  Int           @default(0) @map("used_entries")
+  status       DayPassStatus @default(ACTIVE)
+  invoiceId    Int?          @map("invoice_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
 
   @@schema("tenant")
   @@map("day_passes")

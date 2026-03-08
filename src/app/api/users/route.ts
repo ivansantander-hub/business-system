@@ -139,7 +139,7 @@ export async function POST(request: Request) {
         companies: {
           create: companyAssignments.map((ca) => ({
             companyId: ca.companyId,
-            role: (ca.role as "ADMIN" | "CASHIER" | "WAITER" | "ACCOUNTANT") || "CASHIER",
+            role: (ca.role as "ADMIN" | "CASHIER" | "WAITER" | "ACCOUNTANT" | "TRAINER") || "CASHIER",
           })),
         },
       },

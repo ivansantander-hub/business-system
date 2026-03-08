@@ -19,12 +19,17 @@ export async function GET(request: Request) {
 
   try {
     if (type === "dashboard") {
+      const company = await prisma.company.findUnique({
+        where: { id: companyId },
+        select: { type: true },
+      });
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const [todaySales, todayInvoices, openOrders, recentInvoices] = await Promise.all([
+      const [todaySales, todayInvoices, recentInvoices] = await Promise.all([
         prisma.invoice.aggregate({
           where: { companyId, date: { gte: today, lt: tomorrow }, status: "PAID" },
           _sum: { total: true },
@@ -33,7 +38,6 @@ export async function GET(request: Request) {
         prisma.invoice.count({
           where: { companyId, date: { gte: today, lt: tomorrow }, status: "PAID" },
         }),
-        prisma.order.count({ where: { companyId, status: "OPEN" } }),
         prisma.invoice.findMany({
           where: { companyId, status: "PAID" },
           include: { customer: { select: { name: true } } },
@@ -76,20 +80,82 @@ export async function GET(request: Request) {
         });
       }
 
-      return NextResponse.json({
+      const baseData = {
+        companyType: company?.type || "RESTAURANT",
         todaySales: Number(todaySales._sum.total) || 0,
         todayTransactions: todayInvoices,
-        openOrders,
-        lowStockCount: filteredLowStock.length,
         salesByDay,
         recentInvoices,
+        lowStockCount: filteredLowStock.length,
         lowStockProducts: filteredLowStock.map((p) => ({
           id: p.id,
           name: p.name,
           stock: String(p.stock),
           min_stock: String(p.minStock),
         })),
-      });
+      };
+
+      if (company?.type === "GYM") {
+        const now = new Date();
+        const [
+          totalMembers,
+          activeMembers,
+          todayCheckIns,
+          activeMemberships,
+          expiringMemberships,
+          activeDayPasses,
+        ] = await Promise.all([
+          prisma.gymMember.count({ where: { companyId } }),
+          prisma.gymMember.count({ where: { companyId, status: "ACTIVE" } }),
+          prisma.checkIn.count({ where: { companyId, timestamp: { gte: today, lt: tomorrow } } }),
+          prisma.membership.count({ where: { companyId, status: "ACTIVE", endDate: { gte: now } } }),
+          prisma.membership.findMany({
+            where: {
+              companyId,
+              status: "ACTIVE",
+              endDate: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
+            },
+            include: { member: { include: { customer: { select: { name: true } } } }, plan: { select: { name: true } } },
+            orderBy: { endDate: "asc" },
+            take: 10,
+          }),
+          prisma.dayPass.count({ where: { companyId, status: "ACTIVE" } }),
+        ]);
+
+        const checkInsByDay = [];
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          d.setHours(0, 0, 0, 0);
+          const next = new Date(d);
+          next.setDate(next.getDate() + 1);
+          const count = await prisma.checkIn.count({
+            where: { companyId, timestamp: { gte: d, lt: next }, type: "ENTRY" },
+          });
+          checkInsByDay.push({ date: d.toISOString().split("T")[0], entries: count });
+        }
+
+        return NextResponse.json({
+          ...baseData,
+          gym: {
+            totalMembers,
+            activeMembers,
+            todayCheckIns,
+            activeMemberships,
+            activeDayPasses,
+            expiringMemberships: expiringMemberships.map((m) => ({
+              id: m.id,
+              memberName: m.member.customer.name,
+              planName: m.plan.name,
+              endDate: m.endDate,
+            })),
+            checkInsByDay,
+          },
+        });
+      }
+
+      const openOrders = await prisma.order.count({ where: { companyId, status: "OPEN" } });
+      return NextResponse.json({ ...baseData, openOrders });
     }
 
     if (type === "sales") {

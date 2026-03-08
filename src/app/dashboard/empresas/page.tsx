@@ -121,15 +121,15 @@ export default function EmpresasPage() {
   );
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>;
+    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400" /></div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Empresas</h1>
-          <p className="text-gray-500 mt-1">Gestión de empresas del sistema</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Empresas</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Gestión de empresas del sistema</p>
         </div>
         <button onClick={openCreate} className="btn-primary flex items-center gap-2">
           <Plus className="w-4 h-4" /> Nueva Empresa
@@ -137,7 +137,7 @@ export default function EmpresasPage() {
       </div>
 
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
         <input
           type="text" placeholder="Buscar por nombre o NIT..."
           value={search} onChange={(e) => setSearch(e.target.value)}
@@ -150,23 +150,23 @@ export default function EmpresasPage() {
           <div key={c.id} className={`card p-5 ${!c.isActive ? "opacity-60" : ""}`}>
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-indigo-600" />
+                <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">{c.name}</h3>
-                  <p className="text-xs text-gray-500">NIT: {c.nit}</p>
+                  <h3 className="font-semibold text-gray-900 dark:text-white">{c.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">NIT: {c.nit}</p>
                 </div>
               </div>
-              <span className={`text-xs px-2 py-1 rounded-full ${c.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+              <span className={`text-xs px-2 py-1 rounded-full ${c.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}>
                 {c.isActive ? "Activa" : "Inactiva"}
               </span>
             </div>
-            <div className="mt-4 space-y-1 text-sm text-gray-600">
+            <div className="mt-4 space-y-1 text-sm text-gray-600 dark:text-gray-300">
               {c.city && <p>{c.city}{c.department ? `, ${c.department}` : ""}</p>}
               {c.phone && <p>{c.phone}</p>}
               {c.taxRegime && <p className="text-xs">{c.taxRegime}</p>}
-              <p className="text-xs text-gray-400">{c._count.userCompanies} usuario(s)</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{c._count.userCompanies} usuario(s)</p>
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => openEdit(c)} className="btn-secondary text-xs flex items-center gap-1">
@@ -181,7 +181,7 @@ export default function EmpresasPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-center py-12 text-gray-500">No se encontraron empresas</div>
+        <div className="text-center py-12 text-gray-500 dark:text-gray-400">No se encontraron empresas</div>
       )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editingCompany ? "Editar Empresa" : "Nueva Empresa"} size="lg">
@@ -189,61 +189,61 @@ export default function EmpresasPage() {
           <div className="grid grid-cols-2 gap-4">
             {!editingCompany && (
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de empresa *</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de empresa *</label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { value: "RESTAURANT", label: "Restaurante / Bar", desc: "Mesas, órdenes, meseros, cocina" },
                     { value: "GYM", label: "Gimnasio", desc: "Membresías, check-in, clases, entrenadores" },
                   ].map((t) => (
                     <button key={t.value} type="button" onClick={() => setForm({ ...form, type: t.value })}
-                      className={`p-3 rounded-lg border-2 text-left transition-colors ${form.type === t.value ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"}`}>
+                      className={`p-3 rounded-lg border-2 text-left transition-colors ${form.type === t.value ? "border-indigo-600 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/20" : "border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600"}`}>
                       <p className="font-medium text-sm">{t.label}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
             )}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre comercial *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre comercial *</label>
               <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Razón social</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Razón social</label>
               <input className="input-field" value={form.legalName} onChange={(e) => setForm({ ...form, legalName: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">NIT *</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">NIT *</label>
               <input className="input-field" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} required placeholder="900123456-7" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Régimen tributario</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Régimen tributario</label>
               <select className="input-field" value={form.taxRegime} onChange={(e) => setForm({ ...form, taxRegime: e.target.value })}>
                 <option value="">Seleccionar...</option>
                 {TAX_REGIMES.map((r) => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ciudad</label>
               <input className="input-field" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
               <select className="input-field" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}>
                 <option value="">Seleccionar...</option>
                 {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dirección</label>
               <input className="input-field" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
               <input className="input-field" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
               <input type="email" className="input-field" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
           </div>

@@ -41,24 +41,24 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Sistema de Gestión</h1>
-            <p className="text-gray-500 mt-1">Ingresa tus credenciales</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sistema de Gestión</h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">Ingresa tus credenciales</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo electrónico</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -73,7 +73,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
@@ -93,12 +93,12 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 font-medium mb-2">Credenciales de prueba:</p>
-            <p className="text-xs text-gray-600">Master: master@sistema.com / master123</p>
-            <p className="text-xs text-gray-600">Admin: admin@miempresa.com / admin123</p>
-            <p className="text-xs text-gray-600">Cajero: cajero@miempresa.com / cajero123</p>
-            <p className="text-xs text-gray-600">Mesero: mesero@miempresa.com / mesero123</p>
+          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <p className="text-xs text-gray-500 dark:text-gray-400 font-medium mb-2">Credenciales de prueba:</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Master: master@sistema.com / master123</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Admin: admin@miempresa.com / admin123</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Cajero: cajero@miempresa.com / cajero123</p>
+            <p className="text-xs text-gray-600 dark:text-gray-300">Mesero: mesero@miempresa.com / mesero123</p>
           </div>
         </div>
       </div>

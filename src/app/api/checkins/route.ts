@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     include: {
       member: {
         include: {
-          customer: { select: { id: true, name: true, email: true } },
+          customer: { select: { id: true, name: true, nit: true, email: true } },
         },
       },
     },
@@ -39,110 +39,145 @@ export async function GET(request: Request) {
   return NextResponse.json(checkIns);
 }
 
-async function validateMembershipMethod(
-  member: { memberships: { status: string; endDate: Date }[] }
-): Promise<NextResponse | null> {
-  const now = new Date();
-  const activeMembership = member.memberships.find(
-    (m) => m.status === "ACTIVE" && new Date(m.endDate) >= now
-  );
-  if (!activeMembership) {
-    return NextResponse.json(
-      { error: "El miembro no tiene membresía activa" },
-      { status: 400 }
-    );
-  }
-  return null;
-}
-
-async function validateAndUseDayPass(
-  dayPassId: number,
-  companyId: number
-): Promise<NextResponse | null> {
-  const dayPass = await prisma.dayPass.findFirst({
-    where: { id: dayPassId, companyId, status: "ACTIVE" },
-  });
-  if (!dayPass) {
-    return NextResponse.json(
-      { error: "Pase de día no encontrado o no está activo" },
-      { status: 400 }
-    );
-  }
-  await prisma.dayPass.update({
-    where: { id: dayPassId },
-    data: { status: "USED" },
-  });
-  return null;
-}
-
-function resolveMethod(method: string): "MEMBERSHIP" | "DAY_PASS" | "MANUAL" {
-  if (method === "DAY_PASS") return "DAY_PASS";
-  if (method === "MANUAL") return "MANUAL";
-  return "MEMBERSHIP";
-}
-
 export async function POST(request: Request) {
   const { companyId } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const body = await request.json();
-  const { memberId, type, method, dayPassId, notes } = body;
+  const { document, type, memberId } = body;
 
-  if (!memberId || !type || !method) {
-    return NextResponse.json(
-      { error: "memberId, type y method son requeridos" },
-      { status: 400 }
-    );
+  if (!type || (type !== "ENTRY" && type !== "EXIT")) {
+    return NextResponse.json({ error: "type debe ser ENTRY o EXIT" }, { status: 400 });
   }
 
-  const member = await prisma.gymMember.findFirst({
-    where: { id: Number(memberId), companyId },
-    include: {
-      memberships: {
-        where: { status: "ACTIVE" },
-        orderBy: { endDate: "desc" },
-      },
-    },
-  });
+  let gymMember;
 
-  if (!member) {
+  if (memberId) {
+    gymMember = await prisma.gymMember.findFirst({
+      where: { id: Number(memberId), companyId },
+      include: {
+        customer: true,
+        memberships: {
+          where: { status: "ACTIVE" },
+          orderBy: { endDate: "desc" },
+        },
+        dayPasses: {
+          where: { status: "ACTIVE", companyId },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+  } else if (document) {
+    const customer = await prisma.customer.findFirst({
+      where: { companyId, nit: document.trim() },
+    });
+    if (!customer) {
+      return NextResponse.json({ error: "No se encontró cliente con ese documento" }, { status: 404 });
+    }
+    gymMember = await prisma.gymMember.findFirst({
+      where: { companyId, customerId: customer.id },
+      include: {
+        customer: true,
+        memberships: {
+          where: { status: "ACTIVE" },
+          orderBy: { endDate: "desc" },
+        },
+        dayPasses: {
+          where: { status: "ACTIVE", companyId },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+    if (!gymMember) {
+      return NextResponse.json({ error: "El cliente no está registrado como miembro del gimnasio" }, { status: 404 });
+    }
+  } else {
+    return NextResponse.json({ error: "Se requiere document o memberId" }, { status: 400 });
+  }
+
+  if (!gymMember) {
     return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
   }
 
-  if (method === "MEMBERSHIP") {
-    const err = await validateMembershipMethod(member);
-    if (err) return err;
-  }
-
-  if (method === "DAY_PASS") {
-    if (!dayPassId) {
-      return NextResponse.json(
-        { error: "dayPassId es requerido para método DAY_PASS" },
-        { status: 400 }
-      );
-    }
-    const err = await validateAndUseDayPass(Number(dayPassId), companyId);
-    if (err) return err;
-  }
-
-  const methodVal = resolveMethod(method);
-  const checkIn = await prisma.checkIn.create({
-    data: {
-      companyId,
-      memberId: Number(memberId),
-      type: type === "EXIT" ? "EXIT" : "ENTRY",
-      method: methodVal,
-      dayPassId: dayPassId ? Number(dayPassId) : null,
-      notes: notes || null,
-    },
-    include: {
-      member: {
-        include: {
-          customer: { select: { id: true, name: true, email: true } },
-        },
+  if (type === "EXIT") {
+    const checkIn = await prisma.checkIn.create({
+      data: {
+        companyId,
+        memberId: gymMember.id,
+        type: "EXIT",
+        method: "MANUAL",
+        notes: null,
       },
-    },
-  });
+      include: {
+        member: { include: { customer: { select: { id: true, name: true, nit: true } } } },
+      },
+    });
+    return NextResponse.json({ checkIn, accessGranted: true, reason: "Salida registrada" }, { status: 201 });
+  }
 
-  return NextResponse.json(checkIn, { status: 201 });
+  const now = new Date();
+  const activeMembership = gymMember.memberships.find(
+    (m) => m.status === "ACTIVE" && new Date(m.endDate) >= now
+  );
+
+  if (activeMembership) {
+    const checkIn = await prisma.checkIn.create({
+      data: {
+        companyId,
+        memberId: gymMember.id,
+        type: "ENTRY",
+        method: "MEMBERSHIP",
+      },
+      include: {
+        member: { include: { customer: { select: { id: true, name: true, nit: true } } } },
+      },
+    });
+    const daysRemaining = Math.ceil((new Date(activeMembership.endDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return NextResponse.json({
+      checkIn,
+      accessGranted: true,
+      reason: `Membresía activa - ${daysRemaining} días restantes`,
+      method: "MEMBERSHIP",
+    }, { status: 201 });
+  }
+
+  const activeDayPass = gymMember.dayPasses.find(
+    (dp) => dp.status === "ACTIVE" && dp.usedEntries < dp.totalEntries
+  );
+
+  if (activeDayPass) {
+    const newUsed = activeDayPass.usedEntries + 1;
+    const newStatus = newUsed >= activeDayPass.totalEntries ? "USED" : "ACTIVE";
+    await prisma.dayPass.update({
+      where: { id: activeDayPass.id },
+      data: { usedEntries: newUsed, status: newStatus },
+    });
+
+    const checkIn = await prisma.checkIn.create({
+      data: {
+        companyId,
+        memberId: gymMember.id,
+        type: "ENTRY",
+        method: "DAY_PASS",
+        dayPassId: activeDayPass.id,
+      },
+      include: {
+        member: { include: { customer: { select: { id: true, name: true, nit: true } } } },
+      },
+    });
+    const remaining = activeDayPass.totalEntries - newUsed;
+    return NextResponse.json({
+      checkIn,
+      accessGranted: true,
+      reason: `Tiquetera - ${remaining} entradas restantes`,
+      method: "DAY_PASS",
+    }, { status: 201 });
+  }
+
+  return NextResponse.json({
+    accessGranted: false,
+    reason: "Sin membresía activa ni tiquetera con entradas disponibles",
+    memberName: gymMember.customer.name,
+    memberId: gymMember.id,
+  }, { status: 403 });
 }

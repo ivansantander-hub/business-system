@@ -72,8 +72,8 @@ export default function OrdenesPage() {
   }
 
   const statusColors: Record<string, string> = {
-    OPEN: "bg-blue-100 text-blue-700", READY: "bg-emerald-100 text-emerald-700",
-    PAID: "bg-gray-100 text-gray-600", CANCELLED: "bg-red-100 text-red-700",
+    OPEN: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400", READY: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+    PAID: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300", CANCELLED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   };
   const statusLabels: Record<string, string> = { OPEN: "Abierta", READY: "Lista", PAID: "Pagada", CANCELLED: "Cancelada" };
   const typeLabels: Record<string, string> = { TABLE: "Mesa", TAKEOUT: "Para Llevar", DELIVERY: "Domicilio" };
@@ -87,8 +87,8 @@ export default function OrdenesPage() {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <ClipboardList className="w-7 h-7 text-indigo-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Órdenes</h1>
+          <ClipboardList className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Órdenes</h1>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ export default function OrdenesPage() {
         <div className="flex gap-2 mb-4">
           {["OPEN", "READY", "PAID", "CANCELLED", ""].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-indigo-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"}`}>
               {s ? statusLabels[s] : "Todas"}
             </button>
           ))}
@@ -118,7 +118,7 @@ export default function OrdenesPage() {
             </thead>
             <tbody>
               {orders.map(o => (
-                <tr key={o.id} className="hover:bg-gray-50">
+                <tr key={o.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                   <td className="table-cell font-medium">#{o.id}</td>
                   <td className="table-cell">{typeLabels[o.type]}</td>
                   <td className="table-cell">{o.table?.number || "-"}</td>
@@ -127,7 +127,7 @@ export default function OrdenesPage() {
                   <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[o.status]}`}>{statusLabels[o.status]}</span></td>
                   <td className="table-cell">{formatDateTime(o.createdAt)}</td>
                   <td className="table-cell">
-                    <button onClick={() => setShowDetail(o)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Eye className="w-4 h-4 text-indigo-600" /></button>
+                    <button onClick={() => setShowDetail(o)} className="p-1.5 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg"><Eye className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /></button>
                   </td>
                 </tr>
               ))}
@@ -159,7 +159,7 @@ export default function OrdenesPage() {
             <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(showDetail.subtotal)}</span></div>
               <div className="flex justify-between"><span>IVA</span><span>{formatCurrency(showDetail.tax)}</span></div>
-              <div className="flex justify-between font-bold text-base pt-1 border-t"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
+              <div className="flex justify-between font-bold text-base pt-1 border-t dark:border-gray-600"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
             </div>
 
             {showDetail.status === "OPEN" && (
@@ -209,8 +209,8 @@ export default function OrdenesPage() {
             ))}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label><input type="number" min="1" className="input-field" value={itemForm.quantity} onChange={e => setItemForm({...itemForm, quantity: e.target.value})} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Notas</label><input className="input-field" value={itemForm.notes} onChange={e => setItemForm({...itemForm, notes: e.target.value})} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad</label><input type="number" min="1" className="input-field" value={itemForm.quantity} onChange={e => setItemForm({...itemForm, quantity: e.target.value})} /></div>
+            <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notas</label><input className="input-field" value={itemForm.notes} onChange={e => setItemForm({...itemForm, notes: e.target.value})} /></div>
           </div>
           <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowAddItem(false)} className="btn-secondary">Cancelar</button><button type="submit" disabled={!itemForm.productId} className="btn-primary">Agregar</button></div>
         </form>

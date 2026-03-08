@@ -12,21 +12,25 @@ export async function GET(request: Request) {
   const memberId = searchParams.get("memberId");
   const status = searchParams.get("status");
 
-  const now = new Date();
-  let startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let endOfDay = new Date(startOfDay);
-  endOfDay.setDate(endOfDay.getDate() + 1);
+  const where: Record<string, unknown> = { companyId };
 
-  if (from) startOfDay = new Date(from);
-  if (to) {
-    endOfDay = new Date(to);
-    endOfDay.setHours(23, 59, 59, 999);
+  if (!from && !to) {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+    where.date = { gte: startOfDay, lte: endOfDay };
+  } else {
+    const dateFilter: Record<string, Date> = {};
+    if (from) dateFilter.gte = new Date(from);
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
+    where.date = dateFilter;
   }
 
-  const where: Record<string, unknown> = {
-    companyId,
-    date: { gte: startOfDay, lte: endOfDay },
-  };
   if (memberId) where.memberId = Number(memberId);
   if (status) where.status = status;
 
@@ -35,7 +39,7 @@ export async function GET(request: Request) {
     include: {
       member: {
         include: {
-          customer: { select: { id: true, name: true, email: true } },
+          customer: { select: { id: true, name: true, email: true, nit: true } },
         },
       },
     },
@@ -50,18 +54,29 @@ export async function POST(request: Request) {
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const body = await request.json();
-  const { memberId, guestName, price } = body;
+  const { guestName, price, totalEntries } = body;
+  let resolvedMemberId: number | null = body.memberId ? Number(body.memberId) : null;
 
-  if (!memberId && !guestName) {
-    return NextResponse.json(
-      { error: "Se requiere memberId o guestName" },
-      { status: 400 }
-    );
+  if (body.customerId && !resolvedMemberId) {
+    const customerId = Number(body.customerId);
+    let gymMember = await prisma.gymMember.findFirst({
+      where: { companyId, customerId },
+    });
+    if (!gymMember) {
+      gymMember = await prisma.gymMember.create({
+        data: { companyId, customerId },
+      });
+    }
+    resolvedMemberId = gymMember.id;
   }
 
-  if (memberId) {
+  if (!resolvedMemberId && !guestName) {
+    return NextResponse.json({ error: "Se requiere un cliente o nombre de invitado" }, { status: 400 });
+  }
+
+  if (resolvedMemberId) {
     const member = await prisma.gymMember.findFirst({
-      where: { id: Number(memberId), companyId },
+      where: { id: resolvedMemberId, companyId },
     });
     if (!member) {
       return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
@@ -71,15 +86,17 @@ export async function POST(request: Request) {
   const dayPass = await prisma.dayPass.create({
     data: {
       companyId,
-      memberId: memberId ? Number(memberId) : null,
+      memberId: resolvedMemberId,
       guestName: guestName || null,
       price: Number(price) || 0,
+      totalEntries: Number(totalEntries) || 1,
+      usedEntries: 0,
       status: "ACTIVE",
     },
     include: {
       member: {
         include: {
-          customer: { select: { id: true, name: true, email: true } },
+          customer: { select: { id: true, name: true, email: true, nit: true } },
         },
       },
     },
@@ -107,12 +124,21 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Pase no encontrado" }, { status: 404 });
   }
 
-  if (action === "use") {
-    await prisma.dayPass.update({
+  if (action === "use-entry") {
+    if (dayPass.status !== "ACTIVE") {
+      return NextResponse.json({ error: "La tiquetera no está activa" }, { status: 400 });
+    }
+    const newUsed = dayPass.usedEntries + 1;
+    const newStatus = newUsed >= dayPass.totalEntries ? "USED" : "ACTIVE";
+    const updated = await prisma.dayPass.update({
       where: { id: Number(id) },
-      data: { status: "USED" },
+      data: { usedEntries: newUsed, status: newStatus },
     });
-    return NextResponse.json({ success: true, status: "USED" });
+    return NextResponse.json({
+      success: true,
+      remaining: updated.totalEntries - updated.usedEntries,
+      status: updated.status,
+    });
   }
 
   if (action === "expire") {

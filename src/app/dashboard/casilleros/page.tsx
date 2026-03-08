@@ -177,8 +177,8 @@ export default function CasillerosPage() {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Package className="w-7 h-7 text-indigo-600" />
-          <h1 className="text-2xl font-bold text-gray-900">Casilleros</h1>
+          <Package className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Casilleros</h1>
         </div>
         <button
           onClick={() => {
@@ -194,8 +194,8 @@ export default function CasillerosPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card">
-          <p className="text-sm text-gray-500">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
         </div>
         <div className="card border-emerald-200 bg-emerald-50/50">
           <p className="text-sm text-emerald-700">Disponibles</p>
@@ -258,7 +258,7 @@ export default function CasillerosPage() {
                     </p>
                   )}
                   {locker.status === "AVAILABLE" && (
-                    <p className="text-xs text-emerald-700 mt-1">Disponible</p>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">Disponible</p>
                   )}
                 </button>
               ))}
@@ -267,7 +267,7 @@ export default function CasillerosPage() {
       ))}
 
       {filteredLockers.length === 0 && (
-        <div className="card text-center text-gray-400 py-12">
+        <div className="card text-center text-gray-400 dark:text-gray-500 py-12">
           {sectionFilter ? "No hay casilleros en esta sección" : "No hay casilleros. Crea uno para comenzar."}
         </div>
       )}
@@ -280,7 +280,7 @@ export default function CasillerosPage() {
       >
         <form onSubmit={createLocker} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Número *</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Número *</label>
             <input
               className="input-field"
               value={createForm.number}
@@ -289,7 +289,7 @@ export default function CasillerosPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sección</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sección</label>
             <input
               className="input-field"
               value={createForm.section}
@@ -320,17 +320,17 @@ export default function CasillerosPage() {
       >
         {selectedLocker && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3">
               <div>
                 <p className="text-sm text-gray-500">
                   Estado:{" "}
                   <span
                     className={`font-semibold ${
                       selectedLocker.status === "AVAILABLE"
-                        ? "text-emerald-600"
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : selectedLocker.status === "ASSIGNED"
-                          ? "text-blue-600"
-                          : "text-amber-600"
+                          ? "text-blue-600 dark:text-blue-400"
+                          : "text-amber-600 dark:text-amber-400"
                     }`}
                   >
                     {selectedLocker.status === "AVAILABLE"
@@ -341,18 +341,18 @@ export default function CasillerosPage() {
                   </span>
                 </p>
                 {selectedLocker.section && (
-                  <p className="text-sm text-gray-500">Sección: {selectedLocker.section}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Sección: {selectedLocker.section}</p>
                 )}
               </div>
             </div>
 
             {selectedLocker.status === "AVAILABLE" && (
               <div className="space-y-3">
-                <h4 className="font-medium text-gray-700">Asignar a miembro</h4>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300">Asignar a miembro</h4>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Buscar miembro</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Buscar miembro</label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                     <input
                       className="input-field pl-10"
                       placeholder="Nombre, email o teléfono..."
@@ -370,12 +370,12 @@ export default function CasillerosPage() {
                         onClick={() => setAssignMemberId(String(m.id))}
                         className={`w-full text-left p-2 rounded-lg border transition-colors ${
                           assignMemberId === String(m.id)
-                            ? "border-indigo-300 bg-indigo-50"
-                            : "border-gray-200 hover:bg-gray-50"
+                            ? "border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30"
+                            : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                         }`}
                       >
                         <span className="font-medium">{m.customer.name}</span>
-                        <span className="text-sm text-gray-500 ml-2">
+                        <span className="text-sm text-gray-500 dark:text-gray-400 ml-2">
                           {m.customer.email || m.customer.phone || ""}
                         </span>
                       </button>
@@ -386,7 +386,7 @@ export default function CasillerosPage() {
                   </div>
                 )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Cuota mensual (opcional)
                   </label>
                   <input
@@ -410,16 +410,16 @@ export default function CasillerosPage() {
 
             {selectedLocker.status === "ASSIGNED" && selectedLocker.currentAssignment && (
               <div className="space-y-3">
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <p className="text-sm text-gray-600">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     <span className="font-medium">Miembro:</span>{" "}
                     {selectedLocker.currentAssignment.member.customer.name}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     <span className="font-medium">Desde:</span>{" "}
                     {formatDate(selectedLocker.currentAssignment.startDate)}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
                     <span className="font-medium">Cuota mensual:</span>{" "}
                     {formatCurrency(selectedLocker.currentAssignment.monthlyFee)}
                   </p>
