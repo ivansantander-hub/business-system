@@ -12,15 +12,15 @@ interface DashboardData {
   openOrders?: number;
   lowStockCount: number;
   salesByDay: { date: string; total: number }[];
-  recentInvoices: { id: number; number: string; total: string; date: string; customer: { name: string } | null }[];
-  lowStockProducts: { id: number; name: string; stock: string; min_stock: string }[];
+  recentInvoices: { id: string; number: string; total: string; date: string; customer: { name: string } | null }[];
+  lowStockProducts: { id: string; name: string; stock: string; min_stock: string }[];
   gym?: {
     totalMembers: number;
     activeMembers: number;
     todayCheckIns: number;
     activeMemberships: number;
     activeDayPasses: number;
-    expiringMemberships: { id: number; memberName: string; planName: string; endDate: string }[];
+    expiringMemberships: { id: string; memberName: string; planName: string; endDate: string }[];
     checkInsByDay: { date: string; entries: number }[];
   };
 }

@@ -7,7 +7,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const { id } = await params;
-  const existing = await prisma.restaurantTable.findFirst({ where: { id: Number(id), companyId } });
+  const existing = await prisma.restaurantTable.findFirst({ where: { id, companyId } });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   const body = await request.json();
@@ -28,7 +28,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const { id } = await params;
-  const existing = await prisma.restaurantTable.findFirst({ where: { id: Number(id), companyId } });
+  const existing = await prisma.restaurantTable.findFirst({ where: { id, companyId } });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   await prisma.restaurantTable.delete({ where: { id: existing.id } });

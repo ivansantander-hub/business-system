@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   }
 
   const assignment = await prisma.userCompany.findUnique({
-    where: { userId_companyId: { userId, companyId: Number(companyId) } },
+    where: { userId_companyId: { userId, companyId } },
     include: {
       company: { select: { id: true, name: true, isActive: true } },
       user: { select: { name: true } },

@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const type = searchParams.get("type");
 
   const where: Record<string, unknown> = { companyId };
-  if (productId) where.productId = Number(productId);
+  if (productId) where.productId = productId;
   if (type) where.type = type;
 
   const movements = await prisma.inventoryMovement.findMany({
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   const product = await prisma.product.findFirst({
-    where: { id: Number(body.productId), companyId },
+    where: { id: body.productId, companyId },
   });
   if (!product) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     prisma.inventoryMovement.create({
       data: {
         companyId,
-        productId: Number(body.productId),
+        productId: body.productId,
         userId,
         type: body.type,
         quantity: Number(body.quantity),
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       include: { product: { select: { name: true } }, user: { select: { name: true } } },
     }),
     prisma.product.updateMany({
-      where: { id: Number(body.productId), companyId },
+      where: { id: body.productId, companyId },
       data: { stock: newStock },
     }),
   ]);

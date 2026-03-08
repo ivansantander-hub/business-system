@@ -6,9 +6,9 @@ import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
 
-interface Product { id: number; name: string; stock: string; minStock: string; unit: string; }
+interface Product { id: string; name: string; stock: string; minStock: string; unit: string; }
 interface Movement {
-  id: number; type: string; quantity: string; previousStock: string; newStock: string;
+  id: string; type: string; quantity: string; previousStock: string; newStock: string;
   reason: string | null; createdAt: string;
   product: { name: string }; user: { name: string };
 }

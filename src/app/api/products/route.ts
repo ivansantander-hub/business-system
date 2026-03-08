@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       { barcode: { contains: search, mode: "insensitive" } },
     ];
   }
-  if (categoryId) where.categoryId = Number(categoryId);
+  if (categoryId) where.categoryId = categoryId;
   if (active !== null && active !== "") where.isActive = active === "true";
 
   const products = await prisma.product.findMany({
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
         name: body.name,
         description: body.description || null,
         barcode: body.barcode || null,
-        categoryId: body.categoryId ? Number(body.categoryId) : null,
+        categoryId: body.categoryId || null,
         unit: body.unit || "unidad",
         costPrice: Number(body.costPrice) || 0,
         salePrice: Number(body.salePrice) || 0,

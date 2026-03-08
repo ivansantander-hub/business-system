@@ -6,7 +6,7 @@ import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
 
-interface Customer { id: number; name: string; nit: string | null; phone: string | null; email: string | null; address: string | null; creditLimit: string; balance: string; }
+interface Customer { id: string; name: string; nit: string | null; phone: string | null; email: string | null; address: string | null; creditLimit: string; balance: string; }
 
 const emptyForm = { name: "", nit: "", phone: "", email: "", address: "", creditLimit: "0" };
 
@@ -39,7 +39,7 @@ export default function ClientesPage() {
     if (res.ok) { setShowModal(false); load(); setToast({ message: editing ? "Actualizado" : "Creado", type: "success" }); }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     if (!confirm("¿Desactivar este cliente?")) return;
     await fetch(`/api/customers/${id}`, { method: "DELETE" });
     load(); setToast({ message: "Cliente desactivado", type: "success" });

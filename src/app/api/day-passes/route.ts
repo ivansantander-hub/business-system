@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     where.date = dateFilter;
   }
 
-  if (memberId) where.memberId = Number(memberId);
+  if (memberId) where.memberId = memberId;
   if (status) where.status = status;
 
   const dayPasses = await prisma.dayPass.findMany({
@@ -56,11 +56,11 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { guestName, price, totalEntries } = body;
-  let resolvedMemberId: number | null = body.memberId ? Number(body.memberId) : null;
-  let resolvedCustomerId: number | null = null;
+  let resolvedMemberId: string | null = body.memberId ? body.memberId : null;
+  let resolvedCustomerId: string | null = null;
 
   if (body.customerId && !resolvedMemberId) {
-    const customerId = Number(body.customerId);
+    const customerId = body.customerId;
     resolvedCustomerId = customerId;
     let gymMember = await prisma.gymMember.findFirst({
       where: { companyId, customerId },
@@ -143,7 +143,7 @@ export async function PUT(request: Request) {
   }
 
   const dayPass = await prisma.dayPass.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
   });
 
   if (!dayPass) {
@@ -157,7 +157,7 @@ export async function PUT(request: Request) {
     const newUsed = dayPass.usedEntries + 1;
     const newStatus = newUsed >= dayPass.totalEntries ? "USED" : "ACTIVE";
     const updated = await prisma.dayPass.update({
-      where: { id: Number(id) },
+      where: { id },
       data: { usedEntries: newUsed, status: newStatus },
     });
     return NextResponse.json({
@@ -169,7 +169,7 @@ export async function PUT(request: Request) {
 
   if (action === "expire") {
     await prisma.dayPass.update({
-      where: { id: Number(id) },
+      where: { id },
       data: { status: "EXPIRED" },
     });
     return NextResponse.json({ success: true, status: "EXPIRED" });

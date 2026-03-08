@@ -28,7 +28,7 @@ function getDateForDayOfWeek(dayOfWeek: number): string {
 }
 
 interface GymClass {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   dayOfWeek: number;
@@ -36,21 +36,21 @@ interface GymClass {
   endTime: string;
   maxCapacity: number;
   room: string | null;
-  trainer: { id: number; name: string } | null;
+  trainer: { id: string; name: string } | null;
   _count: { enrollments: number };
   enrollmentCountForDate?: number;
-  enrollmentsForDate?: { id: number; status: string; member: { customer: { name: string; email: string } } }[];
+  enrollmentsForDate?: { id: string; status: string; member: { customer: { name: string; email: string } } }[];
 }
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
 }
 
 interface GymMember {
-  id: number;
+  id: string;
   customer: { name: string; email: string };
 }
 
@@ -123,7 +123,7 @@ export default function ClasesPage() {
       body: JSON.stringify({
         name: classForm.name,
         description: classForm.description || undefined,
-        trainerId: classForm.trainerId ? Number(classForm.trainerId) : undefined,
+        trainerId: classForm.trainerId || undefined,
         dayOfWeek: Number(classForm.dayOfWeek),
         startTime: classForm.startTime,
         endTime: classForm.endTime,
@@ -147,7 +147,7 @@ export default function ClasesPage() {
     setShowDetailModal(true);
   }
 
-  async function handleEnroll(memberId: number) {
+  async function handleEnroll(memberId: string) {
     if (!selectedClass) return;
     const res = await fetch("/api/gym-classes", {
       method: "PUT",
@@ -172,7 +172,7 @@ export default function ClasesPage() {
     }
   }
 
-  async function handleAttendance(enrollmentId: number, status: "ATTENDED" | "ABSENT") {
+  async function handleAttendance(enrollmentId: string, status: "ATTENDED" | "ABSENT") {
     const res = await fetch("/api/gym-classes", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

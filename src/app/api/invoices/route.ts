@@ -47,8 +47,8 @@ export async function POST(request: Request) {
       paymentMethod: body.paymentMethod || "CASH",
       paidAmount: body.paidAmount ? Number(body.paidAmount) : undefined,
       discount: body.discount ? Number(body.discount) : 0,
-      customerId: body.customerId ? Number(body.customerId) : null,
-      orderId: body.orderId ? Number(body.orderId) : null,
+      customerId: body.customerId || null,
+      orderId: body.orderId || null,
       notes: body.notes || null,
     });
 

@@ -7,12 +7,12 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Invoice {
-  id: number; number: string; date: string; subtotal: string; tax: string; taxRate: string;
+  id: string; number: string; date: string; subtotal: string; tax: string; taxRate: string;
   discount: string; total: string; paidAmount: string; changeAmount: string;
   paymentMethod: string; status: string; notes: string | null; createdAt: string;
   customer: { name: string; nit: string | null } | null;
   user: { name: string };
-  items: { id: number; productName: string; quantity: string; unitPrice: string; total: string }[];
+  items: { id: string; productName: string; quantity: string; unitPrice: string; total: string }[];
 }
 
 export default function FacturasPage() {
@@ -38,7 +38,7 @@ export default function FacturasPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  async function cancelInvoice(id: number) {
+  async function cancelInvoice(id: string) {
     if (!confirm("¿Anular esta factura? Se restaurará el inventario.")) return;
     const res = await fetch(`/api/invoices/${id}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },

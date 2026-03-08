@@ -82,10 +82,10 @@ export async function POST(request: Request) {
     });
     if (!plan) return NextResponse.json({ error: "Plan no encontrado" }, { status: 404 });
 
-    let memberId = body.memberId ? Number(body.memberId) : null;
+    let memberId = body.memberId ? body.memberId : null;
 
     if (body.customerId && !memberId) {
-      const customerId = Number(body.customerId);
+      const customerId = body.customerId;
       let gymMember = await prisma.gymMember.findFirst({
         where: { companyId, customerId },
       });

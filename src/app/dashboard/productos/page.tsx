@@ -7,12 +7,12 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
 
 interface Product {
-  id: number; name: string; description: string | null; barcode: string | null;
-  categoryId: number | null; category: { id: number; name: string } | null;
+  id: string; name: string; description: string | null; barcode: string | null;
+  categoryId: string | null; category: { id: string; name: string } | null;
   unit: string; costPrice: string; salePrice: string; stock: string; minStock: string;
   isActive: boolean;
 }
-interface Category { id: number; name: string; }
+interface Category { id: string; name: string; }
 
 const emptyForm = { name: "", description: "", barcode: "", categoryId: "", unit: "unidad", costPrice: "", salePrice: "", stock: "0", minStock: "5" };
 
@@ -73,7 +73,7 @@ export default function ProductosPage() {
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     if (!confirm("¿Desactivar este producto?")) return;
     await fetch(`/api/products/${id}`, { method: "DELETE" });
     load();

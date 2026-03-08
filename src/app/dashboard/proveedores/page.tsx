@@ -5,7 +5,7 @@ import { Truck, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 
-interface Supplier { id: number; name: string; nit: string | null; contactName: string | null; phone: string | null; email: string | null; address: string | null; }
+interface Supplier { id: string; name: string; nit: string | null; contactName: string | null; phone: string | null; email: string | null; address: string | null; }
 
 const emptyForm = { name: "", nit: "", contactName: "", phone: "", email: "", address: "" };
 
@@ -38,7 +38,7 @@ export default function ProveedoresPage() {
     if (res.ok) { setShowModal(false); load(); setToast({ message: editing ? "Actualizado" : "Creado", type: "success" }); }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     if (!confirm("¿Desactivar proveedor?")) return;
     await fetch(`/api/suppliers/${id}`, { method: "DELETE" });
     load(); setToast({ message: "Proveedor desactivado", type: "success" });

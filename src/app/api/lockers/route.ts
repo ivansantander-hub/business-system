@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const section = searchParams.get("section");
 
-  const where: { companyId: number; section?: string } = { companyId };
+  const where: { companyId: string; section?: string } = { companyId };
   if (section) where.section = section;
 
   const lockers = await prisma.locker.findMany({
@@ -73,14 +73,14 @@ export async function PUT(request: Request) {
 
     const [locker, assignment] = await prisma.$transaction([
       prisma.locker.update({
-        where: { id: Number(lockerId), companyId },
+        where: { id: lockerId, companyId },
         data: { status: "ASSIGNED" },
       }),
       prisma.lockerAssignment.create({
         data: {
           companyId,
-          lockerId: Number(lockerId),
-          memberId: Number(memberId),
+          lockerId,
+          memberId,
           startDate: now,
           monthlyFee: monthlyFee != null ? Number(monthlyFee) : 0,
         },
@@ -96,7 +96,7 @@ export async function PUT(request: Request) {
 
     const currentAssignment = await prisma.lockerAssignment.findFirst({
       where: {
-        lockerId: Number(lockerId),
+        lockerId,
         companyId,
         OR: [{ endDate: null }, { endDate: { gte: now } }],
       },
@@ -111,7 +111,7 @@ export async function PUT(request: Request) {
         data: { endDate: now },
       }),
       prisma.locker.update({
-        where: { id: Number(lockerId), companyId },
+        where: { id: lockerId, companyId },
         data: { status: "AVAILABLE" },
       }),
     ]);
@@ -123,7 +123,7 @@ export async function PUT(request: Request) {
     if (!lockerId) return NextResponse.json({ error: "lockerId requerido" }, { status: 400 });
 
     const locker = await prisma.locker.update({
-      where: { id: Number(lockerId), companyId },
+      where: { id: lockerId, companyId },
       data: { status: "MAINTENANCE" },
     });
     return NextResponse.json(locker);
@@ -134,7 +134,7 @@ export async function PUT(request: Request) {
     if (!lockerId) return NextResponse.json({ error: "lockerId requerido" }, { status: 400 });
 
     const locker = await prisma.locker.update({
-      where: { id: Number(lockerId), companyId },
+      where: { id: lockerId, companyId },
       data: { status: "AVAILABLE" },
     });
     return NextResponse.json(locker);
@@ -145,7 +145,7 @@ export async function PUT(request: Request) {
     if (!lockerId) return NextResponse.json({ error: "lockerId requerido" }, { status: 400 });
 
     const locker = await prisma.locker.update({
-      where: { id: Number(lockerId), companyId },
+      where: { id: lockerId, companyId },
       data: {
         ...(number != null && { number: String(number) }),
         ...(section !== undefined && { section: section || null }),

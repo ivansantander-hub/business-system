@@ -5,20 +5,20 @@ import { Dumbbell, Calendar, Mail, User } from "lucide-react";
 import Link from "next/link";
 
 interface UserItem {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
 }
 
 interface GymClass {
-  id: number;
+  id: string;
   name: string;
   dayOfWeek: number;
   startTime: string;
   endTime: string;
   room: string | null;
-  trainerId: number | null;
+  trainerId: string | null;
 }
 
 const DAY_LABELS: Record<number, string> = {
@@ -58,7 +58,7 @@ export default function EntrenadoresPage() {
 
   const trainers = users.filter((u) => u.role === "TRAINER");
 
-  function getClassesForTrainer(trainerId: number) {
+  function getClassesForTrainer(trainerId: string) {
     return classes.filter((c) => c.trainerId === trainerId);
   }
 

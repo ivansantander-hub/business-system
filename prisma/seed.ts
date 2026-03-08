@@ -98,7 +98,7 @@ async function main() {
   const catPostres = await prisma.category.findFirst({ where: { companyId, name: "Postres" } });
   const catServicios = await prisma.category.findFirst({ where: { companyId, name: "Servicios" } });
 
-  const catMap: Record<string, number | null> = {
+  const catMap: Record<string, string | null> = {
     "Hamburguesa Clásica": catAlimentos?.id ?? null,
     "Pizza Mediana": catAlimentos?.id ?? null,
     "Ensalada César": catAlimentos?.id ?? null,

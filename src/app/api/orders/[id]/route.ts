@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const order = await prisma.order.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     include: {
       table: true,
       customer: true,
@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const body = await request.json();
 
   const existing = await prisma.order.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     select: { id: true, tableId: true, status: true },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });

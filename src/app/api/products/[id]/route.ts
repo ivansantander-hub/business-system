@@ -8,7 +8,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
   const product = await prisma.product.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     include: { category: true },
   });
   if (!product) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -21,19 +21,19 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const existing = await prisma.product.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   try {
     const body = await request.json();
     const product = await prisma.product.update({
-      where: { id: Number(id) },
+      where: { id },
       data: {
         name: body.name,
         description: body.description || null,
         barcode: body.barcode || null,
-        categoryId: body.categoryId ? Number(body.categoryId) : null,
+        categoryId: body.categoryId || null,
         unit: body.unit,
         costPrice: Number(body.costPrice),
         salePrice: Number(body.salePrice),
@@ -56,7 +56,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const result = await prisma.product.updateMany({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     data: { isActive: false },
   });
   if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });

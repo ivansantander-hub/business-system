@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const memberId = searchParams.get("memberId");
 
-  const where: { companyId: number; memberId?: number } = { companyId };
-  if (memberId) where.memberId = Number(memberId);
+  const where: { companyId: string; memberId?: string } = { companyId };
+  if (memberId) where.memberId = memberId;
 
   const measurements = await prisma.bodyMeasurement.findMany({
     where,
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const measurement = await prisma.bodyMeasurement.create({
     data: {
       companyId,
-      memberId: Number(memberId),
+      memberId,
       measuredById: userId,
       weight: weight != null ? Number(weight) : undefined,
       height: height != null ? Number(height) : undefined,

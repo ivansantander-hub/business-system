@@ -10,7 +10,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const company = await prisma.company.findUnique({
-    where: { id: Number(id) },
+    where: { id },
     include: {
       _count: { select: { userCompanies: true, products: true, invoices: true } },
     },
@@ -33,7 +33,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
     const body = await request.json();
     const company = await prisma.company.update({
-      where: { id: Number(id) },
+      where: { id },
       data: {
         name: body.name,
         legalName: body.legalName,
@@ -63,7 +63,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     await prisma.company.update({
-      where: { id: Number(id) },
+      where: { id },
       data: { isActive: false },
     });
     return NextResponse.json({ ok: true });

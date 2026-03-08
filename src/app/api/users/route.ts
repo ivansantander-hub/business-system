@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
   if (qsCompanyId) {
     const assignments = await prisma.userCompany.findMany({
-      where: { companyId: Number(qsCompanyId) },
+      where: { companyId: qsCompanyId },
       include: {
         user: {
           select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
@@ -121,11 +121,11 @@ export async function POST(request: Request) {
     }
 
     // SUPER_ADMIN: companyIds is an array of { companyId, role }
-    const companyAssignments: { companyId: number; role: string }[] = body.companyAssignments || [];
+    const companyAssignments: { companyId: string; role: string }[] = body.companyAssignments || [];
 
     if (companyAssignments.length === 0 && body.companyId) {
       companyAssignments.push({
-        companyId: Number(body.companyId),
+        companyId: body.companyId,
         role: body.role || "CASHIER",
       });
     }

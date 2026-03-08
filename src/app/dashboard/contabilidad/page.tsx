@@ -6,12 +6,12 @@ import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-interface Account { id: number; code: string; name: string; type: string; balance: string; }
+interface Account { id: string; code: string; name: string; type: string; balance: string; }
 interface JournalEntry {
-  id: number; date: string; description: string; reference: string | null;
-  lines: { id: number; debit: string; credit: string; description: string | null; account: { code: string; name: string } }[];
+  id: string; date: string; description: string; reference: string | null;
+  lines: { id: string; debit: string; credit: string; description: string | null; account: { code: string; name: string } }[];
 }
-interface Expense { id: number; category: string; description: string; amount: string; date: string; paymentMethod: string; user: { name: string }; receiptNumber: string | null; }
+interface Expense { id: string; category: string; description: string; amount: string; date: string; paymentMethod: string; user: { name: string }; receiptNumber: string | null; }
 
 type Tab = "accounts" | "journal" | "expenses";
 

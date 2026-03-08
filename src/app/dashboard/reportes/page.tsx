@@ -65,7 +65,7 @@ export default function ReportesPage() {
       ) : (
         <>
           {reportType === "sales" && (() => {
-            const d = data as { summary: { total: number; tax: number; count: number }; invoices: { id: number; number: string; total: string; date: string; customer: { name: string } | null }[] };
+            const d = data as { summary: { total: number; tax: number; count: number }; invoices: { id: string; number: string; total: string; date: string; customer: { name: string } | null }[] };
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
@@ -82,7 +82,7 @@ export default function ReportesPage() {
           })()}
 
           {reportType === "inventory" && (() => {
-            const d = data as { summary: { totalProducts: number; totalValue: number; totalSaleValue: number }; products: { id: number; name: string; stock: string; costPrice: string; salePrice: string; category: { name: string } | null }[] };
+            const d = data as { summary: { totalProducts: number; totalValue: number; totalSaleValue: number }; products: { id: string; name: string; stock: string; costPrice: string; salePrice: string; category: { name: string } | null }[] };
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">

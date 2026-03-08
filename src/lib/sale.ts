@@ -2,39 +2,34 @@ import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/accounting";
 
 interface SaleItem {
-  productId?: number | null;
+  productId?: string | null;
   productName: string;
   quantity: number;
   unitPrice: number;
 }
 
 interface CreateSaleParams {
-  companyId: number;
-  userId: number;
+  companyId: string;
+  userId: string;
   items: SaleItem[];
   paymentMethod: string;
   paidAmount?: number;
   discount?: number;
-  customerId?: number | null;
-  orderId?: number | null;
+  customerId?: string | null;
+  orderId?: string | null;
   notes?: string | null;
 }
 
 interface SaleResult {
   invoice: {
-    id: number;
+    id: string;
     number: string;
     total: number;
     [key: string]: unknown;
   };
-  cashSession: { id: number };
+  cashSession: { id: string };
 }
 
-/**
- * Unified sale pipeline: validates cash session, creates invoice + items,
- * updates stock for physical products, updates cash session, and creates
- * the corresponding journal entry.
- */
 export async function createSale(params: CreateSaleParams): Promise<SaleResult> {
   const {
     companyId,
@@ -60,7 +55,7 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
     const total = Number(item.quantity) * Number(item.unitPrice);
     subtotal += total;
     return {
-      productId: item.productId ? Number(item.productId) : null,
+      productId: item.productId || null,
       productName: item.productName,
       quantity: Number(item.quantity),
       unitPrice: Number(item.unitPrice),
@@ -84,13 +79,13 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
     const invoiceCount = await tx.invoice.count({ where: { companyId } });
     const lastInvoice = await tx.invoice.findFirst({
       where: { companyId },
-      orderBy: { id: "desc" },
+      orderBy: { createdAt: "desc" },
       select: { number: true },
     });
 
     let nextNum = invoiceCount + 1;
     if (lastInvoice?.number) {
-      const numericPart = lastInvoice.number.replace(/\D/g, "");
+      const numericPart = lastInvoice.number.replaceAll(/\D/g, "");
       if (numericPart) {
         const parsed = Number.parseInt(numericPart, 10);
         if (parsed >= nextNum) nextNum = parsed + 1;
@@ -116,8 +111,8 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
     const inv = await tx.invoice.create({
       data: {
         companyId,
-        orderId: orderId ? Number(orderId) : null,
-        customerId: customerId ? Number(customerId) : null,
+        orderId: orderId || null,
+        customerId: customerId || null,
         userId,
         cashSessionId: cashSession.id,
         number: invoiceNumber,
@@ -179,7 +174,7 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
     }
 
     if (orderId) {
-      const order = await tx.order.findFirst({ where: { id: Number(orderId), companyId } });
+      const order = await tx.order.findFirst({ where: { id: orderId, companyId } });
       if (order) {
         await tx.order.update({ where: { id: order.id }, data: { status: "PAID" } });
         if (order.tableId) {

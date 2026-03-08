@@ -45,8 +45,8 @@ export async function POST(request: Request) {
         description: body.description,
         reference: body.reference || null,
         lines: {
-          create: body.lines.map((l: { accountId: number; debit: number; credit: number; description?: string }) => ({
-            accountId: Number(l.accountId),
+          create: body.lines.map((l: { accountId: string; debit: number; credit: number; description?: string }) => ({
+            accountId: l.accountId,
             debit: Number(l.debit) || 0,
             credit: Number(l.credit) || 0,
             description: l.description || null,
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     // Update account balances (accounts must belong to company)
     for (const line of body.lines) {
       const account = await tx.account.findFirst({
-        where: { id: Number(line.accountId), companyId },
+        where: { id: line.accountId, companyId },
       });
       if (!account) continue;
 

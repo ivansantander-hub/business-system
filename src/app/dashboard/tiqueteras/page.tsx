@@ -7,7 +7,7 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Customer {
-  id: number;
+  id: string;
   name: string;
   email: string | null;
   nit: string | null;
@@ -15,14 +15,14 @@ interface Customer {
 }
 
 interface DayPass {
-  id: number;
+  id: string;
   date: string;
   price: string;
   status: string;
   totalEntries: number;
   usedEntries: number;
   guestName: string | null;
-  member: { id: number; customer: Customer } | null;
+  member: { id: string; customer: Customer } | null;
 }
 
 function statusBadgeClass(status: string) {
@@ -87,7 +87,7 @@ export default function TiqueterasPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        customerId: form.customerId ? Number(form.customerId) : undefined,
+        customerId: form.customerId || undefined,
         guestName: form.guestName.trim() || undefined,
         price: Number(form.price) || 0,
         totalEntries: Number(form.totalEntries) || 1,

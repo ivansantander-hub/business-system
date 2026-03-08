@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       code: body.code,
       name: body.name,
       type: body.type,
-      parentId: body.parentId ? Number(body.parentId) : null,
+      parentId: body.parentId || null,
     },
   });
   return NextResponse.json(account, { status: 201 });

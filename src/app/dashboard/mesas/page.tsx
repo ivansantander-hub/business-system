@@ -7,10 +7,10 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
 
 interface TableData {
-  id: number; number: string; capacity: number; section: string | null; status: string;
-  orders: { id: number; total: string; waiter: { name: string } | null; items: { product: { name: string }; quantity: string; total: string; status: string }[] }[];
+  id: string; number: string; capacity: number; section: string | null; status: string;
+  orders: { id: string; total: string; waiter: { name: string } | null; items: { product: { name: string }; quantity: string; total: string; status: string }[] }[];
 }
-interface Waiter { id: number; name: string; }
+interface Waiter { id: string; name: string; }
 
 export default function MesasPage() {
   const [tables, setTables] = useState<TableData[]>([]);
@@ -43,10 +43,10 @@ export default function MesasPage() {
     if (res.ok) { setShowCreate(false); load(); setToast({ message: "Mesa creada", type: "success" }); }
   }
 
-  async function createOrder(tableId: number) {
+  async function createOrder(tableId: string) {
     const res = await fetch("/api/orders", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tableId, type: "TABLE", waiterId: selectedWaiter ? Number(selectedWaiter) : undefined }),
+      body: JSON.stringify({ tableId, type: "TABLE", waiterId: selectedWaiter || undefined }),
     });
     if (res.ok) { load(); setToast({ message: "Orden abierta", type: "success" }); }
   }

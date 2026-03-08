@@ -16,12 +16,12 @@ interface JournalLineInput {
  */
 export async function createJournalEntry(
   tx: Tx,
-  companyId: number,
+  companyId: string,
   description: string,
   reference: string | null,
   lines: JournalLineInput[]
 ) {
-  const resolvedLines: { accountId: number; debit: number; credit: number; description: string | null }[] = [];
+  const resolvedLines: { accountId: string; debit: number; credit: number; description: string | null }[] = [];
 
   for (const line of lines) {
     const account = await tx.account.findFirst({

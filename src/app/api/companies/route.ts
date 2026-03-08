@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function seedCompanyDefaults(companyId: number, companyType: string = "RESTAURANT") {
+async function seedCompanyDefaults(companyId: string, companyType: string = "RESTAURANT") {
   const accounts = [
     { code: "1", name: "ACTIVO", type: "ASSET" as const },
     { code: "11", name: "Disponible", type: "ASSET" as const },

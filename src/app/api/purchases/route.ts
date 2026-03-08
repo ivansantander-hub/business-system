@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const total = Number(item.quantity) * Number(item.unitPrice);
     subtotal += total;
     return {
-      productId: Number(item.productId),
+      productId: item.productId,
       quantity: Number(item.quantity),
       unitPrice: Number(item.unitPrice),
       total,
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const purchase = await prisma.purchase.create({
     data: {
       companyId,
-      supplierId: Number(body.supplierId),
+      supplierId: body.supplierId,
       userId,
       number,
       date: new Date(),

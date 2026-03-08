@@ -9,7 +9,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
   const purchase = await prisma.purchase.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     include: {
       supplier: true,
       user: { select: { name: true } },
@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   if (body.status === "RECEIVED") {
     const purchase = await prisma.purchase.findFirst({
-      where: { id: Number(id), companyId },
+      where: { id, companyId },
       include: { items: true },
     });
     if (!purchase) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -64,7 +64,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
 
       await tx.purchase.update({
-        where: { id: Number(id) },
+        where: { id },
         data: { status: "RECEIVED" },
       });
 
@@ -85,11 +85,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   if (body.status === "CANCELLED") {
-    const existing = await prisma.purchase.findFirst({ where: { id: Number(id), companyId } });
+    const existing = await prisma.purchase.findFirst({ where: { id, companyId } });
     if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
     await prisma.purchase.update({
-      where: { id: Number(id) },
+      where: { id },
       data: { status: "CANCELLED" },
     });
     return NextResponse.json({ ok: true });

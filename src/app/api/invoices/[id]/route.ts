@@ -8,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const invoice = await prisma.invoice.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     include: {
       customer: true,
       user: { select: { name: true } },
@@ -29,7 +29,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   if (body.status === "CANCELLED") {
     const invoice = await prisma.invoice.findFirst({
-      where: { id: Number(id), companyId },
+      where: { id, companyId },
       include: { items: true },
     });
 
@@ -48,7 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
 
       await tx.invoice.update({
-        where: { id: Number(id) },
+        where: { id },
         data: { status: "CANCELLED" },
       });
     });

@@ -11,7 +11,7 @@ export async function GET(
 
   const { id } = await params;
   const member = await prisma.gymMember.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
     include: {
       customer: true,
       memberships: { include: { plan: true } },
@@ -35,7 +35,7 @@ export async function PUT(
 
   const { id } = await params;
   const existing = await prisma.gymMember.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
   });
 
   if (!existing) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
@@ -66,7 +66,7 @@ export async function PUT(
   }
 
   const member = await prisma.gymMember.update({
-    where: { id: Number(id) },
+    where: { id },
     data,
     include: {
       customer: { select: { id: true, name: true, email: true, phone: true } },

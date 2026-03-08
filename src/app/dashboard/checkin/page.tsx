@@ -6,7 +6,7 @@ import Toast from "@/components/ui/Toast";
 import { formatDateTime } from "@/lib/utils";
 
 interface CheckInRecord {
-  id: number;
+  id: string;
   timestamp: string;
   type: string;
   method: string;

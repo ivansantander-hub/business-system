@@ -19,7 +19,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 type TabType = "plans" | "memberships";
 
 interface MembershipPlan {
-  id: number;
+  id: string;
   name: string;
   durationDays: number;
   price: string;
@@ -30,7 +30,7 @@ interface MembershipPlan {
 }
 
 interface CustomerOption {
-  id: number;
+  id: string;
   name: string;
   nit: string | null;
   phone: string | null;
@@ -38,9 +38,9 @@ interface CustomerOption {
 }
 
 interface Membership {
-  id: number;
-  memberId: number;
-  planId: number;
+  id: string;
+  memberId: string;
+  planId: string;
   startDate: string;
   endDate: string;
   status: string;
@@ -203,8 +203,8 @@ export default function MembresiasPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create-membership",
-        customerId: Number(membershipForm.customerId),
-        planId: Number(membershipForm.planId),
+        customerId: membershipForm.customerId,
+        planId: membershipForm.planId,
         paymentMethod: membershipForm.paymentMethod,
         paidAmount: Number(membershipForm.paidAmount) || planPrice,
       }),

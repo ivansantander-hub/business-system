@@ -5,7 +5,7 @@ import { User, Building2, ChevronDown, Check, Sun, Moon } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 interface CompanyOption {
-  id: number;
+  id: string;
   name: string;
   role: string;
 }
@@ -13,7 +13,7 @@ interface CompanyOption {
 interface UserInfo {
   name: string;
   role: string;
-  companyId: number | null;
+  companyId: string | null;
   companyName?: string;
   companies?: CompanyOption[];
 }
@@ -42,7 +42,7 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  async function switchCompany(companyId: number) {
+  async function switchCompany(companyId: string) {
     if (companyId === user?.companyId) {
       setShowCompanyDropdown(false);
       return;

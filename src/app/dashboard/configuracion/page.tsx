@@ -11,7 +11,7 @@ export default function ConfiguracionPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showCashClose, setShowCashClose] = useState(false);
   const [closingAmount, setClosingAmount] = useState("");
-  const [cashSession, setCashSession] = useState<{ id: number; openingAmount: string; salesTotal: string; openedAt: string } | null>(null);
+  const [cashSession, setCashSession] = useState<{ id: string; openingAmount: string; salesTotal: string; openedAt: string } | null>(null);
 
   const load = useCallback(async () => {
     const [sRes, csRes] = await Promise.all([

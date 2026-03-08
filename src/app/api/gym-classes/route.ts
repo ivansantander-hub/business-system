@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const trainerId = searchParams.get("trainerId");
   const date = searchParams.get("date");
 
-  const where: { companyId: number; dayOfWeek?: number; trainerId?: number } = { companyId };
+  const where: { companyId: string; dayOfWeek?: number; trainerId?: string } = { companyId };
 
   if (dayOfWeek !== null && dayOfWeek !== undefined && dayOfWeek !== "") {
     const d = Number(dayOfWeek);
@@ -19,8 +19,7 @@ export async function GET(request: Request) {
   }
 
   if (trainerId) {
-    const t = Number(trainerId);
-    if (!Number.isNaN(t)) where.trainerId = t;
+    where.trainerId = trainerId;
   }
 
   const classes = await prisma.gymClass.findMany({
@@ -47,7 +46,7 @@ export async function GET(request: Request) {
       include: { member: { include: { customer: { select: { name: true, email: true } } } } },
     });
 
-    const byClass = new Map<number, (typeof enrollmentsForDate)[0][]>();
+    const byClass = new Map<string, (typeof enrollmentsForDate)[0][]>();
     for (const e of enrollmentsForDate) {
       const list = byClass.get(e.classId) || [];
       list.push(e);
@@ -80,7 +79,7 @@ export async function POST(request: Request) {
       companyId,
       name: body.name,
       description: body.description?.trim() || null,
-      trainerId: body.trainerId ? Number(body.trainerId) : null,
+      trainerId: body.trainerId || null,
       dayOfWeek,
       startTime: body.startTime || "09:00",
       endTime: body.endTime || "10:00",
@@ -110,12 +109,12 @@ export async function PUT(request: Request) {
     }
 
     const gymClass = await prisma.gymClass.findFirst({
-      where: { id: Number(classId), companyId },
+      where: { id: classId, companyId },
     });
     if (!gymClass) return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
 
     const member = await prisma.gymMember.findFirst({
-      where: { id: Number(memberId), companyId },
+      where: { id: memberId, companyId },
     });
     if (!member) return NextResponse.json({ error: "Miembro no encontrado" }, { status: 404 });
 
@@ -126,7 +125,7 @@ export async function PUT(request: Request) {
 
     const enrolledCount = await prisma.classEnrollment.count({
       where: {
-        classId: Number(classId),
+        classId,
         companyId,
         date: { gte: classDate, lt: nextDay },
         status: { not: "CANCELLED" },
@@ -139,8 +138,8 @@ export async function PUT(request: Request) {
 
     const existing = await prisma.classEnrollment.findFirst({
       where: {
-        classId: Number(classId),
-        memberId: Number(memberId),
+        classId,
+        memberId,
         companyId,
         date: { gte: classDate, lt: nextDay },
       },
@@ -152,8 +151,8 @@ export async function PUT(request: Request) {
     const enrollment = await prisma.classEnrollment.create({
       data: {
         companyId,
-        classId: Number(classId),
-        memberId: Number(memberId),
+        classId,
+        memberId,
         date: classDate,
         status: "ENROLLED",
       },
@@ -175,12 +174,12 @@ export async function PUT(request: Request) {
     }
 
     const existing = await prisma.classEnrollment.findFirst({
-      where: { id: Number(enrollmentId), companyId },
+      where: { id: enrollmentId, companyId },
     });
     if (!existing) return NextResponse.json({ error: "Inscripción no encontrada" }, { status: 404 });
 
     const enrollment = await prisma.classEnrollment.update({
-      where: { id: Number(enrollmentId) },
+      where: { id: enrollmentId },
       data: { status: enrollmentStatus },
       include: {
         member: { include: { customer: { select: { name: true } } } },
@@ -195,14 +194,14 @@ export async function PUT(request: Request) {
     if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
 
     const existing = await prisma.gymClass.findFirst({
-      where: { id: Number(id), companyId },
+      where: { id, companyId },
     });
     if (!existing) return NextResponse.json({ error: "Clase no encontrada" }, { status: 404 });
 
     const data: Record<string, unknown> = {};
     if (updates.name !== undefined) data.name = updates.name;
     if (updates.description !== undefined) data.description = updates.description?.trim() || null;
-    if (updates.trainerId !== undefined) data.trainerId = updates.trainerId ? Number(updates.trainerId) : null;
+    if (updates.trainerId !== undefined) data.trainerId = updates.trainerId || null;
     if (updates.dayOfWeek !== undefined) {
       const d = Number(updates.dayOfWeek);
       if (d >= 0 && d <= 6) data.dayOfWeek = d;
@@ -214,7 +213,7 @@ export async function PUT(request: Request) {
     if (updates.isActive !== undefined) data.isActive = Boolean(updates.isActive);
 
     const gymClass = await prisma.gymClass.update({
-      where: { id: Number(id) },
+      where: { id },
       data,
       include: {
         trainer: { select: { id: true, name: true } },

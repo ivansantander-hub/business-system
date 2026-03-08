@@ -6,7 +6,7 @@ import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 
 interface Company {
-  id: number;
+  id: string;
   name: string;
   legalName: string | null;
   nit: string;

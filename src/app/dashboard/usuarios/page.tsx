@@ -7,13 +7,13 @@ import Toast from "@/components/ui/Toast";
 import { formatDate } from "@/lib/utils";
 
 interface CompanyAssignment {
-  id: number;
+  id: string;
   name: string;
   role: string;
 }
 
 interface UserItem {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
@@ -23,12 +23,12 @@ interface UserItem {
 }
 
 interface CompanyOption {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface FormAssignment {
-  companyId: number;
+  companyId: string;
   companyName: string;
   role: string;
 }
@@ -84,7 +84,7 @@ export default function UsuariosPage() {
   }
 
   function addCompanyAssignment() {
-    const companyId = Number(selectedCompanyToAdd);
+    const companyId = selectedCompanyToAdd;
     if (!companyId) return;
     if (formAssignments.some((a) => a.companyId === companyId)) return;
     const company = allCompanies.find((c) => c.id === companyId);
@@ -97,11 +97,11 @@ export default function UsuariosPage() {
     setSelectedRoleToAdd("CASHIER");
   }
 
-  function removeAssignment(companyId: number) {
+  function removeAssignment(companyId: string) {
     setFormAssignments(formAssignments.filter((a) => a.companyId !== companyId));
   }
 
-  function updateAssignmentRole(companyId: number, role: string) {
+  function updateAssignmentRole(companyId: string, role: string) {
     setFormAssignments(
       formAssignments.map((a) =>
         a.companyId === companyId ? { ...a, role } : a

@@ -7,21 +7,21 @@ import Toast from "@/components/ui/Toast";
 import { formatDate } from "@/lib/utils";
 
 interface Customer {
-  id: number;
+  id: string;
   name: string;
   email: string | null;
   phone: string | null;
 }
 
 interface GymMember {
-  id: number;
+  id: string;
   customer: Customer;
   birthDate: string | null;
   gender: string | null;
 }
 
 interface BodyMeasurement {
-  id: number;
+  id: string;
   date: string;
   weight: string | null;
   height: string | null;
@@ -96,7 +96,7 @@ export default function MedidasPage() {
   const [form, setForm] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const loadMeasurements = useCallback(async (memberId: number) => {
+  const loadMeasurements = useCallback(async (memberId: string) => {
     const res = await fetch(`/api/body-measurements?memberId=${memberId}`);
     if (res.ok) setMeasurements(await res.json());
     else setMeasurements([]);

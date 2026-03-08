@@ -7,27 +7,27 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Customer {
-  id: number;
+  id: string;
   name: string;
   email?: string | null;
   phone?: string | null;
 }
 
 interface GymMember {
-  id: number;
+  id: string;
   customer: Customer;
 }
 
 interface LockerAssignment {
-  id: number;
-  memberId: number;
+  id: string;
+  memberId: string;
   member: GymMember;
   startDate: string;
   monthlyFee: string;
 }
 
 interface Locker {
-  id: number;
+  id: string;
   number: string;
   section: string | null;
   status: string;
@@ -117,7 +117,7 @@ export default function CasillerosPage() {
       body: JSON.stringify({
         action: "assign",
         lockerId: selectedLocker.id,
-        memberId: Number(assignMemberId),
+        memberId: assignMemberId,
         monthlyFee: assignFee ? Number(assignFee) : 0,
       }),
     });

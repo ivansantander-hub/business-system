@@ -7,12 +7,12 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Purchase {
-  id: number; number: string; date: string; subtotal: string; tax: string; total: string; status: string; notes: string | null;
+  id: string; number: string; date: string; subtotal: string; tax: string; total: string; status: string; notes: string | null;
   supplier: { name: string }; user: { name: string };
-  items: { id: number; quantity: string; unitPrice: string; total: string; product: { name: string } }[];
+  items: { id: string; quantity: string; unitPrice: string; total: string; product: { name: string } }[];
 }
-interface Supplier { id: number; name: string; }
-interface Product { id: number; name: string; costPrice: string; }
+interface Supplier { id: string; name: string; }
+interface Product { id: string; name: string; costPrice: string; }
 
 export default function ComprasPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -65,7 +65,7 @@ export default function ComprasPage() {
     if (res.ok) { setShowCreate(false); load(); setToast({ message: "Orden de compra creada", type: "success" }); }
   }
 
-  async function updateStatus(id: number, status: string) {
+  async function updateStatus(id: string, status: string) {
     const msg = status === "RECEIVED" ? "¿Marcar como recibida? Se actualizará el inventario." : "¿Cancelar esta orden?";
     if (!confirm(msg)) return;
     const res = await fetch(`/api/purchases/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status }) });

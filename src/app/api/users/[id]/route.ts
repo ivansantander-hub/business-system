@@ -10,7 +10,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const { id } = await params;
-  const userId = Number(id);
+  const userId = id;
 
   if (role === "ADMIN") {
     if (companyId === null) {
@@ -45,7 +45,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (role === "SUPER_ADMIN" && body.companyAssignments) {
       await prisma.userCompany.deleteMany({ where: { userId } });
-      const assignments: { companyId: number; role: string }[] = body.companyAssignments;
+      const assignments: { companyId: string; role: string }[] = body.companyAssignments;
       if (assignments.length > 0) {
         await prisma.userCompany.createMany({
           data: assignments.map((a) => ({
@@ -77,7 +77,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   const { id } = await params;
-  const userId = Number(id);
+  const userId = id;
 
   if (role === "ADMIN") {
     if (companyId === null) {

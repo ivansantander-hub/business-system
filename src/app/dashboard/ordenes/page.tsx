@@ -7,12 +7,12 @@ import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface Order {
-  id: number; type: string; status: string; subtotal: string; tax: string; total: string; notes: string | null;
+  id: string; type: string; status: string; subtotal: string; tax: string; total: string; notes: string | null;
   createdAt: string; table: { number: string } | null; customer: { name: string } | null;
   user: { name: string }; waiter: { name: string } | null;
-  items: { id: number; productId: number; quantity: string; unitPrice: string; total: string; status: string; notes: string | null; product: { id: number; name: string; salePrice: string } }[];
+  items: { id: string; productId: string; quantity: string; unitPrice: string; total: string; status: string; notes: string | null; product: { id: string; name: string; salePrice: string } }[];
 }
-interface Product { id: number; name: string; salePrice: string; }
+interface Product { id: string; name: string; salePrice: string; }
 
 export default function OrdenesPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -72,7 +72,7 @@ export default function OrdenesPage() {
     }
   }
 
-  async function cancelOrder(id: number) {
+  async function cancelOrder(id: string) {
     if (!confirm("¿Cancelar esta orden?")) return;
     await updateOrderStatus(id, "CANCELLED", "Orden cancelada");
   }

@@ -38,10 +38,10 @@ export async function POST(request: Request) {
   const order = await prisma.order.create({
     data: {
       companyId,
-      tableId: body.tableId ? Number(body.tableId) : null,
-      customerId: body.customerId ? Number(body.customerId) : null,
+      tableId: body.tableId || null,
+      customerId: body.customerId || null,
       userId,
-      waiterId: body.waiterId ? Number(body.waiterId) : null,
+      waiterId: body.waiterId || null,
       type: body.type || "TABLE",
       notes: body.notes || null,
     },
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
   if (body.tableId) {
     await prisma.restaurantTable.update({
-      where: { id: Number(body.tableId) },
+      where: { id: body.tableId },
       data: { status: "OCCUPIED" },
     });
   }

@@ -8,14 +8,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const existing = await prisma.category.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
   try {
     const body = await request.json();
     const category = await prisma.category.update({
-      where: { id: Number(id) },
+      where: { id },
       data: { name: body.name, description: body.description },
     });
     return NextResponse.json(category);
@@ -31,10 +31,10 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const existing = await prisma.category.findFirst({
-    where: { id: Number(id), companyId },
+    where: { id, companyId },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  await prisma.category.delete({ where: { id: Number(id) } });
+  await prisma.category.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

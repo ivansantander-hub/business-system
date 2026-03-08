@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
 
   const where: {
-    companyId: number;
+    companyId: string;
     customer?: { OR: { name?: { contains: string; mode: "insensitive" }; email?: { contains: string; mode: "insensitive" } }[] };
     status?: "ACTIVE" | "INACTIVE" | "SUSPENDED";
   } = { companyId };
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const body = await request.json();
-  let customerId = body.customerId ? Number(body.customerId) : null;
+  let customerId = body.customerId ? body.customerId : null;
 
   if (customerId) {
     const existing = await prisma.customer.findFirst({

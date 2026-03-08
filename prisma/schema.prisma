@@ -187,7 +187,7 @@ enum LockerStatus {
 // =============================================
 
 model Company {
-  id         Int         @id @default(autoincrement())
+  id         String      @id @default(uuid())
   name       String
   legalName  String?     @map("legal_name")
   nit        String      @unique
@@ -227,7 +227,7 @@ model Company {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(uuid())
   name      String
   email     String   @unique
   password  String
@@ -251,10 +251,10 @@ model User {
 }
 
 model UserCompany {
-  id        Int     @id @default(autoincrement())
-  userId    Int     @map("user_id")
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyId Int     @map("company_id")
+  companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   role      Role    @default(CASHIER)
 
@@ -268,12 +268,12 @@ model UserCompany {
 // =============================================
 
 model Category {
-  id          Int        @id @default(autoincrement())
-  companyId   Int        @map("company_id")
+  id          String     @id @default(uuid())
+  companyId   String     @map("company_id")
   company     Company    @relation(fields: [companyId], references: [id])
   name        String
   description String?
-  parentId    Int?       @map("parent_id")
+  parentId    String?    @map("parent_id")
   parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryTree")
   products    Product[]
@@ -283,10 +283,10 @@ model Category {
 }
 
 model Product {
-  id          Int       @id @default(autoincrement())
-  companyId   Int       @map("company_id")
+  id          String    @id @default(uuid())
+  companyId   String    @map("company_id")
   company     Company   @relation(fields: [companyId], references: [id])
-  categoryId  Int?      @map("category_id")
+  categoryId  String?   @map("category_id")
   category    Category? @relation(fields: [categoryId], references: [id])
   name        String
   description String?
@@ -310,19 +310,19 @@ model Product {
 }
 
 model InventoryMovement {
-  id            Int          @id @default(autoincrement())
-  companyId     Int          @map("company_id")
+  id            String       @id @default(uuid())
+  companyId     String       @map("company_id")
   company       Company      @relation(fields: [companyId], references: [id])
-  productId     Int          @map("product_id")
+  productId     String       @map("product_id")
   product       Product      @relation(fields: [productId], references: [id])
-  userId        Int          @map("user_id")
+  userId        String       @map("user_id")
   user          User         @relation(fields: [userId], references: [id])
   type          MovementType
   quantity      Decimal
   previousStock Decimal      @map("previous_stock")
   newStock      Decimal      @map("new_stock")
   reason        String?
-  referenceId   Int?         @map("reference_id")
+  referenceId   String?      @map("reference_id")
   referenceType String?      @map("reference_type")
   createdAt     DateTime     @default(now()) @map("created_at")
 
@@ -331,8 +331,8 @@ model InventoryMovement {
 }
 
 model Supplier {
-  id          Int        @id @default(autoincrement())
-  companyId   Int        @map("company_id")
+  id          String     @id @default(uuid())
+  companyId   String     @map("company_id")
   company     Company    @relation(fields: [companyId], references: [id])
   name        String
   nit         String?
@@ -349,12 +349,12 @@ model Supplier {
 }
 
 model Purchase {
-  id           Int            @id @default(autoincrement())
-  companyId    Int            @map("company_id")
+  id           String         @id @default(uuid())
+  companyId    String         @map("company_id")
   company      Company        @relation(fields: [companyId], references: [id])
-  supplierId   Int            @map("supplier_id")
+  supplierId   String         @map("supplier_id")
   supplier     Supplier       @relation(fields: [supplierId], references: [id])
-  userId       Int            @map("user_id")
+  userId       String         @map("user_id")
   user         User           @relation(fields: [userId], references: [id])
   number       String         @unique
   date         DateTime       @default(now())
@@ -372,10 +372,10 @@ model Purchase {
 }
 
 model PurchaseItem {
-  id         Int      @id @default(autoincrement())
-  purchaseId Int      @map("purchase_id")
+  id         String   @id @default(uuid())
+  purchaseId String   @map("purchase_id")
   purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  productId  Int      @map("product_id")
+  productId  String   @map("product_id")
   product    Product  @relation(fields: [productId], references: [id])
   quantity   Decimal
   unitPrice  Decimal  @map("unit_price")
@@ -386,8 +386,8 @@ model PurchaseItem {
 }
 
 model Customer {
-  id          Int        @id @default(autoincrement())
-  companyId   Int        @map("company_id")
+  id          String     @id @default(uuid())
+  companyId   String     @map("company_id")
   company     Company    @relation(fields: [companyId], references: [id])
   name        String
   nit         String?
@@ -407,8 +407,8 @@ model Customer {
 }
 
 model RestaurantTable {
-  id        Int         @id @default(autoincrement())
-  companyId Int         @map("company_id")
+  id        String      @id @default(uuid())
+  companyId String      @map("company_id")
   company   Company     @relation(fields: [companyId], references: [id])
   number    String
   capacity  Int         @default(4)
@@ -422,16 +422,16 @@ model RestaurantTable {
 }
 
 model Order {
-  id         Int              @id @default(autoincrement())
-  companyId  Int              @map("company_id")
+  id         String           @id @default(uuid())
+  companyId  String           @map("company_id")
   company    Company          @relation(fields: [companyId], references: [id])
-  tableId    Int?             @map("table_id")
+  tableId    String?          @map("table_id")
   table      RestaurantTable? @relation(fields: [tableId], references: [id])
-  customerId Int?             @map("customer_id")
+  customerId String?          @map("customer_id")
   customer   Customer?        @relation(fields: [customerId], references: [id])
-  userId     Int              @map("user_id")
+  userId     String           @map("user_id")
   user       User             @relation("OrderUser", fields: [userId], references: [id])
-  waiterId   Int?             @map("waiter_id")
+  waiterId   String?          @map("waiter_id")
   waiter     User?            @relation("OrderWaiter", fields: [waiterId], references: [id])
   type       OrderType        @default(TABLE)
   status     OrderStatus      @default(OPEN)
@@ -450,10 +450,10 @@ model Order {
 }
 
 model OrderItem {
-  id        Int             @id @default(autoincrement())
-  orderId   Int             @map("order_id")
+  id        String          @id @default(uuid())
+  orderId   String          @map("order_id")
   order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId Int             @map("product_id")
+  productId String          @map("product_id")
   product   Product         @relation(fields: [productId], references: [id])
   quantity  Decimal
   unitPrice Decimal         @map("unit_price")
@@ -466,16 +466,16 @@ model OrderItem {
 }
 
 model Invoice {
-  id             Int           @id @default(autoincrement())
-  companyId      Int           @map("company_id")
+  id             String        @id @default(uuid())
+  companyId      String        @map("company_id")
   company        Company       @relation(fields: [companyId], references: [id])
-  orderId        Int?          @map("order_id")
+  orderId        String?       @map("order_id")
   order          Order?        @relation(fields: [orderId], references: [id])
-  customerId     Int?          @map("customer_id")
+  customerId     String?       @map("customer_id")
   customer       Customer?     @relation(fields: [customerId], references: [id])
-  userId         Int           @map("user_id")
+  userId         String        @map("user_id")
   user           User          @relation(fields: [userId], references: [id])
-  cashSessionId  Int?          @map("cash_session_id")
+  cashSessionId  String?       @map("cash_session_id")
   cashSession    CashSession?  @relation(fields: [cashSessionId], references: [id])
   number         String
   date           DateTime      @default(now())
@@ -498,10 +498,10 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id          Int      @id @default(autoincrement())
-  invoiceId   Int      @map("invoice_id")
+  id          String   @id @default(uuid())
+  invoiceId   String   @map("invoice_id")
   invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  productId   Int?     @map("product_id")
+  productId   String?  @map("product_id")
   product     Product? @relation(fields: [productId], references: [id])
   productName String   @map("product_name")
   quantity    Decimal
@@ -513,10 +513,10 @@ model InvoiceItem {
 }
 
 model CashSession {
-  id             Int               @id @default(autoincrement())
-  companyId      Int               @map("company_id")
+  id             String            @id @default(uuid())
+  companyId      String            @map("company_id")
   company        Company           @relation(fields: [companyId], references: [id])
-  userId         Int               @map("user_id")
+  userId         String            @map("user_id")
   user           User              @relation(fields: [userId], references: [id])
   openingAmount  Decimal           @default(0) @map("opening_amount")
   closingAmount  Decimal?          @map("closing_amount")
@@ -533,13 +533,13 @@ model CashSession {
 }
 
 model Account {
-  id           Int           @id @default(autoincrement())
-  companyId    Int           @map("company_id")
+  id           String        @id @default(uuid())
+  companyId    String        @map("company_id")
   company      Company       @relation(fields: [companyId], references: [id])
   code         String
   name         String
   type         AccountType
-  parentId     Int?          @map("parent_id")
+  parentId     String?       @map("parent_id")
   parent       Account?      @relation("AccountTree", fields: [parentId], references: [id])
   children     Account[]     @relation("AccountTree")
   balance      Decimal       @default(0)
@@ -552,8 +552,8 @@ model Account {
 }
 
 model JournalEntry {
-  id          Int           @id @default(autoincrement())
-  companyId   Int           @map("company_id")
+  id          String        @id @default(uuid())
+  companyId   String        @map("company_id")
   company     Company       @relation(fields: [companyId], references: [id])
   date        DateTime      @default(now())
   description String
@@ -566,10 +566,10 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id          Int          @id @default(autoincrement())
-  entryId     Int          @map("entry_id")
+  id          String       @id @default(uuid())
+  entryId     String       @map("entry_id")
   entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  accountId   Int          @map("account_id")
+  accountId   String       @map("account_id")
   account     Account      @relation(fields: [accountId], references: [id])
   debit       Decimal      @default(0)
   credit      Decimal      @default(0)
@@ -580,15 +580,15 @@ model JournalLine {
 }
 
 model Expense {
-  id            Int           @id @default(autoincrement())
-  companyId     Int           @map("company_id")
+  id            String        @id @default(uuid())
+  companyId     String        @map("company_id")
   company       Company       @relation(fields: [companyId], references: [id])
   category      String
   description   String
   amount        Decimal
   date          DateTime      @default(now())
   paymentMethod PaymentMethod @default(CASH) @map("payment_method")
-  userId        Int           @map("user_id")
+  userId        String        @map("user_id")
   user          User          @relation(fields: [userId], references: [id])
   receiptNumber String?       @map("receipt_number")
   notes         String?
@@ -599,8 +599,8 @@ model Expense {
 }
 
 model Setting {
-  id        Int     @id @default(autoincrement())
-  companyId Int     @map("company_id")
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
   company   Company @relation(fields: [companyId], references: [id])
   key       String
   value     String
@@ -615,8 +615,8 @@ model Setting {
 // =============================================
 
 model MembershipPlan {
-  id           Int      @id @default(autoincrement())
-  companyId    Int      @map("company_id")
+  id           String   @id @default(uuid())
+  companyId    String   @map("company_id")
   company      Company  @relation(fields: [companyId], references: [id])
   name         String
   durationDays Int      @map("duration_days")
@@ -633,10 +633,10 @@ model MembershipPlan {
 }
 
 model GymMember {
-  id               Int             @id @default(autoincrement())
-  companyId        Int             @map("company_id")
+  id               String          @id @default(uuid())
+  companyId        String          @map("company_id")
   company          Company         @relation(fields: [companyId], references: [id])
-  customerId       Int             @unique @map("customer_id")
+  customerId       String          @unique @map("customer_id")
   customer         Customer        @relation(fields: [customerId], references: [id])
   emergencyContact String?         @map("emergency_contact")
   emergencyPhone   String?         @map("emergency_phone")
@@ -661,17 +661,17 @@ model GymMember {
 }
 
 model Membership {
-  id            Int                     @id @default(autoincrement())
-  companyId     Int                     @map("company_id")
-  memberId      Int                     @map("member_id")
+  id            String                  @id @default(uuid())
+  companyId     String                  @map("company_id")
+  memberId      String                  @map("member_id")
   member        GymMember               @relation(fields: [memberId], references: [id])
-  planId        Int                     @map("plan_id")
+  planId        String                  @map("plan_id")
   plan          MembershipPlan          @relation(fields: [planId], references: [id])
   startDate     DateTime                @map("start_date")
   endDate       DateTime                @map("end_date")
   status        MembershipStatus        @default(ACTIVE)
   paymentStatus MembershipPaymentStatus @default(PENDING) @map("payment_status")
-  invoiceId     Int?                    @map("invoice_id")
+  invoiceId     String?                 @map("invoice_id")
   notes         String?
   createdAt     DateTime                @default(now()) @map("created_at")
 
@@ -680,14 +680,14 @@ model Membership {
 }
 
 model CheckIn {
-  id        Int           @id @default(autoincrement())
-  companyId Int           @map("company_id")
-  memberId  Int           @map("member_id")
+  id        String        @id @default(uuid())
+  companyId String        @map("company_id")
+  memberId  String        @map("member_id")
   member    GymMember     @relation(fields: [memberId], references: [id])
   timestamp DateTime      @default(now())
   type      CheckInType
   method    CheckInMethod
-  dayPassId Int?          @map("day_pass_id")
+  dayPassId String?       @map("day_pass_id")
   notes     String?
 
   @@schema("tenant")
@@ -695,10 +695,10 @@ model CheckIn {
 }
 
 model DayPass {
-  id           Int           @id @default(autoincrement())
-  companyId    Int           @map("company_id")
+  id           String        @id @default(uuid())
+  companyId    String        @map("company_id")
   company      Company       @relation(fields: [companyId], references: [id])
-  memberId     Int?          @map("member_id")
+  memberId     String?       @map("member_id")
   member       GymMember?    @relation(fields: [memberId], references: [id])
   guestName    String?       @map("guest_name")
   date         DateTime      @default(now())
@@ -706,7 +706,7 @@ model DayPass {
   totalEntries Int           @default(1) @map("total_entries")
   usedEntries  Int           @default(0) @map("used_entries")
   status       DayPassStatus @default(ACTIVE)
-  invoiceId    Int?          @map("invoice_id")
+  invoiceId    String?       @map("invoice_id")
   createdAt    DateTime      @default(now()) @map("created_at")
 
   @@schema("tenant")
@@ -714,12 +714,12 @@ model DayPass {
 }
 
 model GymClass {
-  id          Int      @id @default(autoincrement())
-  companyId   Int      @map("company_id")
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
   company     Company  @relation(fields: [companyId], references: [id])
   name        String
   description String?
-  trainerId   Int?     @map("trainer_id")
+  trainerId   String?  @map("trainer_id")
   trainer     User?    @relation(fields: [trainerId], references: [id])
   dayOfWeek   Int      @map("day_of_week")
   startTime   String   @map("start_time")
@@ -736,11 +736,11 @@ model GymClass {
 }
 
 model ClassEnrollment {
-  id        Int                   @id @default(autoincrement())
-  companyId Int                   @map("company_id")
-  memberId  Int                   @map("member_id")
+  id        String                @id @default(uuid())
+  companyId String                @map("company_id")
+  memberId  String                @map("member_id")
   member    GymMember             @relation(fields: [memberId], references: [id])
-  classId   Int                   @map("class_id")
+  classId   String                @map("class_id")
   gymClass  GymClass              @relation(fields: [classId], references: [id])
   date      DateTime
   status    ClassEnrollmentStatus @default(ENROLLED)
@@ -750,9 +750,9 @@ model ClassEnrollment {
 }
 
 model BodyMeasurement {
-  id           Int       @id @default(autoincrement())
-  companyId    Int       @map("company_id")
-  memberId     Int       @map("member_id")
+  id           String    @id @default(uuid())
+  companyId    String    @map("company_id")
+  memberId     String    @map("member_id")
   member       GymMember @relation(fields: [memberId], references: [id])
   date         DateTime  @default(now())
   weight       Decimal?
@@ -766,7 +766,7 @@ model BodyMeasurement {
   leftThigh    Decimal?  @map("left_thigh")
   rightThigh   Decimal?  @map("right_thigh")
   notes        String?
-  measuredById Int?      @map("measured_by_id")
+  measuredById String?   @map("measured_by_id")
   measuredBy   User?     @relation("MeasuredBy", fields: [measuredById], references: [id])
 
   @@schema("tenant")
@@ -774,8 +774,8 @@ model BodyMeasurement {
 }
 
 model Locker {
-  id        Int          @id @default(autoincrement())
-  companyId Int          @map("company_id")
+  id        String       @id @default(uuid())
+  companyId String       @map("company_id")
   company   Company      @relation(fields: [companyId], references: [id])
   number    String
   section   String?
@@ -789,11 +789,11 @@ model Locker {
 }
 
 model LockerAssignment {
-  id         Int       @id @default(autoincrement())
-  companyId  Int       @map("company_id")
-  lockerId   Int       @map("locker_id")
+  id         String    @id @default(uuid())
+  companyId  String    @map("company_id")
+  lockerId   String    @map("locker_id")
   locker     Locker    @relation(fields: [lockerId], references: [id])
-  memberId   Int       @map("member_id")
+  memberId   String    @map("member_id")
   member     GymMember @relation(fields: [memberId], references: [id])
   startDate  DateTime  @map("start_date")
   endDate    DateTime? @map("end_date")

@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   if (memberId) {
     gymMember = await prisma.gymMember.findFirst({
-      where: { id: Number(memberId), companyId },
+      where: { id: memberId, companyId },
       include: {
         customer: true,
         memberships: {

@@ -6,11 +6,11 @@ import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
 
-interface Product { id: number; name: string; salePrice: string; stock: string; category: { name: string } | null; barcode: string | null; }
+interface Product { id: string; name: string; salePrice: string; stock: string; category: { name: string } | null; barcode: string | null; }
 interface CartItem { product: Product; quantity: number; unitPrice: number; total: number; }
-interface Category { id: number; name: string; }
-interface MembershipPlan { id: number; name: string; durationDays: number; price: string; description: string | null; }
-interface GymMemberOption { id: number; customer: { name: string; email: string | null } }
+interface Category { id: string; name: string; }
+interface MembershipPlan { id: string; name: string; durationDays: number; price: string; description: string | null; }
+interface GymMemberOption { id: string; customer: { name: string; email: string | null } }
 
 type PosTab = "products" | "memberships" | "daypasses";
 
@@ -28,13 +28,13 @@ export default function POSPage() {
   const [customerName, setCustomerName] = useState("Consumidor Final");
   const [customerNit, setCustomerNit] = useState("222222222");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [cashSession, setCashSession] = useState<{ id: number } | null>(null);
+  const [cashSession, setCashSession] = useState<{ id: string } | null>(null);
   const [showCashOpen, setShowCashOpen] = useState(false);
   const [openingAmount, setOpeningAmount] = useState("");
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [gymMembers, setGymMembers] = useState<GymMemberOption[]>([]);
   const [memberSearch, setMemberSearch] = useState("");
-  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [dayPassPrice, setDayPassPrice] = useState("15000");
   const [guestName, setGuestName] = useState("");
 
@@ -91,7 +91,7 @@ export default function POSPage() {
 
   function addPlanToCart(plan: MembershipPlan) {
     const fakeProduct: Product = {
-      id: -plan.id,
+      id: `virtual-membership-${plan.id}`,
       name: `Membresía: ${plan.name} (${plan.durationDays} días)`,
       salePrice: plan.price,
       stock: "999",
@@ -109,7 +109,7 @@ export default function POSPage() {
   function addDayPassToCart() {
     const price = Number(dayPassPrice) || 0;
     const fakeProduct: Product = {
-      id: -(Date.now()),
+      id: `virtual-daypass-${Date.now()}`,
       name: `Pase del Día${guestName ? `: ${guestName}` : ""}`,
       salePrice: String(price),
       stock: "999",
@@ -125,7 +125,7 @@ export default function POSPage() {
     setGuestName("");
   }
 
-  function updateQuantity(productId: number, delta: number) {
+  function updateQuantity(productId: string, delta: number) {
     setCart(prev => prev.map(i => {
       if (i.product.id !== productId) return i;
       const newQty = Math.max(1, i.quantity + delta);
@@ -133,7 +133,7 @@ export default function POSPage() {
     }));
   }
 
-  function removeFromCart(productId: number) {
+  function removeFromCart(productId: string) {
     setCart(prev => prev.filter(i => i.product.id !== productId));
   }
 
@@ -167,7 +167,7 @@ export default function POSPage() {
     }
 
     const allItems = cart.map(i => ({
-      productId: i.product.id > 0 ? i.product.id : undefined,
+      productId: i.product.id.startsWith("virtual-") ? undefined : i.product.id,
       productName: i.product.name,
       quantity: i.quantity,
       unitPrice: i.unitPrice,
@@ -191,11 +191,11 @@ export default function POSPage() {
       return;
     }
 
-    const membershipItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Membresía");
-    const dayPassItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Pase Día");
+    const membershipItems = cart.filter(i => i.product.id.startsWith("virtual-membership-"));
+    const dayPassItems = cart.filter(i => i.product.id.startsWith("virtual-daypass-"));
 
     for (const item of membershipItems) {
-      const planId = Math.abs(item.product.id);
+      const planId = item.product.id.replace("virtual-membership-", "");
       if (selectedMemberId) {
         await fetch("/api/membership-plans", {
           method: "POST",
@@ -399,7 +399,7 @@ export default function POSPage() {
                 </button>
               </div>
               <div className="flex items-center justify-between mt-2">
-                {item.product.id > 0 ? (
+                {!item.product.id.startsWith("virtual-") ? (
                   <div className="flex items-center gap-2">
                     <button onClick={() => updateQuantity(item.product.id, -1)} className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-500">
                       <Minus className="w-3 h-3" />

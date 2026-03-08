@@ -6,10 +6,10 @@ const JWT_SECRET = new TextEncoder().encode(
 );
 
 export interface JWTPayload {
-  userId: number;
+  userId: string;
   role: string;
   name: string;
-  companyId: number | null;
+  companyId: string | null;
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
@@ -37,25 +37,24 @@ export async function getSession(): Promise<JWTPayload | null> {
 }
 
 export function getUserFromHeaders(request: Request): {
-  userId: number;
+  userId: string;
   role: string;
   name: string;
-  companyId: number | null;
+  companyId: string | null;
 } {
-  const userId = Number(request.headers.get("x-user-id") || "0");
+  const userId = request.headers.get("x-user-id") || "";
   const role = request.headers.get("x-user-role") || "CASHIER";
   const name = request.headers.get("x-user-name") || "";
-  const rawCompanyId = request.headers.get("x-company-id");
-  const companyId = rawCompanyId ? Number(rawCompanyId) : null;
+  const companyId = request.headers.get("x-company-id") || null;
   return { userId, role, name, companyId };
 }
 
-export function requireCompanyId(request: Request): number {
+export function requireCompanyId(request: Request): string {
   const { companyId, role } = getUserFromHeaders(request);
   if (role === "SUPER_ADMIN") {
     const url = new URL(request.url);
     const qsCompanyId = url.searchParams.get("companyId");
-    if (qsCompanyId) return Number(qsCompanyId);
+    if (qsCompanyId) return qsCompanyId;
     throw new Error("SUPER_ADMIN must specify companyId");
   }
   if (!companyId) throw new Error("Company context required");

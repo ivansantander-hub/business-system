@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
-    let activeCompanyId: number | null = null;
+    let activeCompanyId: string | null = null;
     let activeRole = user.role as string;
     let activeCompanyName: string | null = null;
 
