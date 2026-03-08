@@ -92,7 +92,7 @@ export default function ReportesPage() {
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header">Categoría</th><th className="table-header text-right">Stock</th><th className="table-header text-right">Costo</th><th className="table-header text-right">Precio</th><th className="table-header text-right">Valor</th></tr></thead>
-                    <tbody>{d.products.map(p => (<tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(p.costPrice)}</td><td className="table-cell text-right">{formatCurrency(p.salePrice)}</td><td className="table-cell text-right font-semibold">{formatCurrency(Number(p.stock) * Number(p.salePrice))}</td></tr>))}</tbody></table>
+                    <tbody>{(d.products || []).map(p => (<tr key={p.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(p.costPrice)}</td><td className="table-cell text-right">{formatCurrency(p.salePrice)}</td><td className="table-cell text-right font-semibold">{formatCurrency(Number(p.stock) * Number(p.salePrice))}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );
@@ -100,7 +100,7 @@ export default function ReportesPage() {
 
           {reportType === "income-expense" && (() => {
             const d = data as { totalIncome: number; totalExpenses: number; profit: number; expensesByCategory: { category: string; _sum: { amount: number } }[] };
-            const chartData = d.expensesByCategory.map(e => ({ name: e.category, value: Number(e._sum.amount) }));
+            const chartData = (d.expensesByCategory || []).map(e => ({ name: e.category, value: Number(e._sum.amount) }));
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
