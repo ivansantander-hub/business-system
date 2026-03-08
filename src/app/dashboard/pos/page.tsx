@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Banknote, Building2, X } from "lucide-react";
+import { ShoppingCart, Search, Plus, Minus, CreditCard, Banknote, Building2, X, Dumbbell, Ticket } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency } from "@/lib/utils";
@@ -9,8 +9,14 @@ import { formatCurrency } from "@/lib/utils";
 interface Product { id: number; name: string; salePrice: string; stock: string; category: { name: string } | null; barcode: string | null; }
 interface CartItem { product: Product; quantity: number; unitPrice: number; total: number; }
 interface Category { id: number; name: string; }
+interface MembershipPlan { id: number; name: string; durationDays: number; price: string; description: string | null; }
+interface GymMemberOption { id: number; customer: { name: string; email: string | null } }
+
+type PosTab = "products" | "memberships" | "daypasses";
 
 export default function POSPage() {
+  const [companyType, setCompanyType] = useState<string>("RESTAURANT");
+  const [activeTab, setActiveTab] = useState<PosTab>("products");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -25,26 +31,49 @@ export default function POSPage() {
   const [cashSession, setCashSession] = useState<{ id: number } | null>(null);
   const [showCashOpen, setShowCashOpen] = useState(false);
   const [openingAmount, setOpeningAmount] = useState("");
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const [gymMembers, setGymMembers] = useState<GymMemberOption[]>([]);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [dayPassPrice, setDayPassPrice] = useState("15000");
+  const [guestName, setGuestName] = useState("");
+
+  useEffect(() => {
+    fetch("/api/auth/me").then(r => r.ok ? r.json() : null).then((data: Record<string, unknown> | null) => {
+      setCompanyType((data?.companyType as string) || "RESTAURANT");
+    });
+  }, []);
 
   const loadProducts = useCallback(async () => {
     const params = new URLSearchParams({ active: "true" });
-    if (search) params.set("search", search);
+    if (search && activeTab === "products") params.set("search", search);
     if (selectedCategory) params.set("categoryId", selectedCategory);
     const res = await fetch(`/api/products?${params}`);
-    if (res.ok) {
-      setProducts(await res.json());
-    } else {
-      setProducts([]);
-    }
-  }, [search, selectedCategory]);
+    if (res.ok) setProducts(await res.json());
+    else setProducts([]);
+  }, [search, selectedCategory, activeTab]);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
+
   useEffect(() => {
     fetch("/api/categories").then(r => r.ok ? r.json() : []).then(setCategories);
     fetch("/api/cash?action=current").then(r => r.ok ? r.json() : null).then(session => {
       if (session) setCashSession(session);
     });
   }, []);
+
+  useEffect(() => {
+    if (companyType === "GYM") {
+      fetch("/api/membership-plans").then(r => r.ok ? r.json() : []).then(setPlans);
+    }
+  }, [companyType]);
+
+  useEffect(() => {
+    if (companyType === "GYM" && memberSearch.length >= 2) {
+      fetch(`/api/gym-members?search=${encodeURIComponent(memberSearch)}`)
+        .then(r => r.ok ? r.json() : []).then(setGymMembers);
+    }
+  }, [memberSearch, companyType]);
 
   function addToCart(product: Product) {
     setCart(prev => {
@@ -58,6 +87,42 @@ export default function POSPage() {
       const unitPrice = Number(product.salePrice);
       return [...prev, { product, quantity: 1, unitPrice, total: unitPrice }];
     });
+  }
+
+  function addPlanToCart(plan: MembershipPlan) {
+    const fakeProduct: Product = {
+      id: -plan.id,
+      name: `Membresía: ${plan.name} (${plan.durationDays} días)`,
+      salePrice: plan.price,
+      stock: "999",
+      category: { name: "Membresía" },
+      barcode: null,
+    };
+    setCart(prev => [...prev, {
+      product: fakeProduct,
+      quantity: 1,
+      unitPrice: Number(plan.price),
+      total: Number(plan.price),
+    }]);
+  }
+
+  function addDayPassToCart() {
+    const price = Number(dayPassPrice) || 0;
+    const fakeProduct: Product = {
+      id: -(Date.now()),
+      name: `Pase del Día${guestName ? `: ${guestName}` : ""}`,
+      salePrice: String(price),
+      stock: "999",
+      category: { name: "Pase Día" },
+      barcode: null,
+    };
+    setCart(prev => [...prev, {
+      product: fakeProduct,
+      quantity: 1,
+      unitPrice: price,
+      total: price,
+    }]);
+    setGuestName("");
   }
 
   function updateQuantity(productId: number, delta: number) {
@@ -101,36 +166,62 @@ export default function POSPage() {
       return;
     }
 
-    const items = cart.map(i => ({
-      productId: i.product.id,
-      productName: i.product.name,
-      quantity: i.quantity,
-      unitPrice: i.unitPrice,
-    }));
+    const regularItems = cart.filter(i => i.product.id > 0);
+    const membershipItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Membresía");
+    const dayPassItems = cart.filter(i => i.product.id < 0 && i.product.category?.name === "Pase Día");
 
-    const res = await fetch("/api/invoices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items,
-        paymentMethod,
-        paidAmount: paymentMethod === "CASH" ? Number(paidAmount) : total,
-        discount: 0,
-        notes: `Cliente: ${customerName} - NIT: ${customerNit}`,
-      }),
-    });
+    if (regularItems.length > 0) {
+      const items = regularItems.map(i => ({
+        productId: i.product.id,
+        productName: i.product.name,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+      }));
 
-    if (res.ok) {
-      setCart([]);
-      setShowPayment(false);
-      setPaidAmount("");
-      setCustomerName("Consumidor Final");
-      setCustomerNit("222222222");
-      loadProducts();
-      setToast({ message: "Venta registrada exitosamente", type: "success" });
-    } else {
-      setToast({ message: "Error al procesar venta", type: "error" });
+      await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items,
+          paymentMethod,
+          paidAmount: paymentMethod === "CASH" ? Number(paidAmount) : total,
+          discount: 0,
+          notes: `Cliente: ${customerName} - NIT: ${customerNit}`,
+        }),
+      });
     }
+
+    for (const item of membershipItems) {
+      const planId = Math.abs(item.product.id);
+      if (selectedMemberId) {
+        await fetch("/api/membership-plans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create-membership", memberId: selectedMemberId, planId, paymentStatus: "PAID" }),
+        });
+      }
+    }
+
+    for (const _item of dayPassItems) {
+      await fetch("/api/day-passes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          memberId: selectedMemberId || undefined,
+          guestName: guestName || customerName,
+          price: Number(dayPassPrice),
+        }),
+      });
+    }
+
+    setCart([]);
+    setShowPayment(false);
+    setPaidAmount("");
+    setCustomerName("Consumidor Final");
+    setCustomerNit("222222222");
+    setSelectedMemberId(null);
+    loadProducts();
+    setToast({ message: "Venta registrada exitosamente", type: "success" });
   }
 
   if (!cashSession) {
@@ -157,48 +248,135 @@ export default function POSPage() {
     );
   }
 
+  const isGym = companyType === "GYM";
+  const tabs: { id: PosTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: "products", label: "Productos", icon: ShoppingCart },
+    ...(isGym ? [
+      { id: "memberships" as PosTab, label: "Membresías", icon: Dumbbell },
+      { id: "daypasses" as PosTab, label: "Pases del Día", icon: Ticket },
+    ] : []),
+  ];
+
   return (
     <div className="flex gap-4 h-[calc(100vh-120px)]">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* Products panel */}
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="flex gap-2 mb-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input className="input-field pl-9" placeholder="Buscar producto o escanear código..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
-          </div>
-          <select className="input-field w-auto" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
-            <option value="">Todas</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {products.filter(p => Number(p.stock) > 0).map(p => (
-              <button key={p.id} onClick={() => addToCart(p)}
-                className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-indigo-300 hover:shadow-md transition-all">
-                <p className="font-medium text-gray-900 text-sm truncate">{p.name}</p>
-                <p className="text-xs text-gray-400 mt-1">{p.category?.name}</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-indigo-600">{formatCurrency(Number(p.salePrice))}</span>
-                  <span className="text-xs text-gray-400">Stock: {Number(p.stock).toFixed(0)}</span>
-                </div>
+        {isGym && (
+          <div className="flex gap-2 mb-3">
+            {tabs.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  activeTab === t.id ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}>
+                <t.icon className="w-4 h-4" /> {t.label}
               </button>
             ))}
           </div>
-        </div>
+        )}
+
+        {activeTab === "products" && (
+          <>
+            <div className="flex gap-2 mb-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input className="input-field pl-9" placeholder="Buscar producto o escanear código..." value={search} onChange={e => setSearch(e.target.value)} autoFocus />
+              </div>
+              <select className="input-field w-auto" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}>
+                <option value="">Todas</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {products.filter(p => Number(p.stock) > 0).map(p => (
+                  <button key={p.id} onClick={() => addToCart(p)}
+                    className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-indigo-300 hover:shadow-md transition-all">
+                    <p className="font-medium text-gray-900 text-sm truncate">{p.name}</p>
+                    <p className="text-xs text-gray-400 mt-1">{p.category?.name}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <span className="text-lg font-bold text-indigo-600">{formatCurrency(Number(p.salePrice))}</span>
+                      <span className="text-xs text-gray-400">Stock: {Number(p.stock).toFixed(0)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === "memberships" && (
+          <div className="flex-1 overflow-y-auto">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Buscar miembro</label>
+              <input className="input-field" placeholder="Nombre o email del miembro..." value={memberSearch} onChange={e => setMemberSearch(e.target.value)} />
+              {gymMembers.length > 0 && memberSearch.length >= 2 && (
+                <div className="mt-1 bg-white border border-gray-200 rounded-lg max-h-32 overflow-y-auto">
+                  {gymMembers.map(m => (
+                    <button key={m.id} onClick={() => { setSelectedMemberId(m.id); setMemberSearch(m.customer.name); setGymMembers([]); }}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${selectedMemberId === m.id ? "bg-indigo-50" : ""}`}>
+                      {m.customer.name} {m.customer.email ? `- ${m.customer.email}` : ""}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedMemberId && <p className="text-xs text-green-600 mt-1">Miembro seleccionado</p>}
+            </div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Planes disponibles</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              {plans.filter(p => Boolean((p as unknown as Record<string, unknown>).isActive !== false)).map(plan => (
+                <button key={plan.id} onClick={() => { if (selectedMemberId) addPlanToCart(plan); else setToast({ message: "Seleccione un miembro primero", type: "error" }); }}
+                  className="bg-white rounded-xl border border-gray-200 p-4 text-left hover:border-indigo-300 hover:shadow-md transition-all">
+                  <p className="font-medium text-gray-900 text-sm">{plan.name}</p>
+                  <p className="text-xs text-gray-400 mt-1">{plan.durationDays} días</p>
+                  <p className="text-lg font-bold text-indigo-600 mt-2">{formatCurrency(Number(plan.price))}</p>
+                  {plan.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{plan.description}</p>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "daypasses" && (
+          <div className="flex-1">
+            <div className="max-w-md space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Miembro (opcional)</label>
+                <input className="input-field" placeholder="Buscar miembro..." value={memberSearch}
+                  onChange={e => setMemberSearch(e.target.value)} />
+                {gymMembers.length > 0 && memberSearch.length >= 2 && (
+                  <div className="mt-1 bg-white border border-gray-200 rounded-lg max-h-32 overflow-y-auto">
+                    {gymMembers.map(m => (
+                      <button key={m.id} onClick={() => { setSelectedMemberId(m.id); setMemberSearch(m.customer.name); setGymMembers([]); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                        {m.customer.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del invitado (si no es miembro)</label>
+                <input className="input-field" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Nombre..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio del pase</label>
+                <input type="number" className="input-field" value={dayPassPrice} onChange={e => setDayPassPrice(e.target.value)} />
+              </div>
+              <button onClick={addDayPassToCart} className="btn-primary w-full flex items-center justify-center gap-2">
+                <Ticket className="w-4 h-4" /> Agregar Pase al Carrito
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Cart panel */}
       <div className="w-96 bg-white rounded-xl border border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-100">
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" /> Carrito ({cart.length})
           </h2>
         </div>
-
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {cart.length === 0 ? (
             <p className="text-sm text-gray-400 text-center py-12">Agrega productos al carrito</p>
@@ -211,31 +389,28 @@ export default function POSPage() {
                 </button>
               </div>
               <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => updateQuantity(item.product.id, -1)} className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300">
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="w-8 text-center font-semibold text-sm">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.product.id, 1)} className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center hover:bg-indigo-200 text-indigo-600">
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div>
+                {item.product.id > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => updateQuantity(item.product.id, -1)} className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center hover:bg-gray-300">
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <span className="w-8 text-center font-semibold text-sm">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.product.id, 1)} className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center hover:bg-indigo-200 text-indigo-600">
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-indigo-600 font-medium">{item.product.category?.name}</span>
+                )}
                 <span className="font-semibold text-gray-900">{formatCurrency(item.total)}</span>
               </div>
             </div>
           ))}
         </div>
-
         <div className="border-t border-gray-200 p-4 space-y-2">
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-sm text-gray-500">
-            <span>IVA (19%)</span><span>{formatCurrency(tax)}</span>
-          </div>
-          <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
-            <span>Total</span><span>{formatCurrency(total)}</span>
-          </div>
+          <div className="flex justify-between text-sm text-gray-500"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+          <div className="flex justify-between text-sm text-gray-500"><span>IVA (19%)</span><span>{formatCurrency(tax)}</span></div>
+          <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t"><span>Total</span><span>{formatCurrency(total)}</span></div>
           <button onClick={() => { setShowPayment(true); setPaidAmount(total.toFixed(2)); }} disabled={cart.length === 0}
             className="btn-success w-full py-3 text-lg mt-3 flex items-center justify-center gap-2">
             <CreditCard className="w-5 h-5" /> Cobrar
@@ -243,7 +418,6 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* Payment modal */}
       <Modal open={showPayment} onClose={() => setShowPayment(false)} title="Procesar Pago" size="md">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -256,7 +430,6 @@ export default function POSPage() {
               <input className="input-field" value={customerNit} onChange={e => setCustomerNit(e.target.value)} />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Método de Pago</label>
             <div className="grid grid-cols-3 gap-2">
@@ -275,7 +448,6 @@ export default function POSPage() {
               ))}
             </div>
           </div>
-
           <div className="bg-gray-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-lg font-bold">
               <span>Total a Cobrar</span><span className="text-indigo-600">{formatCurrency(total)}</span>
@@ -295,7 +467,6 @@ export default function POSPage() {
               </>
             )}
           </div>
-
           <div className="flex gap-3 pt-2">
             <button onClick={() => setShowPayment(false)} className="btn-secondary flex-1">Cancelar</button>
             <button onClick={handlePayment} className="btn-success flex-1 py-3 text-lg">Confirmar Pago</button>

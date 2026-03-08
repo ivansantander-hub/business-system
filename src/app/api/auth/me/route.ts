@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       email: true,
       role: true,
       companies: {
-        include: { company: { select: { id: true, name: true, isActive: true } } },
+        include: { company: { select: { id: true, name: true, isActive: true, type: true } } },
       },
     },
   });
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
 
   const activeCompanies = user.companies.filter((uc) => uc.company.isActive);
   const activeAssignment = activeCompanies.find((uc) => uc.companyId === companyId);
+  const companyType = activeAssignment?.company.type || null;
 
   const effectiveRole = role || user.role;
 
@@ -38,11 +39,13 @@ export async function GET(request: Request) {
     role: effectiveRole,
     companyId,
     companyName: activeAssignment?.company.name || null,
-    permissions: getPermissions(effectiveRole),
+    companyType,
+    permissions: getPermissions(effectiveRole, companyType),
     companies: activeCompanies.map((uc) => ({
       id: uc.company.id,
       name: uc.company.name,
       role: uc.role,
+      type: uc.company.type,
     })),
   });
 }

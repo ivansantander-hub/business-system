@@ -13,7 +13,14 @@ export type Permission =
   | "accounting"
   | "reports"
   | "users"
-  | "settings";
+  | "settings"
+  | "memberships"
+  | "checkin"
+  | "day_passes"
+  | "classes"
+  | "trainers"
+  | "body_tracking"
+  | "lockers";
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   SUPER_ADMIN: ["dashboard", "companies", "users", "reports"],
@@ -32,8 +39,15 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "reports",
     "users",
     "settings",
+    "memberships",
+    "checkin",
+    "day_passes",
+    "classes",
+    "trainers",
+    "body_tracking",
+    "lockers",
   ],
-  CASHIER: ["dashboard", "pos", "orders", "invoices", "customers"],
+  CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],
   ACCOUNTANT: [
     "dashboard",
@@ -44,6 +58,29 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "suppliers",
     "customers",
   ],
+  TRAINER: [
+    "dashboard",
+    "classes",
+    "checkin",
+    "body_tracking",
+    "memberships",
+  ],
+};
+
+export type CompanyType = "RESTAURANT" | "GYM";
+
+export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
+  RESTAURANT: [
+    "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
+    "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
+    "users", "settings",
+  ],
+  GYM: [
+    "dashboard", "companies", "products", "inventory", "pos",
+    "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
+    "users", "settings", "memberships", "checkin", "day_passes", "classes",
+    "trainers", "body_tracking", "lockers",
+  ],
 };
 
 export function hasPermission(role: string, permission: Permission): boolean {
@@ -52,6 +89,9 @@ export function hasPermission(role: string, permission: Permission): boolean {
   return permissions.includes(permission);
 }
 
-export function getPermissions(role: string): Permission[] {
-  return ROLE_PERMISSIONS[role] || [];
+export function getPermissions(role: string, companyType?: string | null): Permission[] {
+  const rolePerms = ROLE_PERMISSIONS[role] || [];
+  if (!companyType || role === "SUPER_ADMIN") return rolePerms;
+  const typePerms = COMPANY_TYPE_PERMISSIONS[companyType as CompanyType] || [];
+  return rolePerms.filter((p) => typePerms.includes(p));
 }

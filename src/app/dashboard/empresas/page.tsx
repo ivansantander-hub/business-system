@@ -45,7 +45,7 @@ export default function EmpresasPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [form, setForm] = useState({
     name: "", legalName: "", nit: "", address: "", city: "",
-    department: "", phone: "", email: "", taxRegime: "",
+    department: "", phone: "", email: "", taxRegime: "", type: "RESTAURANT" as string,
   });
 
   const fetchCompanies = useCallback(async () => {
@@ -61,7 +61,7 @@ export default function EmpresasPage() {
 
   function openCreate() {
     setEditingCompany(null);
-    setForm({ name: "", legalName: "", nit: "", address: "", city: "", department: "", phone: "", email: "", taxRegime: "" });
+    setForm({ name: "", legalName: "", nit: "", address: "", city: "", department: "", phone: "", email: "", taxRegime: "", type: "RESTAURANT" });
     setShowModal(true);
   }
 
@@ -71,6 +71,7 @@ export default function EmpresasPage() {
       name: c.name, legalName: c.legalName || "", nit: c.nit,
       address: c.address || "", city: c.city || "", department: c.department || "",
       phone: c.phone || "", email: c.email || "", taxRegime: c.taxRegime || "",
+      type: (c as unknown as Record<string, string>).type || "RESTAURANT",
     });
     setShowModal(true);
   }
@@ -186,6 +187,23 @@ export default function EmpresasPage() {
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editingCompany ? "Editar Empresa" : "Nueva Empresa"} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
+            {!editingCompany && (
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de empresa *</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: "RESTAURANT", label: "Restaurante / Bar", desc: "Mesas, órdenes, meseros, cocina" },
+                    { value: "GYM", label: "Gimnasio", desc: "Membresías, check-in, clases, entrenadores" },
+                  ].map((t) => (
+                    <button key={t.value} type="button" onClick={() => setForm({ ...form, type: t.value })}
+                      className={`p-3 rounded-lg border-2 text-left transition-colors ${form.type === t.value ? "border-indigo-600 bg-indigo-50" : "border-gray-200 hover:border-gray-300"}`}>
+                      <p className="font-medium text-sm">{t.label}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{t.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre comercial *</label>
               <input className="input-field" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

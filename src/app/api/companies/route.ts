@@ -35,10 +35,11 @@ export async function POST(request: Request) {
         phone: body.phone || null,
         email: body.email || null,
         taxRegime: body.taxRegime || null,
+        type: body.type || "RESTAURANT",
       },
     });
 
-    await seedCompanyDefaults(company.id);
+    await seedCompanyDefaults(company.id, body.type || "RESTAURANT");
 
     return NextResponse.json(company, { status: 201 });
   } catch (error: unknown) {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function seedCompanyDefaults(companyId: number) {
+async function seedCompanyDefaults(companyId: number, companyType: string = "RESTAURANT") {
   const accounts = [
     { code: "1", name: "ACTIVO", type: "ASSET" as const },
     { code: "11", name: "Disponible", type: "ASSET" as const },
@@ -130,8 +131,22 @@ async function seedCompanyDefaults(companyId: number) {
     },
   });
 
-  const defaultCategories = ["General", "Alimentos", "Bebidas", "Postres", "Servicios"];
+  const defaultCategories = companyType === "GYM"
+    ? ["General", "Suplementos", "Accesorios", "Ropa Deportiva", "Equipamiento"]
+    : ["General", "Alimentos", "Bebidas", "Postres", "Servicios"];
   await prisma.category.createMany({
     data: defaultCategories.map((name) => ({ companyId, name })),
   });
+
+  if (companyType === "GYM") {
+    await prisma.membershipPlan.createMany({
+      data: [
+        { companyId, name: "Pase Diario", durationDays: 1, price: 15000, description: "Acceso por un día" },
+        { companyId, name: "Mensual", durationDays: 30, price: 80000, description: "Acceso ilimitado por 30 días" },
+        { companyId, name: "Trimestral", durationDays: 90, price: 200000, description: "Acceso ilimitado por 3 meses" },
+        { companyId, name: "Semestral", durationDays: 180, price: 350000, description: "Acceso ilimitado por 6 meses" },
+        { companyId, name: "Anual", durationDays: 365, price: 600000, description: "Acceso ilimitado por 1 año" },
+      ],
+    });
+  }
 }

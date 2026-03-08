@@ -33,6 +33,7 @@ async function main() {
         phone: "601-555-1234",
         email: "info@miempresa.com",
         taxRegime: "Responsable de IVA",
+        type: "RESTAURANT",
       },
     });
   }

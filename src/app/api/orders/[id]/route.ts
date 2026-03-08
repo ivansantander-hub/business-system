@@ -30,24 +30,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   const existing = await prisma.order.findFirst({
     where: { id: Number(id), companyId },
-    select: { id: true, tableId: true },
+    select: { id: true, tableId: true, status: true },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  if (body.status === "CANCELLED") {
-    await prisma.order.update({
-      where: { id: existing.id },
-      data: { status: "CANCELLED" },
+  const shouldReleaseTable = (body.status === "CANCELLED" || body.status === "PAID") && existing.tableId;
+
+  if (shouldReleaseTable) {
+    await prisma.restaurantTable.update({
+      where: { id: existing.tableId! },
+      data: { status: "AVAILABLE" },
     });
-
-    if (existing.tableId) {
-      await prisma.restaurantTable.update({
-        where: { id: existing.tableId },
-        data: { status: "AVAILABLE" },
-      });
-    }
-
-    return NextResponse.json({ ok: true });
   }
 
   const order = await prisma.order.update({

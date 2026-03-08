@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ClipboardList, Search, Plus, Eye } from "lucide-react";
+import { ClipboardList, Search, Plus, Eye, CheckCircle, CreditCard, XCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
@@ -28,11 +28,8 @@ export default function OrdenesPage() {
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/orders?${params}`);
-    if (res.ok) {
-      setOrders(await res.json());
-    } else {
-      setOrders([]);
-    }
+    if (res.ok) setOrders(await res.json());
+    else setOrders([]);
   }, [statusFilter]);
 
   useEffect(() => { load(); }, [load]);
@@ -47,7 +44,6 @@ export default function OrdenesPage() {
     });
     if (res.ok) {
       setShowAddItem(false);
-      // Refresh order detail
       const updRes = await fetch(`/api/orders/${showDetail.id}`);
       if (updRes.ok) setShowDetail(await updRes.json());
       load();
@@ -55,12 +51,24 @@ export default function OrdenesPage() {
     }
   }
 
+  async function updateOrderStatus(id: number, status: string, message: string) {
+    const res = await fetch(`/api/orders/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    if (res.ok) {
+      setShowDetail(null);
+      load();
+      setToast({ message, type: "success" });
+    } else {
+      setToast({ message: "Error al actualizar orden", type: "error" });
+    }
+  }
+
   async function cancelOrder(id: number) {
     if (!confirm("¿Cancelar esta orden?")) return;
-    await fetch(`/api/orders/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "CANCELLED" }) });
-    setShowDetail(null);
-    load();
-    setToast({ message: "Orden cancelada", type: "success" });
+    await updateOrderStatus(id, "CANCELLED", "Orden cancelada");
   }
 
   const statusColors: Record<string, string> = {
@@ -71,6 +79,7 @@ export default function OrdenesPage() {
   const typeLabels: Record<string, string> = { TABLE: "Mesa", TAKEOUT: "Para Llevar", DELIVERY: "Domicilio" };
 
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const hasItems = showDetail ? showDetail.items.filter(i => i.status !== "CANCELLED").length > 0 : false;
 
   return (
     <div className="space-y-6">
@@ -127,7 +136,6 @@ export default function OrdenesPage() {
         </div>
       </div>
 
-      {/* Order detail modal */}
       <Modal open={!!showDetail} onClose={() => setShowDetail(null)} title={showDetail ? `Orden #${showDetail.id}` : ""} size="lg">
         {showDetail && (
           <div className="space-y-4">
@@ -156,15 +164,36 @@ export default function OrdenesPage() {
 
             {showDetail.status === "OPEN" && (
               <div className="flex gap-3">
-                <button onClick={() => setShowAddItem(true)} className="btn-primary flex items-center gap-2 flex-1"><Plus className="w-4 h-4" /> Agregar Producto</button>
-                <button onClick={() => cancelOrder(showDetail.id)} className="btn-danger flex-1">Cancelar Orden</button>
+                <button onClick={() => setShowAddItem(true)} className="btn-primary flex items-center gap-2 flex-1">
+                  <Plus className="w-4 h-4" /> Agregar Producto
+                </button>
+                {hasItems && (
+                  <button onClick={() => updateOrderStatus(showDetail.id, "READY", "Orden marcada como lista")}
+                    className="btn-success flex items-center gap-2 flex-1">
+                    <CheckCircle className="w-4 h-4" /> Marcar Lista
+                  </button>
+                )}
+                <button onClick={() => cancelOrder(showDetail.id)} className="btn-danger flex items-center gap-2">
+                  <XCircle className="w-4 h-4" /> Cancelar
+                </button>
+              </div>
+            )}
+
+            {showDetail.status === "READY" && (
+              <div className="flex gap-3">
+                <button onClick={() => updateOrderStatus(showDetail.id, "PAID", "Orden cobrada")}
+                  className="btn-success flex items-center gap-2 flex-1">
+                  <CreditCard className="w-4 h-4" /> Cobrar Orden
+                </button>
+                <button onClick={() => cancelOrder(showDetail.id)} className="btn-danger flex items-center gap-2">
+                  <XCircle className="w-4 h-4" /> Cancelar
+                </button>
               </div>
             )}
           </div>
         )}
       </Modal>
 
-      {/* Add item modal */}
       <Modal open={showAddItem} onClose={() => setShowAddItem(false)} title="Agregar Producto a Orden" size="md">
         <form onSubmit={addItem} className="space-y-4">
           <div className="relative">

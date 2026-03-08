@@ -12,12 +12,20 @@ datasource db {
 // ENUMS
 // =============================================
 
+enum CompanyType {
+  RESTAURANT
+  GYM
+
+  @@schema("public")
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN
   CASHIER
   WAITER
   ACCOUNTANT
+  TRAINER
 
   @@schema("public")
 }
@@ -108,23 +116,90 @@ enum CashSessionStatus {
   @@schema("tenant")
 }
 
+enum GymMemberStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+
+  @@schema("tenant")
+}
+
+enum MembershipStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  CANCELLED
+  FROZEN
+
+  @@schema("tenant")
+}
+
+enum MembershipPaymentStatus {
+  PAID
+  PENDING
+  OVERDUE
+
+  @@schema("tenant")
+}
+
+enum CheckInType {
+  ENTRY
+  EXIT
+
+  @@schema("tenant")
+}
+
+enum CheckInMethod {
+  MEMBERSHIP
+  DAY_PASS
+  MANUAL
+
+  @@schema("tenant")
+}
+
+enum DayPassStatus {
+  ACTIVE
+  USED
+  EXPIRED
+
+  @@schema("tenant")
+}
+
+enum ClassEnrollmentStatus {
+  ENROLLED
+  ATTENDED
+  ABSENT
+  CANCELLED
+
+  @@schema("tenant")
+}
+
+enum LockerStatus {
+  AVAILABLE
+  ASSIGNED
+  MAINTENANCE
+
+  @@schema("tenant")
+}
+
 // =============================================
 // PUBLIC SCHEMA — Master / Multi-tenant
 // =============================================
 
 model Company {
-  id         Int      @id @default(autoincrement())
+  id         Int         @id @default(autoincrement())
   name       String
-  legalName  String?  @map("legal_name")
-  nit        String   @unique
+  legalName  String?     @map("legal_name")
+  nit        String      @unique
+  type       CompanyType @default(RESTAURANT)
   address    String?
   city       String?
   department String?
   phone      String?
   email      String?
-  taxRegime  String?  @map("tax_regime")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
+  taxRegime  String?     @map("tax_regime")
+  isActive   Boolean     @default(true) @map("is_active")
+  createdAt  DateTime    @default(now()) @map("created_at")
 
   userCompanies    UserCompany[]
   categories       Category[]
@@ -141,6 +216,11 @@ model Company {
   journalEntries   JournalEntry[]
   expenses         Expense[]
   settings         Setting[]
+  membershipPlans  MembershipPlan[]
+  gymMembers       GymMember[]
+  dayPasses        DayPass[]
+  gymClasses       GymClass[]
+  lockers          Locker[]
 
   @@schema("public")
   @@map("companies")
@@ -155,14 +235,16 @@ model User {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  companies      UserCompany[]
-  orders         Order[]             @relation("OrderUser")
-  waiterOrders   Order[]             @relation("OrderWaiter")
-  invoices       Invoice[]
-  cashSessions   CashSession[]
-  purchases      Purchase[]
-  expenses       Expense[]
-  inventoryMoves InventoryMovement[]
+  companies        UserCompany[]
+  orders           Order[]             @relation("OrderUser")
+  waiterOrders     Order[]             @relation("OrderWaiter")
+  invoices         Invoice[]
+  cashSessions     CashSession[]
+  purchases        Purchase[]
+  expenses         Expense[]
+  inventoryMoves   InventoryMovement[]
+  trainerClasses   GymClass[]
+  bodyMeasurements BodyMeasurement[]   @relation("MeasuredBy")
 
   @@schema("public")
   @@map("users")
@@ -304,20 +386,21 @@ model PurchaseItem {
 }
 
 model Customer {
-  id          Int       @id @default(autoincrement())
-  companyId   Int       @map("company_id")
-  company     Company   @relation(fields: [companyId], references: [id])
+  id          Int        @id @default(autoincrement())
+  companyId   Int        @map("company_id")
+  company     Company    @relation(fields: [companyId], references: [id])
   name        String
   nit         String?
   phone       String?
   email       String?
   address     String?
-  creditLimit Decimal   @default(0) @map("credit_limit")
-  balance     Decimal   @default(0)
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  creditLimit Decimal    @default(0) @map("credit_limit")
+  balance     Decimal    @default(0)
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
   orders      Order[]
   invoices    Invoice[]
+  gymMember   GymMember?
 
   @@schema("tenant")
   @@map("customers")
@@ -521,4 +604,195 @@ model Setting {
   @@unique([companyId, key])
   @@schema("tenant")
   @@map("settings")
+}
+
+// =============================================
+// GYM MODULE
+// =============================================
+
+model MembershipPlan {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @map("company_id")
+  company      Company  @relation(fields: [companyId], references: [id])
+  name         String
+  durationDays Int      @map("duration_days")
+  price        Decimal
+  description  String?
+  features     String?
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  memberships Membership[]
+
+  @@schema("tenant")
+  @@map("membership_plans")
+}
+
+model GymMember {
+  id               Int             @id @default(autoincrement())
+  companyId        Int             @map("company_id")
+  company          Company         @relation(fields: [companyId], references: [id])
+  customerId       Int             @unique @map("customer_id")
+  customer         Customer        @relation(fields: [customerId], references: [id])
+  emergencyContact String?         @map("emergency_contact")
+  emergencyPhone   String?         @map("emergency_phone")
+  birthDate        DateTime?       @map("birth_date")
+  gender           String?
+  bloodType        String?         @map("blood_type")
+  medicalNotes     String?         @map("medical_notes")
+  photoUrl         String?         @map("photo_url")
+  status           GymMemberStatus @default(ACTIVE)
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  memberships       Membership[]
+  checkIns          CheckIn[]
+  dayPasses         DayPass[]
+  classEnrollments  ClassEnrollment[]
+  bodyMeasurements  BodyMeasurement[]
+  lockerAssignments LockerAssignment[]
+
+  @@unique([companyId, customerId])
+  @@schema("tenant")
+  @@map("gym_members")
+}
+
+model Membership {
+  id            Int                     @id @default(autoincrement())
+  companyId     Int                     @map("company_id")
+  memberId      Int                     @map("member_id")
+  member        GymMember               @relation(fields: [memberId], references: [id])
+  planId        Int                     @map("plan_id")
+  plan          MembershipPlan          @relation(fields: [planId], references: [id])
+  startDate     DateTime                @map("start_date")
+  endDate       DateTime                @map("end_date")
+  status        MembershipStatus        @default(ACTIVE)
+  paymentStatus MembershipPaymentStatus @default(PENDING) @map("payment_status")
+  invoiceId     Int?                    @map("invoice_id")
+  notes         String?
+  createdAt     DateTime                @default(now()) @map("created_at")
+
+  @@schema("tenant")
+  @@map("memberships")
+}
+
+model CheckIn {
+  id        Int           @id @default(autoincrement())
+  companyId Int           @map("company_id")
+  memberId  Int           @map("member_id")
+  member    GymMember     @relation(fields: [memberId], references: [id])
+  timestamp DateTime      @default(now())
+  type      CheckInType
+  method    CheckInMethod
+  dayPassId Int?          @map("day_pass_id")
+  notes     String?
+
+  @@schema("tenant")
+  @@map("check_ins")
+}
+
+model DayPass {
+  id        Int           @id @default(autoincrement())
+  companyId Int           @map("company_id")
+  company   Company       @relation(fields: [companyId], references: [id])
+  memberId  Int?          @map("member_id")
+  member    GymMember?    @relation(fields: [memberId], references: [id])
+  guestName String?       @map("guest_name")
+  date      DateTime      @default(now())
+  price     Decimal
+  status    DayPassStatus @default(ACTIVE)
+  invoiceId Int?          @map("invoice_id")
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  @@schema("tenant")
+  @@map("day_passes")
+}
+
+model GymClass {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  company     Company  @relation(fields: [companyId], references: [id])
+  name        String
+  description String?
+  trainerId   Int?     @map("trainer_id")
+  trainer     User?    @relation(fields: [trainerId], references: [id])
+  dayOfWeek   Int      @map("day_of_week")
+  startTime   String   @map("start_time")
+  endTime     String   @map("end_time")
+  maxCapacity Int      @default(20) @map("max_capacity")
+  room        String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  enrollments ClassEnrollment[]
+
+  @@schema("tenant")
+  @@map("gym_classes")
+}
+
+model ClassEnrollment {
+  id        Int                   @id @default(autoincrement())
+  companyId Int                   @map("company_id")
+  memberId  Int                   @map("member_id")
+  member    GymMember             @relation(fields: [memberId], references: [id])
+  classId   Int                   @map("class_id")
+  gymClass  GymClass              @relation(fields: [classId], references: [id])
+  date      DateTime
+  status    ClassEnrollmentStatus @default(ENROLLED)
+
+  @@schema("tenant")
+  @@map("class_enrollments")
+}
+
+model BodyMeasurement {
+  id           Int       @id @default(autoincrement())
+  companyId    Int       @map("company_id")
+  memberId     Int       @map("member_id")
+  member       GymMember @relation(fields: [memberId], references: [id])
+  date         DateTime  @default(now())
+  weight       Decimal?
+  height       Decimal?
+  bodyFat      Decimal?  @map("body_fat")
+  chest        Decimal?
+  waist        Decimal?
+  hips         Decimal?
+  leftArm      Decimal?  @map("left_arm")
+  rightArm     Decimal?  @map("right_arm")
+  leftThigh    Decimal?  @map("left_thigh")
+  rightThigh   Decimal?  @map("right_thigh")
+  notes        String?
+  measuredById Int?      @map("measured_by_id")
+  measuredBy   User?     @relation("MeasuredBy", fields: [measuredById], references: [id])
+
+  @@schema("tenant")
+  @@map("body_measurements")
+}
+
+model Locker {
+  id        Int          @id @default(autoincrement())
+  companyId Int          @map("company_id")
+  company   Company      @relation(fields: [companyId], references: [id])
+  number    String
+  section   String?
+  status    LockerStatus @default(AVAILABLE)
+
+  assignments LockerAssignment[]
+
+  @@unique([companyId, number])
+  @@schema("tenant")
+  @@map("lockers")
+}
+
+model LockerAssignment {
+  id         Int       @id @default(autoincrement())
+  companyId  Int       @map("company_id")
+  lockerId   Int       @map("locker_id")
+  locker     Locker    @relation(fields: [lockerId], references: [id])
+  memberId   Int       @map("member_id")
+  member     GymMember @relation(fields: [memberId], references: [id])
+  startDate  DateTime  @map("start_date")
+  endDate    DateTime? @map("end_date")
+  monthlyFee Decimal   @default(0) @map("monthly_fee")
+
+  @@schema("tenant")
+  @@map("locker_assignments")
 }

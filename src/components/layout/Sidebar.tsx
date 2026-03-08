@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, UtensilsCrossed,
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
   BarChart3, Settings, LogOut, X, Menu, Building2, PanelLeftClose, PanelLeftOpen,
+  UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Permission } from "@/lib/rbac";
@@ -30,6 +31,13 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/pos", label: "Punto de Venta", icon: ShoppingCart, permission: "pos" },
   { href: "/dashboard/mesas", label: "Mesas", icon: UtensilsCrossed, permission: "tables" },
   { href: "/dashboard/ordenes", label: "Órdenes", icon: ClipboardList, permission: "orders" },
+  { href: "/dashboard/membresias", label: "Membresías", icon: Dumbbell, permission: "memberships" },
+  { href: "/dashboard/checkin", label: "Check-in", icon: UserCheck, permission: "checkin" },
+  { href: "/dashboard/tiqueteras", label: "Tiqueteras", icon: Ticket, permission: "day_passes" },
+  { href: "/dashboard/clases", label: "Clases", icon: CalendarDays, permission: "classes" },
+  { href: "/dashboard/entrenadores", label: "Entrenadores", icon: Dumbbell, permission: "trainers" },
+  { href: "/dashboard/medidas", label: "Medidas", icon: Ruler, permission: "body_tracking" },
+  { href: "/dashboard/casilleros", label: "Casilleros", icon: Lock, permission: "lockers" },
   { href: "/dashboard/facturas", label: "Facturas", icon: FileText, permission: "invoices" },
   { href: "/dashboard/clientes", label: "Clientes", icon: Users, permission: "customers" },
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, permission: "suppliers" },
@@ -62,7 +70,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+    globalThis.location.href = "/login";
   }
 
   const navContent = (isMobile: boolean) => (
