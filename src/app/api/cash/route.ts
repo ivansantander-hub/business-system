@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
+import { sendNotification, EMAIL_EVENTS, emailCashSessionClosed } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -128,6 +129,20 @@ export async function POST(request: Request) {
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         timeout: 15000,
       });
+
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+      if (user?.email) {
+        sendNotification(companyId, EMAIL_EVENTS.CASH_SESSION_CLOSED,
+          emailCashSessionClosed(
+            user.email, user.name,
+            Number(updated.salesTotal), Number(updated.openingAmount),
+            Number(updated.closingAmount), Number(updated.difference),
+            company?.name || "SGC"
+          ),
+          userId,
+        ).catch(() => {});
+      }
 
       return NextResponse.json(updated);
     } catch (error) {

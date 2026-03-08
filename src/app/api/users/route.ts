@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { sendNotification, EMAIL_EVENTS, emailUserCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { role, companyId } = getUserFromHeaders(request);
@@ -117,6 +118,13 @@ export async function POST(request: Request) {
         },
         select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
       });
+
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+      sendNotification(companyId, EMAIL_EVENTS.USER_CREATED,
+        emailUserCreated(body.name, body.email, body.password, company?.name || "SGC"),
+        user.id
+      ).catch(() => {});
+
       return NextResponse.json(user, { status: 201 });
     }
 
@@ -155,6 +163,15 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    if (companyAssignments.length > 0) {
+      const firstCompanyId = companyAssignments[0].companyId;
+      const company = await prisma.company.findUnique({ where: { id: firstCompanyId }, select: { name: true } });
+      sendNotification(firstCompanyId, EMAIL_EVENTS.USER_CREATED,
+        emailUserCreated(body.name, body.email, body.password, company?.name || "SGC"),
+        user.id
+      ).catch(() => {});
+    }
 
     return NextResponse.json(
       {

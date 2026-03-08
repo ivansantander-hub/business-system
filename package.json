@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "test:concurrency": "vitest run tests/concurrency.test.ts",
     "test:api": "vitest run tests/api.test.ts",
-    "test:e2e": "vitest run tests/e2e.test.ts"
+    "test:e2e": "vitest run tests/e2e.test.ts",
+    "test:email": "vitest run tests/email.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.0",

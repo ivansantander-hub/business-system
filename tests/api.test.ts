@@ -270,3 +270,76 @@ describe("Reports API", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("Forgot Password API", () => {
+  it("POST /api/auth/forgot-password should always return 200", async (ctx) => {
+    requireServer(ctx);
+    const res = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "nonexistent@nowhere.com" }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.message).toBeDefined();
+  });
+
+  it("POST /api/auth/reset-password should reject invalid token", async (ctx) => {
+    requireServer(ctx);
+    const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: "invalid-token", password: "newpass123" }),
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe("Notifications API", () => {
+  it("GET /api/notifications should return event templates", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/notifications");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty("eventType");
+    expect(data[0]).toHaveProperty("label");
+    expect(data[0]).toHaveProperty("enabled");
+  });
+
+  it("PUT /api/notifications should toggle a notification", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/notifications", {
+      method: "PUT",
+      body: JSON.stringify({ eventType: "user_created", enabled: false }),
+    });
+    expect(res.status).toBe(200);
+
+    const check = await apiRequest("/api/notifications");
+    const data = await check.json();
+    const userCreated = data.find((t: { eventType: string }) => t.eventType === "user_created");
+    expect(userCreated.enabled).toBe(false);
+
+    await apiRequest("/api/notifications", {
+      method: "PUT",
+      body: JSON.stringify({ eventType: "user_created", enabled: true }),
+    });
+  });
+
+  it("GET /api/notifications/users should return user preferences", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/notifications/users");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it("GET /api/notifications/roles should return role groups", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/notifications/roles");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+});

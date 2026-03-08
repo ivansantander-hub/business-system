@@ -13,7 +13,7 @@ import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, UtensilsCrossed,
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
   BarChart3, Settings, LogOut, X, Menu, Building2, ChevronsLeft, ChevronsRight,
-  UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket, ChevronDown,
+  UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket, ChevronDown, Bell,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAtomValue } from "jotai";
@@ -56,6 +56,7 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports", group: "sistema" },
   { href: "/dashboard/usuarios", label: "Usuarios", icon: Users, permission: "users", group: "sistema" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings, permission: "settings", group: "sistema" },
+  { href: "/dashboard/notificaciones", label: "Notificaciones", icon: Bell, permission: "notifications", group: "sistema" },
 ];
 
 const groupConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {

@@ -216,11 +216,13 @@ model Company {
   journalEntries   JournalEntry[]
   expenses         Expense[]
   settings         Setting[]
-  membershipPlans  MembershipPlan[]
-  gymMembers       GymMember[]
-  dayPasses        DayPass[]
-  gymClasses       GymClass[]
-  lockers          Locker[]
+  membershipPlans         MembershipPlan[]
+  gymMembers              GymMember[]
+  dayPasses               DayPass[]
+  gymClasses              GymClass[]
+  lockers                 Locker[]
+  notificationTemplates   NotificationTemplate[]
+  userNotifPreferences    UserNotificationPreference[]
 
   @@schema("public")
   @@map("companies")
@@ -235,19 +237,34 @@ model User {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  companies        UserCompany[]
-  orders           Order[]             @relation("OrderUser")
-  waiterOrders     Order[]             @relation("OrderWaiter")
-  invoices         Invoice[]
-  cashSessions     CashSession[]
-  purchases        Purchase[]
-  expenses         Expense[]
-  inventoryMoves   InventoryMovement[]
-  trainerClasses   GymClass[]
-  bodyMeasurements BodyMeasurement[]   @relation("MeasuredBy")
+  companies              UserCompany[]
+  orders                 Order[]             @relation("OrderUser")
+  waiterOrders           Order[]             @relation("OrderWaiter")
+  invoices               Invoice[]
+  cashSessions           CashSession[]
+  purchases              Purchase[]
+  expenses               Expense[]
+  inventoryMoves         InventoryMovement[]
+  trainerClasses         GymClass[]
+  bodyMeasurements       BodyMeasurement[]   @relation("MeasuredBy")
+  passwordResetTokens    PasswordResetToken[]
+  notificationPreferences UserNotificationPreference[]
 
   @@schema("public")
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@schema("public")
+  @@map("password_reset_tokens")
 }
 
 model UserCompany {
@@ -608,6 +625,38 @@ model Setting {
   @@unique([companyId, key])
   @@schema("tenant")
   @@map("settings")
+}
+
+// =============================================
+// NOTIFICATION SYSTEM
+// =============================================
+
+model NotificationTemplate {
+  id          String  @id @default(uuid())
+  companyId   String  @map("company_id")
+  company     Company @relation(fields: [companyId], references: [id])
+  eventType   String  @map("event_type")
+  enabled     Boolean @default(true)
+  subject     String?
+  bodyHtml    String? @map("body_html")
+
+  @@unique([companyId, eventType])
+  @@schema("tenant")
+  @@map("notification_templates")
+}
+
+model UserNotificationPreference {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+  eventType String  @map("event_type")
+  enabled   Boolean @default(true)
+
+  @@unique([userId, companyId, eventType])
+  @@schema("tenant")
+  @@map("user_notification_preferences")
 }
 
 // =============================================

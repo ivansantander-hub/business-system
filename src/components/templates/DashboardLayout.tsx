@@ -7,11 +7,19 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { authUserAtom, fetchAuthAtom } from "@/store";
 import { Sidebar, Header } from "../organisms";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const user = useAtomValue(authUserAtom);
+  const fetchAuth = useSetAtom(fetchAuthAtom);
+
+  useEffect(() => {
+    if (!user) fetchAuth();
+  }, [user, fetchAuth]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0e1a] transition-colors">

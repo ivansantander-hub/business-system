@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { sendNotification, EMAIL_EVENTS, emailPurchaseCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -61,6 +62,15 @@ export async function POST(request: Request) {
       items: { include: { product: { select: { name: true } } } },
     },
   });
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+  if (user?.email) {
+    sendNotification(companyId, EMAIL_EVENTS.PURCHASE_CREATED,
+      emailPurchaseCreated(user.email, user.name, number, purchase.supplier?.name || "", total, company?.name || "SGC"),
+      userId,
+    ).catch(() => {});
+  }
 
   return NextResponse.json(purchase, { status: 201 });
 }

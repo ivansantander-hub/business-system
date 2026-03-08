@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
+import { sendNotification, EMAIL_EVENTS, emailPurchaseReceived } from "@/lib/email";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { companyId } = getUserFromHeaders(_req);
@@ -90,6 +91,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         timeout: 15000,
       });
+
+      const updatedPurchase = await prisma.purchase.findFirst({ where: { id, companyId }, select: { number: true, total: true } });
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } });
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+      if (user?.email && updatedPurchase) {
+        sendNotification(companyId, EMAIL_EVENTS.PURCHASE_RECEIVED,
+          emailPurchaseReceived(user.email, user.name, updatedPurchase.number, Number(updatedPurchase.total), company?.name || "SGC"),
+          userId,
+        ).catch(() => {});
+      }
 
       return NextResponse.json({ ok: true });
     } catch (error) {

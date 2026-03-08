@@ -224,6 +224,37 @@ def test_responsive_mobile(page):
     page.set_viewport_size({"width": 1280, "height": 720})
 
 
+def test_forgot_password_link(page):
+    """Login page should have a forgot password link that shows the form."""
+    page.goto(f"{BASE_URL}/login")
+    page.wait_for_load_state("networkidle")
+    forgot_link = page.locator("text=Olvidaste tu contraseña")
+    has_link = forgot_link.count() > 0
+    if has_link:
+        forgot_link.click()
+        page.wait_for_timeout(500)
+        heading = page.locator("text=Recuperar contraseña")
+        report(
+            "Forgot password link shows recovery form",
+            heading.count() > 0,
+        )
+    else:
+        report("Forgot password link shows recovery form", False, "Link not found")
+
+
+def test_notifications_page(page):
+    """Notifications page loads with tab navigation."""
+    page.goto(f"{BASE_URL}/dashboard/notificaciones")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
+    body = page.text_content("body") or ""
+    report(
+        "Notifications page loads",
+        "Notificaciones" in body or "notificaciones" in page.url,
+        f"URL: {page.url}",
+    )
+
+
 def main():
     print("\n=== E2E Tests for Business System ===\n")
 
@@ -256,6 +287,8 @@ def main():
         print("\n[Feature Tests]")
         test_theme_toggle(page)
         test_responsive_mobile(page)
+        test_forgot_password_link(page)
+        test_notifications_page(page)
 
         browser.close()
 

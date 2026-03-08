@@ -20,7 +20,8 @@ export type Permission =
   | "classes"
   | "trainers"
   | "body_tracking"
-  | "lockers";
+  | "lockers"
+  | "notifications";
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   SUPER_ADMIN: ["dashboard", "companies", "users", "reports"],
@@ -46,6 +47,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "trainers",
     "body_tracking",
     "lockers",
+    "notifications",
   ],
   CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],
@@ -73,13 +75,13 @@ export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
   RESTAURANT: [
     "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
-    "users", "settings",
+    "users", "settings", "notifications",
   ],
   GYM: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
-    "users", "settings", "memberships", "checkin", "day_passes", "classes",
-    "trainers", "body_tracking", "lockers",
+    "users", "settings", "notifications", "memberships", "checkin", "day_passes",
+    "classes", "trainers", "body_tracking", "lockers",
   ],
 };
 

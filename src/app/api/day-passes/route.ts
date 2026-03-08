@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
+import { sendNotification, EMAIL_EVENTS, emailDayPassCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -120,6 +121,14 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    const customer = dayPass.member?.customer;
+    if (customer?.email) {
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+      sendNotification(companyId, EMAIL_EVENTS.DAYPASS_CREATED,
+        emailDayPassCreated(customer.email, customer.name, entries, salePrice, company?.name || "SGC"),
+      ).catch(() => {});
+    }
 
     return NextResponse.json(dayPass, { status: 201 });
   } catch (error) {

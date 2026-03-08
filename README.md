@@ -21,7 +21,10 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Modo oscuro/claro** — Soporte completo con toggle manual
 - **Gestión de estado con Jotai** — Atoms para theme, auth y permisos
 - **Concurrencia segura** — Transacciones serializables, reintentos automáticos
-- **Test suite completa** — Concurrencia, API, E2E
+- **Sistema de emails transaccionales (Brevo)** — Notificaciones en ventas, compras, membresías, tiqueteras, facturas
+- **Recuperación de contraseña** — Flujo completo con token y email
+- **Panel de notificaciones** — Gestión por empresa, rol y usuario
+- **Test suite completa** — Concurrencia, API, Email, E2E
 
 ## Requisitos previos
 
@@ -46,6 +49,13 @@ Crea un archivo `.env` en la raíz del proyecto:
 ```env
 DATABASE_URL="postgresql://usuario:contraseña@localhost:5432/business_system"
 JWT_SECRET="tu-secreto-jwt-seguro-min-32-caracteres"
+SMTP_HOST="smtp-relay.brevo.com"
+SMTP_PORT="587"
+SMTP_USER="tu-email-brevo@ejemplo.com"
+SMTP_PASS="tu-smtp-key-de-brevo"
+SMTP_FROM_EMAIL="noreply@tuempresa.com"
+SMTP_FROM_NAME="SGC - Sistema de Gestión Comercial"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 ### 3. Base de datos
@@ -94,7 +104,7 @@ business-system/
 │   │   ├── organisms/  # Sidebar, Header
 │   │   └── templates/  # DashboardLayout, AuthLayout
 │   ├── store/          # Jotai atoms (theme, auth, permissions)
-│   ├── lib/            # auth, prisma, rbac, accounting, sale
+│   ├── lib/            # auth, prisma, rbac, accounting, sale, email
 │   └── quarks/         # Tokens de diseño (colores, espaciado, tipografía)
 ├── tests/              # Vitest + Playwright tests
 ├── docs/               # Documentación
@@ -118,6 +128,7 @@ business-system/
 | `pnpm test:watch` | Tests en modo watch |
 | `pnpm test:concurrency` | Tests de concurrencia |
 | `pnpm test:api` | Tests de API |
+| `pnpm test:email` | Tests del sistema de email |
 | `pnpm test:e2e` | Tests E2E |
 
 ## Documentación adicional
@@ -127,6 +138,7 @@ business-system/
 - [Sistema de diseño](docs/DESIGN-SYSTEM.md) — Colores, tipografía, clases CSS
 - [Testing](docs/TESTING.md) — Vitest, Playwright, estrategia de pruebas
 - [Concurrencia](docs/CONCURRENCY.md) — Transacciones, aislamiento, reintentos
+- [Emails y notificaciones](docs/EMAILS.md) — Brevo, templates, preferencias
 
 ## Licencia
 

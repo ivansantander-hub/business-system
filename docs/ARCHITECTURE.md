@@ -294,3 +294,26 @@ Sale Request
 ### Accounting (`src/lib/accounting.ts`)
 
 All account balance updates use Prisma's atomic `{ increment: balanceChange }` to prevent lost-update anomalies. The `createJournalEntry` function validates debit/credit balance before persisting.
+
+## Email & Notification System
+
+The system integrates with **Brevo SMTP** (via `nodemailer`) for transactional emails. Emails are sent as fire-and-forget (non-blocking) after business actions complete.
+
+### Key Components
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| Email library | `src/lib/email.ts` | SMTP transport (nodemailer), templates, notification check |
+| Notification API | `src/app/api/notifications/` | Company/user/role preference management |
+| Password reset | `src/app/api/auth/forgot-password/` | Token-based password recovery |
+| Admin panel | `src/app/dashboard/notificaciones/` | UI for managing notification preferences |
+
+### Notification Hierarchy
+
+```
+Company Template (enabled?) → User Preference (enabled?) → Send Email
+       ↓                            ↓
+  Default: true                Default: true
+```
+
+Both must be enabled for the email to be sent. See [docs/EMAILS.md](./EMAILS.md) for complete reference.

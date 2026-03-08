@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
+import { sendNotification, EMAIL_EVENTS, emailMembershipCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -136,6 +137,19 @@ export async function POST(request: Request) {
           plan: true,
         },
       });
+
+      const customer = membership.member?.customer;
+      if (customer?.email) {
+        const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+        sendNotification(companyId, EMAIL_EVENTS.MEMBERSHIP_CREATED,
+          emailMembershipCreated(
+            customer.email, customer.name, plan.name,
+            startDate.toLocaleDateString("es-CO"), endDate.toLocaleDateString("es-CO"),
+            Number(plan.price), company?.name || "SGC"
+          ),
+        ).catch(() => {});
+      }
+
       return NextResponse.json(membership, { status: 201 });
     } catch (error) {
       if (error instanceof Error && error.message === "NO_CASH_SESSION") {

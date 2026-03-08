@@ -30,6 +30,7 @@ pnpm test:watch
 ```bash
 pnpm test:concurrency    # Concurrency tests only (no server needed)
 pnpm test:api             # API integration tests (requires running server)
+pnpm test:email           # Email template unit tests (no server needed)
 pnpm test:e2e             # E2E browser tests (requires running server)
 ```
 
@@ -57,6 +58,7 @@ python -m playwright install chromium
 tests/
 ├── setup.ts              # Global setup (Prisma disconnect)
 ├── helpers.ts            # Shared test utilities
+├── email.test.ts         # Email template unit tests (13 tests)
 ├── concurrency.test.ts   # Concurrency tests (6 tests)
 ├── api.test.ts           # API integration tests (17 tests)
 └── e2e.py                # E2E browser tests (15 tests)
@@ -169,6 +171,27 @@ def test_my_feature(page):
 ```
 
 2. Call it from `main()` in the appropriate group.
+
+## Email Tests (`tests/email.test.ts`)
+
+Unit tests for the email/notification system. These do not require a running server or Brevo credentials.
+
+| Test Group | Tests | Description |
+|------------|-------|-------------|
+| Email Event Constants | 2 | Validates all event types and labels are defined |
+| formatCurrency | 2 | COP currency formatting |
+| Email Template Functions | 9 | Validates each template function generates correct params |
+
+### API Tests for Notifications
+
+The `tests/api.test.ts` file includes additional integration tests:
+
+- `POST /api/auth/forgot-password` — Always returns 200
+- `POST /api/auth/reset-password` — Rejects invalid tokens
+- `GET /api/notifications` — Returns event templates
+- `PUT /api/notifications` — Toggles a notification
+- `GET /api/notifications/users` — Returns user preferences
+- `GET /api/notifications/roles` — Returns role groups
 
 ## Environment Variables
 

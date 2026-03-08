@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
+import { sendNotification, EMAIL_EVENTS, emailSaleCompleted } from "@/lib/email";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -51,6 +52,19 @@ export async function POST(request: Request) {
       orderId: body.orderId || null,
       notes: body.notes || null,
     });
+
+    if (result.invoice && body.customerId) {
+      const customer = await prisma.customer.findUnique({ where: { id: body.customerId }, select: { name: true, email: true } });
+      const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+      if (customer?.email) {
+        const items = (body.items as { productName: string; quantity: number; unitPrice: number }[]).map(i => ({
+          name: i.productName, qty: i.quantity, price: i.unitPrice * i.quantity,
+        }));
+        sendNotification(companyId, EMAIL_EVENTS.SALE_COMPLETED,
+          emailSaleCompleted(customer.email, customer.name, result.invoice.number, Number(result.invoice.total), items, company?.name || "SGC"),
+        ).catch(() => {});
+      }
+    }
 
     return NextResponse.json(result.invoice, { status: 201 });
   } catch (error) {
