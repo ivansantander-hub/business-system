@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { companyId } = getUserFromHeaders(_req);
@@ -43,6 +44,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
       include: { category: true },
     });
+    auditApiRequest(request, "product.update", { entity: "Product", entityId: id, statusCode: 200, details: { name: product.name } });
     return NextResponse.json(product);
   } catch (error) {
     console.error("Update product error:", error);
@@ -60,5 +62,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     data: { isActive: false },
   });
   if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+  const product = await prisma.product.findFirst({ where: { id, companyId }, select: { name: true } });
+  auditApiRequest(_req, "product.delete", { entity: "Product", entityId: id, details: { name: product?.name ?? "" } });
   return NextResponse.json({ ok: true });
 }

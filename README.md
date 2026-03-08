@@ -27,7 +27,11 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Almacenamiento R2 (Cloudflare)** — PDFs de facturas y compras, fotos de perfil
 - **Generación automática de PDFs** — Facturas y órdenes de compra en PDF con diseño profesional
 - **Perfil de usuario** — Gestión de info personal, contraseña y foto de perfil
-- **Test suite completa** — Concurrencia, API, Email, E2E, R2/PDF
+- **Test suite completa** — Concurrencia, API, Email, E2E, R2/PDF (ejecución unificada con `pnpm test:all`)
+- **Visor de resultados de tests** — Panel para SUPER_ADMIN con screenshots E2E desde R2
+- **Historial de actividad por usuario** — Desde gestión de usuarios, con links de navegación a entidades
+- **Sistema de auditoría** — Logging centralizado (singleton), trazabilidad de usuario, visor de admin y perfil
+- **Screenshots E2E** — Capturas automáticas de cada test, subidas a R2
 
 ## Requisitos previos
 
@@ -112,7 +116,7 @@ business-system/
 │   │   ├── organisms/  # Sidebar, Header
 │   │   └── templates/  # DashboardLayout, AuthLayout
 │   ├── store/          # Jotai atoms (theme, auth, permissions)
-│   ├── lib/            # auth, prisma, rbac, accounting, sale, email
+│   ├── lib/            # auth, prisma, rbac, accounting, sale, email, audit-logger
 │   └── quarks/         # Tokens de diseño (colores, espaciado, tipografía)
 ├── tests/              # Vitest + Playwright tests
 ├── docs/               # Documentación
@@ -136,10 +140,12 @@ business-system/
 | `pnpm test:watch` | Tests en modo watch |
 | `pnpm test:concurrency` | Tests de concurrencia (6 tests) |
 | `pnpm test:api` | Tests de API (32 tests, requiere servidor) |
-| `pnpm test:email` | Tests del sistema de email (12 tests) |
-| `pnpm test:r2` | Tests unitarios R2/PDF (8 tests) |
+| `pnpm test:email` | Tests del sistema de email (17 tests) |
+| `pnpm test:r2` | Tests unitarios R2/PDF (9 tests) |
 | `pnpm test:r2-integration` | Tests integración R2 live (8 tests, requiere servidor + R2) |
-| `pnpm test:e2e` | Tests E2E Playwright (24 tests, requiere servidor) |
+| `pnpm test:e2e` | Tests E2E Playwright con screenshots (26 tests, requiere servidor) |
+| `pnpm test:upload-logs` | Sube screenshots E2E y logs a R2 |
+| `pnpm test:all` | **Inicia servidor** + ejecuta todos los tests + sube a R2 (un solo comando) |
 
 ## Documentación adicional
 
@@ -149,6 +155,7 @@ business-system/
 - [Testing](docs/TESTING.md) — Vitest, Playwright, estrategia de pruebas
 - [Concurrencia](docs/CONCURRENCY.md) — Transacciones, aislamiento, reintentos
 - [Emails y notificaciones](docs/EMAILS.md) — Brevo, templates, preferencias
+- [Auditoría](docs/AUDITING.md) — Sistema de logging, singleton, visor admin
 
 ## Licencia
 

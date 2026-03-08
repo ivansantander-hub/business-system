@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { uploadToR2, deleteFromR2, avatarKey, isR2Configured } from "@/lib/r2";
+import { auditApiRequest } from "@/lib/api-audit";
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
     data: { avatarUrl: key },
   });
 
+  auditApiRequest(request, "avatar.upload", { entity: "User", entityId: userId });
   return NextResponse.json({ avatarUrl, key });
 }
 
@@ -84,5 +86,6 @@ export async function DELETE(request: Request) {
     data: { avatarUrl: null },
   });
 
+  auditApiRequest(request, "avatar.delete", { entity: "User", entityId: userId });
   return NextResponse.json({ ok: true });
 }

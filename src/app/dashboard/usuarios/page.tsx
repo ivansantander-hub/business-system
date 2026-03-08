@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Pencil, Shield, Building2, X } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Shield, Building2, X, ScrollText, Clock, ExternalLink, ChevronLeft, ChevronRight, Info, AlertTriangle, AlertCircle, Monitor, Globe } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
 import { PageHeader } from "@/components/molecules";
 import { Button } from "@/components/atoms";
 import { formatDate } from "@/lib/utils";
+import { getEntityUrl, getEntityLabel, getActionLabel } from "@/lib/entity-urls";
 
 interface CompanyAssignment {
   id: string;
@@ -48,6 +50,7 @@ export default function UsuariosPage() {
   const [formAssignments, setFormAssignments] = useState<FormAssignment[]>([]);
   const [selectedCompanyToAdd, setSelectedCompanyToAdd] = useState("");
   const [selectedRoleToAdd, setSelectedRoleToAdd] = useState("CASHIER");
+  const [activityUser, setActivityUser] = useState<UserItem | null>(null);
 
   const load = useCallback(async () => {
     const meRes = await fetch("/api/auth/me");
@@ -242,9 +245,14 @@ export default function UsuariosPage() {
                 </td>
                 <td className="table-cell">{formatDate(u.createdAt)}</td>
                 <td className="table-cell">
-                  <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg">
-                    <Pencil className="w-4 h-4 text-violet-600 dark:text-violet-400" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setActivityUser(u)} className="p-1.5 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg" title="Ver actividad">
+                      <ScrollText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </button>
+                    <button onClick={() => openEdit(u)} className="p-1.5 hover:bg-violet-50 dark:hover:bg-violet-500/10 rounded-lg" title="Editar">
+                      <Pencil className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -252,6 +260,10 @@ export default function UsuariosPage() {
         </table>
         </div>
       </div>
+
+      {activityUser && (
+        <UserActivityModal user={activityUser} onClose={() => setActivityUser(null)} />
+      )}
 
       <Modal open={showModal} onClose={() => setShowModal(false)} title={editing ? "Editar Usuario" : "Nuevo Usuario"} size={isSuperAdmin ? "lg" : "md"}>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -370,5 +382,205 @@ export default function UsuariosPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+interface ActivityLog {
+  id: string;
+  action: string;
+  entity: string | null;
+  entityId: string | null;
+  level: string;
+  source: string;
+  path: string | null;
+  method: string | null;
+  statusCode: number | null;
+  duration: number | null;
+  ipAddress: string | null;
+  details: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+function renderDetailValue(key: string, val: unknown): string {
+  if (val === null || val === undefined) return "-";
+  if (typeof val === "number") {
+    if (key.toLowerCase().includes("price") || key.toLowerCase().includes("total") || key.toLowerCase().includes("amount")) {
+      return `$ ${val.toLocaleString("es-CO")}`;
+    }
+    return String(val);
+  }
+  if (typeof val === "object") return JSON.stringify(val);
+  return String(val);
+}
+
+function UserActivityModal({ user, onClose }: Readonly<{ user: UserItem; onClose: () => void }>) {
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/logs?userId=${user.id}&page=${page}&limit=20`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs);
+        setTotalPages(data.totalPages);
+        setTotal(data.total);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [user.id, page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const levelIcons: Record<string, typeof Info> = { info: Info, warn: AlertTriangle, error: AlertCircle };
+  const levelColors: Record<string, string> = {
+    info: "text-blue-500", warn: "text-amber-500", error: "text-red-500",
+  };
+
+  return (
+    <Modal open onClose={onClose} title={`Actividad de ${user.name}`} size="lg">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-500 dark:text-slate-400">{total} acciones registradas</p>
+        </div>
+
+        {loading && logs.length === 0 && (
+          <div className="py-8 text-center text-slate-400">Cargando...</div>
+        )}
+
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {logs.map((log) => {
+            const LevelIcon = levelIcons[log.level] || Info;
+            const isExp = expanded === log.id;
+            const entityUrl = getEntityUrl(log.entity, log.entityId);
+
+            return (
+              <div key={log.id} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  className="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors"
+                  onClick={() => setExpanded(isExp ? null : log.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    <LevelIcon className={`w-4 h-4 mt-0.5 shrink-0 ${levelColors[log.level] || "text-slate-400"}`} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                          {getActionLabel(log.action)}
+                        </span>
+                        {log.entity && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300">
+                            {getEntityLabel(log.entity)}
+                          </span>
+                        )}
+                        {log.details && (
+                          <span className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-[200px]">
+                            {log.details.name ? String(log.details.name) : log.details.number ? String(log.details.number) : ""}
+                          </span>
+                        )}
+                        {entityUrl && (
+                          <Link
+                            href={entityUrl}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-violet-600 dark:text-violet-400 hover:underline flex items-center gap-0.5"
+                          >
+                            <ExternalLink className="w-3 h-3" /> Ver
+                          </Link>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-400">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(log.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "medium" })}
+                        </span>
+                        {log.source === "frontend" && <span className="flex items-center gap-1"><Monitor className="w-3 h-3" /> Frontend</span>}
+                        {log.source === "backend" && <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> Backend</span>}
+                        {log.path && log.action === "page.view" && (
+                          <span className="font-mono">{log.path}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {isExp && (
+                  <div className="border-t border-slate-100 dark:border-slate-800 p-3 bg-slate-50/50 dark:bg-white/[0.01]">
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      {log.entityId && (
+                        <div>
+                          <dt className="text-slate-400">Entity ID</dt>
+                          <dd className="font-mono text-slate-700 dark:text-slate-300">{log.entityId.slice(0, 12)}...</dd>
+                        </div>
+                      )}
+                      {log.path && (
+                        <div>
+                          <dt className="text-slate-400">Ruta</dt>
+                          <dd className="font-mono text-slate-700 dark:text-slate-300">{log.method} {log.path}</dd>
+                        </div>
+                      )}
+                      {log.ipAddress && (
+                        <div>
+                          <dt className="text-slate-400">IP</dt>
+                          <dd className="font-mono text-slate-700 dark:text-slate-300">{log.ipAddress}</dd>
+                        </div>
+                      )}
+                      {typeof log.statusCode === "number" && (
+                        <div>
+                          <dt className="text-slate-400">Status</dt>
+                          <dd className={`font-mono ${log.statusCode >= 400 ? "text-red-500" : "text-emerald-600"}`}>{log.statusCode}</dd>
+                        </div>
+                      )}
+                      {typeof log.duration === "number" && (
+                        <div>
+                          <dt className="text-slate-400">Duración</dt>
+                          <dd className="text-slate-700 dark:text-slate-300">{log.duration}ms</dd>
+                        </div>
+                      )}
+                      {log.details && Object.keys(log.details).length > 0 && (
+                        <div className="col-span-2">
+                          <dt className="text-slate-400 mb-1">Detalles</dt>
+                          <dd className="space-y-1">
+                            {Object.entries(log.details).map(([k, v]) => (
+                              <div key={k} className="flex gap-2">
+                                <span className="text-slate-400 capitalize">{k}:</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-medium">{renderDetailValue(k, v)}</span>
+                              </div>
+                            ))}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {logs.length === 0 && !loading && (
+          <div className="py-8 text-center text-slate-400">No hay actividad registrada para este usuario</div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-xs text-slate-500">Página {page} de {totalPages}</span>
+            <div className="flex gap-1">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="btn-secondary p-1.5 disabled:opacity-40">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="btn-secondary p-1.5 disabled:opacity-40">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
   );
 }

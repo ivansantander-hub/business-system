@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
+import { auditApiRequest } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailCashSessionClosed } from "@/lib/email";
 
 export async function GET(request: Request) {
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
         timeout: 10000,
       });
 
+      auditApiRequest(request, "cash.open", { entity: "CashSession", entityId: session.id, statusCode: 201, details: { openingAmount: Number(session.openingAmount) } });
       return NextResponse.json(session, { status: 201 });
     } catch (error) {
       if (error instanceof Error && error.message === "ALREADY_OPEN") {
@@ -144,6 +146,7 @@ export async function POST(request: Request) {
         ).catch(() => {});
       }
 
+      auditApiRequest(request, "cash.close", { entity: "CashSession", entityId: updated.id, details: { salesTotal: Number(updated.salesTotal), closingAmount: Number(updated.closingAmount) } });
       return NextResponse.json(updated);
     } catch (error) {
       if (error instanceof Error && error.message === "NO_OPEN_SESSION") {

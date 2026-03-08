@@ -36,6 +36,21 @@ pnpm test:r2-integration  # R2 integration tests (requires server + R2 credentia
 pnpm test:e2e             # E2E browser tests (requires running server)
 ```
 
+### All tests (server + Vitest + E2E + R2 upload)
+
+The easiest way to run everything with a single command:
+
+```bash
+pnpm test:all
+```
+
+This script will:
+1. Start the dev server (or detect an already running one)
+2. Run all Vitest test suites
+3. Run all Python E2E tests
+4. Upload screenshots and results to R2
+5. Shut down the server when done
+
 ### E2E tests (Playwright)
 
 E2E tests require a running dev server and Python with Playwright installed:
@@ -54,18 +69,37 @@ pip install playwright
 python -m playwright install chromium
 ```
 
+### Screenshots & Test Log Upload
+
+E2E tests automatically capture screenshots for every test in `tests/screenshots/`. After running tests, upload screenshots and results to R2:
+
+```bash
+pnpm test:upload-logs
+```
+
+This uploads all screenshots, `results.json`, and a `manifest.json` to R2 under `test-logs/<timestamp>/`.
+
+### Test Results Viewer
+
+SUPER_ADMIN users can view test run history, screenshots, and results from the admin panel at `/dashboard/test-runs`. This page fetches data from R2 and displays:
+- Test run listing sorted by date
+- Pass/fail summary
+- Failed test details
+- Full-size screenshot viewer with lightbox
+
 ## Test Structure
 
 ```
 tests/
 ├── setup.ts                 # Global setup (Prisma disconnect)
 ├── helpers.ts               # Shared test utilities
-├── email.test.ts            # Email template unit tests (12 tests)
+├── email.test.ts            # Email template unit tests (17 tests)
 ├── concurrency.test.ts      # Concurrency tests (6 tests)
 ├── api.test.ts              # API integration tests (32 tests)
-├── r2-pdf.test.ts           # R2 key generation and PDF generation tests (8 tests)
+├── r2-pdf.test.ts           # R2 key generation and PDF generation tests (9 tests)
 ├── r2-integration.test.ts   # R2 live integration tests (8 tests)
-└── e2e.py                   # E2E browser tests (24 tests)
+├── e2e.py                   # E2E browser tests with screenshots (26 tests)
+└── screenshots/             # Auto-generated E2E test screenshots
 ```
 
 ### Configuration
@@ -90,12 +124,12 @@ export default defineConfig({
 | Suite | Tests | Server Required | R2 Required | Description |
 |-------|-------|-----------------|-------------|-------------|
 | `concurrency.test.ts` | 6 | No | No | Parallel database operation integrity |
-| `email.test.ts` | 12 | No | No | Email templates and event constants |
+| `email.test.ts` | 17 | No | No | Email templates and event constants |
 | `api.test.ts` | 32 | Yes | No | REST API endpoint validation |
-| `r2-pdf.test.ts` | 8 | No | No | R2 key generation and PDF creation |
+| `r2-pdf.test.ts` | 9 | No | No | R2 key generation and PDF creation |
 | `r2-integration.test.ts` | 8 | Yes | Yes | Live R2 upload/download/delete + API flows |
-| `e2e.py` | 24 | Yes | No | Full browser-based user experience |
-| **Total** | **90** | | | |
+| `e2e.py` | 26 | Yes | No | Full browser-based user experience with screenshots |
+| **Total** | **98** | | | |
 
 ## Test Suites Detail
 

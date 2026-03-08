@@ -11,11 +11,14 @@ import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { authUserAtom, fetchAuthAtom } from "@/store";
 import { Sidebar, Header } from "../organisms";
+import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const user = useAtomValue(authUserAtom);
   const fetchAuth = useSetAtom(fetchAuthAtom);
+
+  usePageTracking();
 
   useEffect(() => {
     if (!user) fetchAuth();

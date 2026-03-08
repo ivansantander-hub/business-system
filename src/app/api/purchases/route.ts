@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { sendNotification, EMAIL_EVENTS, emailPurchaseCreated } from "@/lib/email";
+import { auditApiRequest } from "@/lib/api-audit";
 import { generateAndUploadPurchasePdf } from "@/lib/pdf-worker";
 
 export async function GET(request: Request) {
@@ -75,5 +76,6 @@ export async function POST(request: Request) {
 
   generateAndUploadPurchasePdf(purchase.id, companyId).catch(() => {});
 
+  auditApiRequest(request, "purchase.create", { entity: "Purchase", entityId: purchase.id, statusCode: 201, details: { number: purchase.number, total: Number(purchase.total) } });
   return NextResponse.json(purchase, { status: 201 });
 }

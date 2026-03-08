@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
+import { auditApiRequest } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailSaleCompleted } from "@/lib/email";
 import { generateAndUploadInvoicePdf } from "@/lib/pdf-worker";
 
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
 
     generateAndUploadInvoicePdf(result.invoice.id, companyId).catch(() => {});
 
+    auditApiRequest(request, "invoice.create", { entity: "Invoice", entityId: result.invoice.id, statusCode: 201, details: { number: result.invoice.number, total: Number(result.invoice.total), customerName: body.customerName || null } });
     return NextResponse.json(result.invoice, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "NO_CASH_SESSION") {

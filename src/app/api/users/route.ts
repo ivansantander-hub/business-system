@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { auditApiRequest } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailUserCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
@@ -125,6 +126,7 @@ export async function POST(request: Request) {
         user.id
       ).catch(() => {});
 
+      auditApiRequest(request, "user.create", { entity: "User", entityId: user.id, statusCode: 201, details: { name: user.name, email: user.email } });
       return NextResponse.json(user, { status: 201 });
     }
 
@@ -173,6 +175,7 @@ export async function POST(request: Request) {
       ).catch(() => {});
     }
 
+    auditApiRequest(request, "user.create", { entity: "User", entityId: user.id, statusCode: 201, details: { name: user.name, email: user.email } });
     return NextResponse.json(
       {
         ...user,

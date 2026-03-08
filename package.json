@@ -18,12 +18,15 @@
     "test:r2": "vitest run tests/r2-pdf.test.ts",
     "test:r2-integration": "vitest run tests/r2-integration.test.ts",
     "test:e2e": "python tests/e2e.py",
-    "test:email": "vitest run tests/email.test.ts"
+    "test:email": "vitest run tests/email.test.ts",
+    "test:upload-logs": "node scripts/upload-test-logs.js",
+    "test:all": "node scripts/run-all-tests.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1004.0",
     "@prisma/client": "^6.0.0",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^17.3.1",
     "jose": "^5.2.0",
     "jotai": "^2.18.0",
     "lucide-react": "^0.460.0",

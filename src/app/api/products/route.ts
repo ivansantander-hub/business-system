@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
       },
       include: { category: true },
     });
+    auditApiRequest(request, "product.create", { entity: "Product", entityId: product.id, statusCode: 201, details: { name: product.name, salePrice: Number(product.salePrice) } });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error("Create product error:", error);

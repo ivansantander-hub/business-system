@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(request: Request) {
   const { userId } = getUserFromHeaders(request);
@@ -64,5 +65,6 @@ export async function PUT(request: Request) {
     select: { id: true, name: true, email: true, role: true, avatarUrl: true, createdAt: true },
   });
 
+  auditApiRequest(request, "profile.update", { entity: "User", entityId: userId });
   return NextResponse.json(updated);
 }

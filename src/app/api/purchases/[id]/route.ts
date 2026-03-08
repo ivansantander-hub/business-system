@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
+import { auditApiRequest } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailPurchaseReceived } from "@/lib/email";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -102,6 +103,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ).catch(() => {});
       }
 
+      auditApiRequest(request, "purchase.receive", { entity: "Purchase", entityId: id });
       return NextResponse.json({ ok: true });
     } catch (error) {
       if (error instanceof Error && error.message === "PURCHASE_NOT_FOUND_OR_ALREADY_RECEIVED") {
@@ -123,6 +125,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       where: { id },
       data: { status: "CANCELLED" },
     });
+    auditApiRequest(request, "purchase.cancel", { entity: "Purchase", entityId: id });
     return NextResponse.json({ ok: true });
   }
 

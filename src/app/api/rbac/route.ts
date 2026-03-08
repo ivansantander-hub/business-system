@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/auth";
+import { auditApiRequest } from "@/lib/api-audit";
 import {
   ALL_PERMISSIONS,
   PERMISSION_LABELS,
@@ -138,5 +139,6 @@ export async function POST(request: Request) {
 
   await prisma.$transaction(ops);
 
+  auditApiRequest(request, "rbac.update");
   return NextResponse.json({ ok: true, updated: ops.length });
 }

@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID || "";
@@ -118,6 +119,31 @@ export async function existsInR2(key: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** List objects by prefix */
+export async function listR2(
+  prefix: string,
+  delimiter?: string,
+  maxKeys = 1000
+): Promise<{ prefixes: string[]; objects: { key: string; size: number; lastModified: Date | undefined }[] }> {
+  const client = getClient();
+  const res = await client.send(
+    new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+      Delimiter: delimiter,
+      MaxKeys: maxKeys,
+    })
+  );
+  return {
+    prefixes: (res.CommonPrefixes || []).map((p) => p.Prefix || ""),
+    objects: (res.Contents || []).map((o) => ({
+      key: o.Key || "",
+      size: o.Size || 0,
+      lastModified: o.LastModified,
+    })),
+  };
 }
 
 /** Compute the R2 key for a sale invoice PDF */

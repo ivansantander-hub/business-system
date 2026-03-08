@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { auditLogger, extractRequestMeta } from "@/lib/audit-logger";
 
 export async function POST(request: Request) {
   try {
@@ -77,6 +78,9 @@ export async function POST(request: Request) {
       maxAge: 60 * 60 * 24,
       path: "/",
     });
+
+    const { ipAddress, userAgent } = extractRequestMeta(request);
+    auditLogger.info("auth.login", { userId: user.id, userName: user.name, companyId: activeCompanyId, entity: "User", entityId: user.id, ipAddress, userAgent, path: "/api/auth/login", method: "POST" });
 
     return response;
   } catch (error) {

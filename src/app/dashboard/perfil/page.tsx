@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { User, Mail, Lock, Camera, Trash2, Save, Eye, EyeOff, Shield } from "lucide-react";
+import { User, Mail, Lock, Camera, Trash2, Save, Eye, EyeOff, Shield, ScrollText, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { useSetAtom } from "jotai";
 import { fetchAuthAtom } from "@/store";
 import Toast from "@/components/ui/Toast";
@@ -317,6 +317,95 @@ export default function PerfilPage() {
           </div>
         </form>
       </div>
+
+      {/* Activity Log */}
+      <UserActivityLog />
+    </div>
+  );
+}
+
+function UserActivityLog() {
+  const [logs, setLogs] = useState<{ id: string; action: string; entity: string | null; level: string; source: string; path: string | null; createdAt: string }[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/logs/my?page=${page}&limit=10`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs);
+        setTotalPages(data.totalPages);
+        setTotal(data.total);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const levelColors: Record<string, string> = {
+    info: "text-blue-600 dark:text-blue-400",
+    warn: "text-amber-600 dark:text-amber-400",
+    error: "text-red-600 dark:text-red-400",
+  };
+
+  return (
+    <div className="card p-4 sm:p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <ScrollText className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Mi Actividad Reciente</h2>
+        <span className="text-xs text-slate-500 ml-auto">{total} registros</span>
+      </div>
+
+      {loading && logs.length === 0 && (
+        <p className="text-center text-slate-500 dark:text-slate-400 py-6">Cargando...</p>
+      )}
+
+      <div className="space-y-2">
+        {logs.map((log) => (
+          <div key={log.id} className="flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+            <div className={`w-2 h-2 rounded-full shrink-0 ${log.level === "error" ? "bg-red-500" : log.level === "warn" ? "bg-amber-500" : "bg-blue-500"}`} />
+            <div className="flex-1 min-w-0">
+              <span className={`text-sm font-medium ${levelColors[log.level] || "text-slate-700 dark:text-slate-300"}`}>
+                {log.action}
+              </span>
+              {log.entity && (
+                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">{log.entity}</span>
+              )}
+              {log.path && (
+                <span className="text-xs text-slate-400 dark:text-slate-500 ml-2 hidden sm:inline font-mono">{log.path}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1 text-xs text-slate-400 shrink-0">
+              <Clock className="w-3 h-3" />
+              {new Date(log.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {logs.length === 0 && !loading && (
+        <p className="text-center text-slate-500 dark:text-slate-400 py-6">No hay actividad registrada</p>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-xs text-slate-500">Página {page} de {totalPages}</span>
+          <div className="flex gap-1">
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40">
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

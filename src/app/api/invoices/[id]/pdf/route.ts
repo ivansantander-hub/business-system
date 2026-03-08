@@ -5,22 +5,41 @@ import { generateInvoicePdf } from "@/lib/pdf";
 import { uploadToR2, getBufferFromR2, invoicePdfKey, isR2Configured } from "@/lib/r2";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(_req);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  const { companyId, userId } = getUserFromHeaders(_req);
+  if (!companyId && !userId) return NextResponse.json({ error: "No autenticado" }, { status: 401 });
 
   const { id } = await params;
 
-  const invoice = await prisma.invoice.findFirst({
-    where: { id, companyId },
+  let invoice = await prisma.invoice.findFirst({
+    where: { id, ...(companyId ? { companyId } : {}) },
     include: {
       customer: true,
       user: { select: { name: true } },
       items: true,
     },
   });
+
+  if (!invoice && companyId) {
+    invoice = await prisma.invoice.findFirst({
+      where: { id },
+      include: {
+        customer: true,
+        user: { select: { name: true } },
+        items: true,
+      },
+    });
+    if (invoice && userId) {
+      const hasAccess = await prisma.userCompany.findFirst({
+        where: { userId, companyId: invoice.companyId },
+      });
+      if (!hasAccess) invoice = null;
+    }
+  }
+
   if (!invoice) return NextResponse.json({ error: "Factura no encontrada" }, { status: 404 });
 
-  const r2Key = invoicePdfKey(companyId, invoice.number);
+  const effectiveCompanyId = invoice.companyId;
+  const r2Key = invoicePdfKey(effectiveCompanyId, invoice.number);
 
   if (isR2Configured()) {
     const existing = await getBufferFromR2(r2Key);
@@ -35,7 +54,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     }
   }
 
-  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  const company = await prisma.company.findUnique({ where: { id: effectiveCompanyId } });
   if (!company) return NextResponse.json({ error: "Empresa no encontrada" }, { status: 404 });
 
   const pdfBytes = await generateInvoicePdf({
@@ -68,9 +87,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
 
   if (isR2Configured()) {
-    uploadToR2(r2Key, Buffer.from(pdfBytes), "application/pdf").catch((err) =>
-      console.error("R2 upload error (invoice PDF):", err)
-    );
+    uploadToR2(r2Key, Buffer.from(pdfBytes), "application/pdf").catch(() => {});
   }
 
   return new Response(Buffer.from(pdfBytes), {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createSale } from "@/lib/sale";
+import { auditApiRequest } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailDayPassCreated } from "@/lib/email";
 
 export async function GET(request: Request) {
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
       ).catch(() => {});
     }
 
+    auditApiRequest(request, "daypass.create", { entity: "DayPass", entityId: dayPass.id, statusCode: 201, details: { customerName: dayPass.member?.customer?.name ?? dayPass.guestName ?? null, entries: dayPass.totalEntries } });
     return NextResponse.json(dayPass, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "NO_CASH_SESSION") {

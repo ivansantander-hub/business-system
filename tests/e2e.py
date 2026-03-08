@@ -1,18 +1,33 @@
 """
 E2E tests for the business system using Playwright.
-Tests login, dashboard, POS sale flow, and purchase flow.
+Tests login, dashboard, POS sale flow, purchase flow, and more.
+Screenshots are saved to tests/screenshots/ for each test.
 """
 
+import os
 import sys
 import json
+import datetime
+from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
 BASE_URL = "http://localhost:3000"
+SCREENSHOTS_DIR = Path(__file__).parent / "screenshots"
+SCREENSHOTS_DIR.mkdir(exist_ok=True)
 
-results = {"passed": 0, "failed": 0, "errors": []}
+results = {"passed": 0, "failed": 0, "errors": [], "screenshots": []}
+_current_page = None
 
 
 def report(name: str, passed: bool, error: str = ""):
+    safe_name = name.replace(" ", "_").replace("/", "_")[:60]
+    if _current_page:
+        try:
+            ss_path = str(SCREENSHOTS_DIR / f"{safe_name}.png")
+            _current_page.screenshot(path=ss_path, full_page=True)
+            results["screenshots"].append(ss_path)
+        except Exception:
+            pass
     if passed:
         results["passed"] += 1
         print(f"  PASS: {name}")
@@ -390,13 +405,42 @@ def test_invoice_pdf_actual_download(page):
     )
 
 
+def test_logs_page(page):
+    """Logs page loads with activity log content."""
+    page.goto(f"{BASE_URL}/dashboard/logs")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(3000)
+    body = page.text_content("body") or ""
+    report(
+        "Logs page loads",
+        "Registro" in body or "Actividad" in body or "logs" in page.url,
+        f"URL: {page.url}",
+    )
+
+
+def test_profile_activity_log(page):
+    """Profile page shows user activity section."""
+    page.goto(f"{BASE_URL}/dashboard/perfil")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
+    body = page.text_content("body") or ""
+    report(
+        "Profile has activity log section",
+        "Actividad" in body or "actividad" in body,
+        f"Body snippet: {body[:200]}",
+    )
+
+
 def main():
+    global _current_page
     print("\n=== E2E Tests for Business System ===\n")
+    print(f"Screenshots will be saved to: {SCREENSHOTS_DIR}\n")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(viewport={"width": 1280, "height": 720})
         page = context.new_page()
+        _current_page = page
 
         # Test login
         print("[Login Tests]")
@@ -434,15 +478,34 @@ def main():
         test_purchase_pdf_download_button(page)
         test_invoice_pdf_actual_download(page)
 
+        print("\n[Logs & Audit Tests]")
+        test_logs_page(page)
+        test_profile_activity_log(page)
+
+        _current_page = None
         browser.close()
 
     # Summary
     total = results["passed"] + results["failed"]
     print(f"\n=== Results: {results['passed']}/{total} passed ===")
+    print(f"Screenshots saved: {len(results['screenshots'])} to {SCREENSHOTS_DIR}")
     if results["errors"]:
         print("\nFailed tests:")
         for err in results["errors"]:
             print(f"  - {err}")
+
+    # Write log as JSON for R2 upload
+    log_path = SCREENSHOTS_DIR / "results.json"
+    with open(log_path, "w") as f:
+        json.dump({
+            "timestamp": datetime.datetime.now().isoformat(),
+            "total": total,
+            "passed": results["passed"],
+            "failed": results["failed"],
+            "errors": results["errors"],
+            "screenshots": [os.path.basename(s) for s in results["screenshots"]],
+        }, f, indent=2)
+    print(f"Results JSON: {log_path}")
 
     sys.exit(0 if results["failed"] == 0 else 1)
 

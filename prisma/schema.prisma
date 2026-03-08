@@ -841,6 +841,38 @@ model BodyMeasurement {
   @@map("body_measurements")
 }
 
+// =============================================
+// AUDIT LOG
+// =============================================
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  companyId  String?  @map("company_id")
+  userId     String?  @map("user_id")
+  userName   String?  @map("user_name")
+  action     String
+  entity     String?
+  entityId   String?  @map("entity_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  source     String   @default("backend") // "backend" | "frontend"
+  level      String   @default("info") // "info" | "warn" | "error" | "debug"
+  duration   Int?     // ms for API calls
+  statusCode Int?     @map("status_code")
+  path       String?
+  method     String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, createdAt])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@schema("public")
+  @@map("audit_logs")
+}
+
 model Locker {
   id        String       @id @default(uuid())
   companyId String       @map("company_id")

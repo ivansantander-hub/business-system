@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
+import { auditApiRequest } from "@/lib/api-audit";
 
 const EXPENSE_CATEGORY_ACCOUNTS: Record<string, string> = {
   "Personal": "5105",
@@ -85,5 +86,6 @@ export async function POST(request: Request) {
     return exp;
   });
 
+  auditApiRequest(request, "expense.create", { entity: "Expense", entityId: expense.id, statusCode: 201 });
   return NextResponse.json(expense, { status: 201 });
 }
