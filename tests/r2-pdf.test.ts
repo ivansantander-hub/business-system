@@ -5,7 +5,7 @@ import { generateInvoicePdf } from "@/lib/pdf";
 describe("R2 Key Generation", () => {
   it("should generate correct invoice PDF key", () => {
     const key = invoicePdfKey("company-123", "FE-00000001");
-    expect(key).toBe("companies/company-123/invoices/FE-00000001.pdf");
+    expect(key).toBe("companies/company-123/invoices/FE-00000001/factura.pdf");
   });
 
   it("should sanitize special characters in invoice number", () => {

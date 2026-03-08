@@ -31,6 +31,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const body = await request.json();
 
   if (body.status === "RECEIVED") {
+    const MAX_RETRIES = 3;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       let purchaseBeforeState: Record<string, unknown> | null = null;
       await prisma.$transaction(async (tx) => {
@@ -117,8 +119,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       if (error instanceof Error && error.message === "PURCHASE_NOT_FOUND_OR_ALREADY_RECEIVED") {
         return NextResponse.json({ error: "Compra no encontrada o ya recibida" }, { status: 409 });
       }
+      const isRetryable =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === "P2034" || error.code === "P2002");
+      if (isRetryable && attempt < MAX_RETRIES - 1) {
+        await new Promise((r) => setTimeout(r, (2 ** attempt) * 50 + Math.random() * 100));
+        continue;
+      }
       console.error("Purchase receive error:", error);
       return NextResponse.json({ error: "Error al recibir compra" }, { status: 500 });
+    }
     }
   }
 

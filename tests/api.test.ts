@@ -493,6 +493,29 @@ describe("Audit API", () => {
     expect(data).toHaveProperty("limit");
     expect(data).toHaveProperty("totalPages");
   });
+
+  it("GET /api/audit/entity-search should search entities", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/audit/entity-search?q=test&type=all");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("results");
+    expect(Array.isArray(data.results)).toBe(true);
+  });
+
+  it("GET /api/audit/entity-detail should return entity detail", async (ctx) => {
+    requireServer(ctx);
+    const prodRes = await apiRequest("/api/products");
+    const products = await prodRes.json();
+    if (products.length > 0) {
+      const res = await apiRequest(`/api/audit/entity-detail?entity=Product&entityId=${products[0].id}`);
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data).toHaveProperty("entityData");
+      expect(data).toHaveProperty("relatedData");
+      expect(data).toHaveProperty("auditLogs");
+    }
+  });
 });
 
 describe("Invoice Export API", () => {
@@ -559,6 +582,15 @@ describe("Company Config API", () => {
     expect(data).toHaveProperty("dianRangeTo");
     expect(data).toHaveProperty("economicActivity");
     expect(data).toHaveProperty("taxResponsibilities");
+  });
+
+  it("GET /api/company/config should include e-invoicing fields", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("electronicInvoicingEnabled");
+    expect(typeof data.electronicInvoicingEnabled).toBe("boolean");
   });
 });
 

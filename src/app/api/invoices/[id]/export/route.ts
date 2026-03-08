@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { generateInvoiceXml, generateInvoiceExcel } from "@/lib/invoice-export";
 import { generateInvoicePdf } from "@/lib/pdf";
-import { uploadToR2, isR2Configured } from "@/lib/r2";
+import { uploadToR2, isR2Configured, invoicePdfKey, invoiceXmlKey, invoiceExcelKey } from "@/lib/r2";
 import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -71,11 +71,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const buffer = Buffer.from(xml, "utf-8");
 
     if (isR2Configured()) {
-      uploadToR2(
-        `companies/${companyId}/invoices/${invoice.number}/factura.xml`,
-        buffer,
-        "application/xml"
-      ).catch(() => {});
+      uploadToR2(invoiceXmlKey(companyId, invoice.number), buffer, "application/xml").catch(() => {});
     }
 
     return new Response(new Uint8Array(buffer), {
@@ -90,11 +86,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const excelBuffer = await generateInvoiceExcel(exportData);
 
     if (isR2Configured()) {
-      uploadToR2(
-        `companies/${companyId}/invoices/${invoice.number}/factura.xlsx`,
-        excelBuffer,
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      ).catch(() => {});
+      uploadToR2(invoiceExcelKey(companyId, invoice.number), excelBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet").catch(() => {});
     }
 
     return new Response(new Uint8Array(excelBuffer), {
@@ -170,11 +162,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     });
 
     if (isR2Configured()) {
-      const prefix = `companies/${companyId}/invoices/${invoice.number}`;
       await Promise.allSettled([
-        uploadToR2(`${prefix}/factura.pdf`, pdfBytes, "application/pdf"),
-        uploadToR2(`${prefix}/factura.xml`, Buffer.from(xml, "utf-8"), "application/xml"),
-        uploadToR2(`${prefix}/factura.xlsx`, excelBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+        uploadToR2(invoicePdfKey(companyId, invoice.number), pdfBytes, "application/pdf"),
+        uploadToR2(invoiceXmlKey(companyId, invoice.number), Buffer.from(xml, "utf-8"), "application/xml"),
+        uploadToR2(invoiceExcelKey(companyId, invoice.number), excelBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
       ]);
     }
 

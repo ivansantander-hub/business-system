@@ -31,10 +31,13 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Visor de resultados de tests** — Panel para SUPER_ADMIN con screenshots E2E desde R2
 - **Historial de actividad por usuario** — Desde gestión de usuarios, con links de navegación a entidades
 - **Centro de Auditoría** — Pista de auditoría completa con estado antes/después, checksums SHA-256, Línea de Vida por entidad
+- **Auditoría centralizada** — Búsqueda de entidades, ciclo de vida de productos, historial de clientes, dashboard con 4 pestañas
 - **Sistema de auditoría** — Logging centralizado (singleton), trazabilidad de usuario, visor de admin y perfil
 - **Exportación de facturas** — XML UBL 2.1, Excel y PDF
 - **Contabilidad ampliada** — Balance General, Estado de Resultados (P&L), Balance de Comprobación
 - **Preparación DIAN** — Resolución, prefijo, rangos y actividad económica configurables por empresa
+- **Módulo de Facturación Electrónica (DIAN)** — Activatable por empresa, generación CUFE, validación de rangos DIAN, gestión de configuración
+- **Estructura de carpetas de facturas en R2** — PDF + XML + Excel por factura
 - **Política de retención** — Años de retención documental configurables por empresa
 - **Notas crédito/débito** — Modelo de notas asociadas a facturas
 - **Screenshots E2E** — Capturas automáticas de cada test, subidas a R2
@@ -142,14 +145,14 @@ business-system/
 | `pnpm db:seed` | Ejecuta el seed (datos iniciales) |
 | `pnpm db:studio` | Abre Prisma Studio |
 | `pnpm setup` | `db:generate` + `db:push` + `db:seed` |
-| `pnpm test` | Ejecuta todos los tests (Vitest) — 79 tests |
+| `pnpm test` | Ejecuta todos los tests (Vitest) — 82 tests |
 | `pnpm test:watch` | Tests en modo watch |
 | `pnpm test:concurrency` | Tests de concurrencia (6 tests) |
-| `pnpm test:api` | Tests de API (39 tests, requiere servidor) |
+| `pnpm test:api` | Tests de API (42 tests, requiere servidor) |
 | `pnpm test:email` | Tests del sistema de email (17 tests) |
 | `pnpm test:r2` | Tests unitarios R2/PDF (9 tests) |
 | `pnpm test:r2-integration` | Tests integración R2 live (8 tests, requiere servidor + R2) |
-| `pnpm test:e2e` | Tests E2E Playwright con screenshots (26 tests, requiere servidor) |
+| `pnpm test:e2e` | Tests E2E Playwright con screenshots (29 tests, requiere servidor) |
 | `pnpm test:upload-logs` | Sube screenshots E2E y logs a R2 |
 | `pnpm test:all` | **Inicia servidor** + ejecuta todos los tests + sube a R2 (un solo comando) |
 
@@ -162,6 +165,7 @@ business-system/
 - [Concurrencia](docs/CONCURRENCY.md) — Transacciones, aislamiento, reintentos
 - [Emails y notificaciones](docs/EMAILS.md) — Brevo, templates, preferencias
 - [Auditoría](docs/AUDITING.md) — Sistema de logging, singleton, visor admin
+- [Facturación Electrónica](docs/ELECTRONIC-INVOICING.md) — Módulo DIAN, CUFE, rangos, configuración
 
 ## Licencia
 

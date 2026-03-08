@@ -431,6 +431,48 @@ def test_profile_activity_log(page):
     )
 
 
+def test_auditoria_page(page):
+    """Test Centro de Auditoría page loads with all tabs"""
+    page.goto(f"{BASE_URL}/dashboard/auditoria")
+    page.wait_for_load_state("networkidle")
+    has_title = page.locator("text=Centro de Auditoría").first.is_visible()
+    has_resumen = page.locator("text=Resumen").first.is_visible()
+    has_explorador = page.locator("text=Explorador").first.is_visible()
+    has_busqueda = page.locator("text=Búsqueda").first.is_visible()
+    report("Auditoría page loads with all tabs", has_title and has_resumen and has_explorador and has_busqueda)
+
+
+def test_facturacion_electronica_page(page):
+    """Test Facturación Electrónica page loads"""
+    page.goto(f"{BASE_URL}/dashboard/facturacion-electronica")
+    page.wait_for_load_state("networkidle")
+    has_title = page.locator("text=Facturación Electrónica").first.is_visible()
+    report("Facturación Electrónica page loads", has_title)
+
+
+def test_audit_entity_search(page):
+    """Test entity search in audit center"""
+    page.goto(f"{BASE_URL}/dashboard/auditoria")
+    page.wait_for_load_state("networkidle")
+    tabs = page.locator("button").all()
+    clicked = False
+    for tab in tabs:
+        txt = tab.inner_text()
+        if "squeda" in txt:
+            tab.click()
+            clicked = True
+            break
+    if not clicked:
+        # fallback: click third tab (index 2)
+        tab_buttons = page.locator("div.flex.gap-1 > button").all()
+        if len(tab_buttons) >= 3:
+            tab_buttons[2].click()
+            clicked = True
+    page.wait_for_timeout(1000)
+    has_content = page.locator("text=Entidades").first.is_visible() if clicked else False
+    report("Audit entity search tab accessible", clicked and has_content)
+
+
 def main():
     global _current_page
     print("\n=== E2E Tests for Business System ===\n")
@@ -481,6 +523,9 @@ def main():
         print("\n[Logs & Audit Tests]")
         test_logs_page(page)
         test_profile_activity_log(page)
+        test_auditoria_page(page)
+        test_facturacion_electronica_page(page)
+        test_audit_entity_search(page)
 
         _current_page = None
         browser.close()

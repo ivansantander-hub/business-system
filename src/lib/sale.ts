@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { createJournalEntry } from "@/lib/accounting";
+import { generatePlaceholderCufe, validateDianRange } from "@/lib/dian";
 
 interface SaleItem {
   productId?: string | null;
@@ -72,6 +73,20 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
       const result = await prisma.$transaction(async (tx) => {
+        const company = await tx.company.findUnique({
+          where: { id: companyId },
+          select: {
+            electronicInvoicingEnabled: true,
+            dianPrefix: true,
+            dianRangeFrom: true,
+            dianRangeTo: true,
+            dianTechnicalKey: true,
+            dianEnvironment: true,
+            nit: true,
+            name: true,
+          },
+        });
+
         const prefixSetting = await tx.setting.findFirst({
           where: { companyId, key: "invoice_prefix" },
         });
@@ -79,7 +94,9 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
           where: { companyId, key: "tax_rate" },
         });
 
-        const prefix = prefixSetting?.value || "FE-";
+        const prefix = company?.electronicInvoicingEnabled && company.dianPrefix
+          ? company.dianPrefix
+          : (prefixSetting?.value || "FE-");
         const taxRate = Number(taxRateSetting?.value || "0.19");
 
         // Atomic invoice number: read count + setting inside Serializable tx
@@ -107,6 +124,17 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
           if (settingNum > nextNum) nextNum = settingNum;
         }
         const invoiceNumber = `${prefix}${String(nextNum).padStart(8, "0")}`;
+
+        if (company?.electronicInvoicingEnabled) {
+          const rangeValidation = validateDianRange(
+            nextNum,
+            company.dianRangeFrom ?? null,
+            company.dianRangeTo ?? null
+          );
+          if (!rangeValidation.valid) {
+            throw new Error(rangeValidation.message ?? "Número fuera del rango DIAN autorizado");
+          }
+        }
 
         const taxableAmount = subtotal - discount;
         const tax = taxableAmount * taxRate;
@@ -223,6 +251,21 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
         }
 
         await createJournalEntry(tx, companyId, `Venta ${invoiceNumber}`, invoiceNumber, journalLines);
+
+        if (company?.electronicInvoicingEnabled) {
+          const totalNum = Number(inv.total);
+          const taxNum = Number(inv.tax);
+          const dateStr = new Date().toISOString();
+          const cufe = generatePlaceholderCufe(invoiceNumber, company.nit, totalNum, dateStr);
+          const qrCode = `NumFac: ${invoiceNumber}\nFecFac: ${dateStr}\nNitFac: ${company.nit}\nDocAdq: ${inv.customer?.nit ?? "N/A"}\nValFac: ${totalNum.toFixed(2)}\nValIva: ${taxNum.toFixed(2)}\nValTot: ${totalNum.toFixed(2)}\nCUFE: ${cufe}`;
+          await tx.invoice.update({
+            where: { id: inv.id },
+            data: { cufe, qrCode, dianStatus: "GENERATED" },
+          });
+          (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).cufe = cufe;
+          (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).qrCode = qrCode;
+          (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).dianStatus = "GENERATED";
+        }
 
         return { invoice: inv as unknown as SaleResult["invoice"], cashSession: { id: cashSession.id } };
       }, {

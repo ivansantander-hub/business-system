@@ -95,10 +95,10 @@ tests/
 ├── helpers.ts               # Shared test utilities
 ├── email.test.ts            # Email template unit tests (17 tests)
 ├── concurrency.test.ts      # Concurrency tests (6 tests)
-├── api.test.ts              # API integration tests (39 tests)
+├── api.test.ts              # API integration tests (42 tests)
 ├── r2-pdf.test.ts           # R2 key generation and PDF generation tests (9 tests)
 ├── r2-integration.test.ts   # R2 live integration tests (8 tests)
-├── e2e.py                   # E2E browser tests with screenshots (26 tests)
+├── e2e.py                   # E2E browser tests with screenshots (29 tests)
 └── screenshots/             # Auto-generated E2E test screenshots
 ```
 
@@ -125,11 +125,11 @@ export default defineConfig({
 |-------|-------|-----------------|-------------|-------------|
 | `concurrency.test.ts` | 6 | No | No | Parallel database operation integrity |
 | `email.test.ts` | 17 | No | No | Email templates and event constants |
-| `api.test.ts` | 39 | Yes | No | REST API endpoint validation |
+| `api.test.ts` | 42 | Yes | No | REST API endpoint validation |
 | `r2-pdf.test.ts` | 9 | No | No | R2 key generation and PDF creation |
 | `r2-integration.test.ts` | 8 | Yes | Yes | Live R2 upload/download/delete + API flows |
-| `e2e.py` | 26 | Yes | No | Full browser-based user experience with screenshots |
-| **Total** | **105** | | | |
+| `e2e.py` | 29 | Yes | No | Full browser-based user experience with screenshots |
+| **Total** | **111** | | | |
 
 ## Test Suites Detail
 
@@ -169,9 +169,9 @@ export default defineConfig({
 | Profile | 3 | Get profile, update name, reject wrong password |
 | Invoice PDF | 1 | Returns 404 for non-existent invoice |
 | Purchase PDF | 1 | Returns 404 for non-existent purchase |
-| Audit | 2 | Audit stats (totalLogs, byEntity, byUser, byAction), entity timeline |
+| Audit | 4 | Audit stats, entity timeline, entity-search, entity-detail |
 | Invoice Export | 1 | XML export (create sale, then request XML) |
-| Company Config | 1 | retentionYears, DIAN fields |
+| Company Config | 2 | retentionYears, DIAN fields, electronicInvoicingEnabled |
 | Accounting | 3 | Balance sheet, income statement, trial balance |
 
 **Authentication:** Tests generate a JWT token using `signToken()` and send it as a cookie.
@@ -224,6 +224,7 @@ Unit tests for the R2 storage layer and PDF generation. No server or R2 credenti
 | Page Navigation | 8 | Products, Customers, Invoices, POS, Accounting, Reports, Purchases, Settings pages load |
 | Features | 7 | Theme toggle, responsive mobile viewport, forgot password, notifications, RBAC, profile pages, PDF 404 |
 | R2 & PDF Integration | 4 | Avatar file input present, invoice PDF link in detail, purchase PDF via API, actual invoice PDF download |
+| Logs & Audit | 5 | Logs page, profile activity, auditoría page, facturación electrónica page, audit entity search |
 
 ## Test Helpers (`tests/helpers.ts`)
 

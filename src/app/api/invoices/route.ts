@@ -14,6 +14,8 @@ export async function GET(request: Request) {
   const status = searchParams.get("status");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const limitParam = searchParams.get("limit");
+  const take = limitParam ? Math.min(Math.max(1, Number.parseInt(limitParam, 10)), 500) : 200;
 
   const where: Record<string, unknown> = { companyId };
   if (status) where.status = status;
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
       items: true,
     },
     orderBy: { createdAt: "desc" },
-    take: 200,
+    take,
   });
   return NextResponse.json(invoices);
 }

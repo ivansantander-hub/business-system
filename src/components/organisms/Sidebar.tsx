@@ -53,6 +53,7 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, permission: "suppliers", group: "finanzas" },
   { href: "/dashboard/compras", label: "Compras", icon: ShoppingBag, permission: "purchases", group: "finanzas" },
   { href: "/dashboard/contabilidad", label: "Contabilidad", icon: Calculator, permission: "accounting", group: "finanzas" },
+  { href: "/dashboard/facturacion-electronica", label: "Facturación Electrónica", icon: FileText, permission: "invoices", group: "finanzas" },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports", group: "sistema" },
   { href: "/dashboard/usuarios", label: "Usuarios", icon: Users, permission: "users", group: "sistema" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings, permission: "settings", group: "sistema" },

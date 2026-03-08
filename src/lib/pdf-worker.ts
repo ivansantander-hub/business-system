@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateInvoicePdf } from "@/lib/pdf";
-import { uploadToR2, invoicePdfKey, purchasePdfKey, isR2Configured } from "@/lib/r2";
+import { generateInvoiceXml, generateInvoiceExcel } from "@/lib/invoice-export";
+import { uploadToR2, invoicePdfKey, invoiceXmlKey, invoiceExcelKey, purchasePdfKey, isR2Configured } from "@/lib/r2";
 
 /**
  * Generates and uploads an invoice PDF to R2 in the background.
@@ -50,7 +51,49 @@ export async function generateAndUploadInvoicePdf(invoiceId: string, companyId: 
 
     const key = invoicePdfKey(companyId, invoice.number);
     await uploadToR2(key, Buffer.from(pdfBytes), "application/pdf");
-    console.log(`Invoice PDF uploaded: ${key}`);
+
+    const exportData = {
+      invoiceNumber: invoice.number,
+      date: new Date(invoice.date).toISOString().split("T")[0],
+      companyName: company.name,
+      companyNit: company.nit,
+      companyAddress: company.address,
+      companyPhone: company.phone,
+      companyEmail: company.email,
+      companyCity: company.city,
+      companyDepartment: company.department,
+      taxRegime: company.taxRegime,
+      economicActivity: company.economicActivity,
+      dianResolution: company.dianResolution,
+      customerName: invoice.customer?.name,
+      customerNit: invoice.customer?.nit,
+      customerAddress: invoice.customer?.address,
+      customerEmail: invoice.customer?.email,
+      customerPhone: invoice.customer?.phone,
+      items: invoice.items.map((i) => ({
+        name: i.productName,
+        quantity: Number(i.quantity),
+        unitPrice: Number(i.unitPrice),
+        total: Number(i.total),
+      })),
+      subtotal: Number(invoice.subtotal),
+      taxRate: Number(invoice.taxRate),
+      tax: Number(invoice.tax),
+      discount: Number(invoice.discount),
+      total: Number(invoice.total),
+      paymentMethod: invoice.paymentMethod,
+      status: invoice.status,
+      notes: invoice.notes,
+    };
+
+    const xml = generateInvoiceXml(exportData);
+    const excelBuffer = await generateInvoiceExcel(exportData);
+
+    await Promise.allSettled([
+      uploadToR2(invoiceXmlKey(companyId, invoice.number), Buffer.from(xml, "utf-8"), "application/xml"),
+      uploadToR2(invoiceExcelKey(companyId, invoice.number), excelBuffer, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+    ]);
+    console.log(`Invoice documents uploaded: PDF + XML + Excel for ${invoice.number}`);
   } catch (err) {
     console.error("Background invoice PDF generation failed:", err);
   }

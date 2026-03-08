@@ -234,6 +234,12 @@ model Company {
   dianRangeTo     Int?      @map("dian_range_to")
   economicActivity String?  @map("economic_activity")
   taxResponsibilities String? @map("tax_responsibilities")
+  electronicInvoicingEnabled Boolean @default(false) @map("electronic_invoicing_enabled")
+  dianTechnicalKey    String?   @map("dian_technical_key")
+  dianEnvironment     String?   @map("dian_environment")
+  dianSoftwareId      String?   @map("dian_software_id")
+  dianSoftwarePin     String?   @map("dian_software_pin")
+  dianTestSetId       String?   @map("dian_test_set_id")
 
   @@schema("public")
   @@map("companies")
@@ -519,6 +525,12 @@ model Invoice {
   status         InvoiceStatus @default(PAID)
   notes          String?
   createdAt      DateTime      @default(now()) @map("created_at")
+  cufe                String?
+  qrCode              String?   @map("qr_code")
+  dianStatus          String?   @map("dian_status")
+  dianResponseDate    DateTime? @map("dian_response_date")
+  dianResponseMessage String?   @map("dian_response_message")
+  xmlPath             String?   @map("xml_path")
   items          InvoiceItem[]
   creditNotes    CreditNote[]
   debitNotes     DebitNote[]

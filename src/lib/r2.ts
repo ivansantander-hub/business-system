@@ -146,10 +146,25 @@ export async function listR2(
   };
 }
 
+/** Compute the R2 folder prefix for an invoice */
+export function invoiceFolderKey(companyId: string, invoiceNumber: string): string {
+  const safe = invoiceNumber.replaceAll(/[^a-zA-Z0-9_-]/g, "_");
+  return `companies/${companyId}/invoices/${safe}`;
+}
+
 /** Compute the R2 key for a sale invoice PDF */
 export function invoicePdfKey(companyId: string, invoiceNumber: string): string {
-  const safe = invoiceNumber.replaceAll(/[^a-zA-Z0-9_-]/g, "_");
-  return `companies/${companyId}/invoices/${safe}.pdf`;
+  return `${invoiceFolderKey(companyId, invoiceNumber)}/factura.pdf`;
+}
+
+/** Compute the R2 key for a sale invoice XML */
+export function invoiceXmlKey(companyId: string, invoiceNumber: string): string {
+  return `${invoiceFolderKey(companyId, invoiceNumber)}/factura.xml`;
+}
+
+/** Compute the R2 key for a sale invoice Excel */
+export function invoiceExcelKey(companyId: string, invoiceNumber: string): string {
+  return `${invoiceFolderKey(companyId, invoiceNumber)}/factura.xlsx`;
 }
 
 /** Compute the R2 key for a purchase order PDF */

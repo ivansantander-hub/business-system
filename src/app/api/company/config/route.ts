@@ -10,6 +10,12 @@ const CONFIG_FIELDS = [
   "dianRangeTo",
   "economicActivity",
   "taxResponsibilities",
+  "electronicInvoicingEnabled",
+  "dianTechnicalKey",
+  "dianEnvironment",
+  "dianSoftwareId",
+  "dianSoftwarePin",
+  "dianTestSetId",
 ] as const;
 
 export type CompanyConfig = {
@@ -20,6 +26,12 @@ export type CompanyConfig = {
   dianRangeTo: number | null;
   economicActivity: string | null;
   taxResponsibilities: string | null;
+  electronicInvoicingEnabled: boolean;
+  dianTechnicalKey: string | null;
+  dianEnvironment: string | null;
+  dianSoftwareId: string | null;
+  dianSoftwarePin: string | null;
+  dianTestSetId: string | null;
 };
 
 export async function GET(request: Request) {
@@ -38,6 +50,12 @@ export async function GET(request: Request) {
       dianRangeTo: true,
       economicActivity: true,
       taxResponsibilities: true,
+      electronicInvoicingEnabled: true,
+      dianTechnicalKey: true,
+      dianEnvironment: true,
+      dianSoftwareId: true,
+      dianSoftwarePin: true,
+      dianTestSetId: true,
     },
   });
 
@@ -53,6 +71,12 @@ export async function GET(request: Request) {
     dianRangeTo: company.dianRangeTo,
     economicActivity: company.economicActivity,
     taxResponsibilities: company.taxResponsibilities,
+    electronicInvoicingEnabled: company.electronicInvoicingEnabled,
+    dianTechnicalKey: company.dianTechnicalKey,
+    dianEnvironment: company.dianEnvironment,
+    dianSoftwareId: company.dianSoftwareId,
+    dianSoftwarePin: company.dianSoftwarePin,
+    dianTestSetId: company.dianTestSetId,
   };
 
   return NextResponse.json(config);
@@ -75,6 +99,8 @@ export async function PUT(request: Request) {
         if (!Number.isNaN(num) && num >= 1 && num <= 30) {
           data[key] = num;
         }
+      } else if (key === "electronicInvoicingEnabled") {
+        data[key] = typeof value === "boolean" ? value : value === "true" || value === true;
       } else if (key === "dianRangeFrom" || key === "dianRangeTo") {
         if (value === "" || value === null || value === undefined) {
           data[key] = null;

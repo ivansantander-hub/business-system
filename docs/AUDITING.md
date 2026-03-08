@@ -152,6 +152,14 @@ Returns aggregated audit statistics: `totalLogs`, `byEntity`, `byUser`, `byActio
 
 Returns the Línea de Vida for a given entity. Requires `entity` and `entityId` query parameters. See [Entity Timeline (Línea de Vida)](#entity-timeline-línea-de-vida) above.
 
+### `GET /api/audit/entity-search` — Entity Search (Admin Only)
+
+Searches entities by name across Product, Customer, Invoice, User, and Purchase. Query parameters: `q` (search term, min 2 chars), `type` (entity type or `all`). Returns `{ results: [{ type, id, label, subtitle? }] }`.
+
+### `GET /api/audit/entity-detail` — Entity Detail (Admin Only)
+
+Returns full audit detail for an entity. Query parameters: `entity` (Product, Customer, Invoice, User, Purchase), `entityId` (UUID). Returns `{ entityData, relatedData, auditLogs }`. See [Entity Detail](#entity-detail) above.
+
 ## Entity Details in Logs
 
 Audit log entries include structured `details` JSON for key entities. This enables:
@@ -219,15 +227,52 @@ Response includes `events`, `total`, `page`, `limit`, and `totalPages`. Use this
 
 ## Admin Audit Dashboard
 
-The **Centro de Auditoría** (`/dashboard/auditoria`) provides a full-featured admin interface:
+The **Centro de Auditoría** (`/dashboard/auditoria`) provides a full-featured admin interface with 4 tabs:
 
-- **Dashboard tab**: Statistics (totalLogs, byEntity, byUser, byAction), recent activity
-- **Explorer tab**: Searchable log viewer with filters (entity, user, action, date range)
+- **Resumen (Dashboard) tab**: Statistics (totalLogs, byEntity, byUser, byAction), recent activity
+- **Explorador tab**: Searchable log viewer with filters (entity, user, action, date range)
+- **Búsqueda tab**: Entity search — search by name across products, customers, invoices, users, purchases
 - **Timeline tab**: Entity Línea de Vida — enter entity type and ID to view all events
 - **Diff viewer**: Side-by-side before/after comparison for state changes
 - **Checksum display**: SHA-256 hash for each entry (tamper detection)
 
 Requires `ADMIN` or `SUPER_ADMIN` role.
+
+## Entity Search
+
+The **Entity Search** feature (Búsqueda tab) allows admins to search across entities by name:
+
+- Search by product name or barcode
+- Search by customer name or NIT
+- Search by invoice number
+- Search by user name or email
+- Search by purchase number
+
+Results show entity type, label, and subtitle. Clicking a result opens the **Entity Detail** view with full timeline and related data.
+
+## Entity Detail
+
+The **Entity Detail** view (`GET /api/audit/entity-detail`) provides a comprehensive audit view for any entity:
+
+### Product Lifecycle
+
+For products, the detail view includes:
+
+- **entityData**: Full product record (name, prices, stock, category)
+- **relatedData**: Sales (invoices with quantities, customers, totals), purchases (suppliers, quantities), inventory movements, top customers by revenue
+- **auditLogs**: Chronological audit trail for the product
+
+### Customer History
+
+For customers, the detail view includes:
+
+- **entityData**: Full customer record
+- **relatedData**: Invoices (items, totals, payment methods), memberships, day passes, total spent, invoice count
+- **auditLogs**: Chronological audit trail for the customer
+
+### Other Entities
+
+Entity Detail also supports Invoice, User, and Purchase entities with appropriate related data.
 
 ## Invoice Cancellation and Reversal Entries
 
