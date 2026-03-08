@@ -59,6 +59,7 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/notificaciones", label: "Notificaciones", icon: Bell, permission: "notifications", group: "sistema" },
   { href: "/dashboard/rbac", label: "Control de Acceso", icon: Shield, permission: "rbac", group: "sistema" },
   { href: "/dashboard/logs", label: "Registro de Actividad", icon: ScrollText, permission: "logs", group: "sistema" },
+  { href: "/dashboard/auditoria", label: "Centro de Auditoría", icon: Shield, permission: "audit", group: "sistema" },
   { href: "/dashboard/test-runs", label: "Resultados de Tests", icon: FlaskConical, permission: "test_runs", group: "sistema" },
 ];
 

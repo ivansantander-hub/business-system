@@ -224,6 +224,16 @@ model Company {
   notificationTemplates   NotificationTemplate[]
   userNotifPreferences    UserNotificationPreference[]
   rolePermissions         RolePermission[]
+  creditNotes             CreditNote[]
+  debitNotes              DebitNote[]
+
+  retentionYears  Int       @default(5) @map("retention_years")
+  dianResolution  String?   @map("dian_resolution")
+  dianPrefix      String?   @map("dian_prefix")
+  dianRangeFrom   Int?      @map("dian_range_from")
+  dianRangeTo     Int?      @map("dian_range_to")
+  economicActivity String?  @map("economic_activity")
+  taxResponsibilities String? @map("tax_responsibilities")
 
   @@schema("public")
   @@map("companies")
@@ -510,6 +520,8 @@ model Invoice {
   notes          String?
   createdAt      DateTime      @default(now()) @map("created_at")
   items          InvoiceItem[]
+  creditNotes    CreditNote[]
+  debitNotes     DebitNote[]
 
   @@unique([companyId, number])
   @@schema("tenant")
@@ -842,27 +854,75 @@ model BodyMeasurement {
 }
 
 // =============================================
+// CREDIT / DEBIT NOTES (DIAN Preparation)
+// =============================================
+
+model CreditNote {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  company     Company  @relation(fields: [companyId], references: [id])
+  invoiceId   String   @map("invoice_id")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  userId      String   @map("user_id")
+  number      String
+  date        DateTime @default(now())
+  reason      String
+  subtotal    Decimal
+  tax         Decimal
+  total       Decimal
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([companyId, number])
+  @@schema("tenant")
+  @@map("credit_notes")
+}
+
+model DebitNote {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  company     Company  @relation(fields: [companyId], references: [id])
+  invoiceId   String   @map("invoice_id")
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  userId      String   @map("user_id")
+  number      String
+  date        DateTime @default(now())
+  reason      String
+  subtotal    Decimal
+  tax         Decimal
+  total       Decimal
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([companyId, number])
+  @@schema("tenant")
+  @@map("debit_notes")
+}
+
+// =============================================
 // AUDIT LOG
 // =============================================
 
 model AuditLog {
-  id         String   @id @default(uuid())
-  companyId  String?  @map("company_id")
-  userId     String?  @map("user_id")
-  userName   String?  @map("user_name")
-  action     String
-  entity     String?
-  entityId   String?  @map("entity_id")
-  details    Json?
-  ipAddress  String?  @map("ip_address")
-  userAgent  String?  @map("user_agent")
-  source     String   @default("backend") // "backend" | "frontend"
-  level      String   @default("info") // "info" | "warn" | "error" | "debug"
-  duration   Int?     // ms for API calls
-  statusCode Int?     @map("status_code")
-  path       String?
-  method     String?
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  companyId     String?  @map("company_id")
+  userId        String?  @map("user_id")
+  userName      String?  @map("user_name")
+  action        String
+  entity        String?
+  entityId      String?  @map("entity_id")
+  details       Json?
+  beforeState   Json?    @map("before_state")
+  afterState    Json?    @map("after_state")
+  changeReason  String?  @map("change_reason")
+  checksum      String?
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  source        String   @default("backend")
+  level         String   @default("info")
+  duration      Int?
+  statusCode    Int?     @map("status_code")
+  path          String?
+  method        String?
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@index([companyId, createdAt])
   @@index([userId, createdAt])

@@ -460,3 +460,154 @@ describe("Purchase PDF API", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("Audit API", () => {
+  it("GET /api/audit/stats should return audit statistics", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/audit/stats");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("totalLogs");
+    expect(typeof data.totalLogs).toBe("number");
+    expect(data).toHaveProperty("byEntity");
+    expect(Array.isArray(data.byEntity)).toBe(true);
+    expect(data).toHaveProperty("byUser");
+    expect(Array.isArray(data.byUser)).toBe(true);
+    expect(data).toHaveProperty("byAction");
+    expect(Array.isArray(data.byAction)).toBe(true);
+  });
+
+  it("GET /api/audit/timeline should return timeline for entity", async (ctx) => {
+    requireServer(ctx);
+    const product = await prisma.product.findFirst({ where: { companyId } });
+    const entityId = product?.id || "00000000-0000-0000-0000-000000000000";
+    const res = await apiRequest(`/api/audit/timeline?entity=Product&entityId=${entityId}`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("entity", "Product");
+    expect(data).toHaveProperty("entityId", entityId);
+    expect(data).toHaveProperty("events");
+    expect(Array.isArray(data.events)).toBe(true);
+    expect(data).toHaveProperty("total");
+    expect(data).toHaveProperty("page");
+    expect(data).toHaveProperty("limit");
+    expect(data).toHaveProperty("totalPages");
+  });
+});
+
+describe("Invoice Export API", () => {
+  let invoiceId: string;
+
+  it("GET /api/invoices/:id/export?format=xml should return XML", async (ctx) => {
+    requireServer(ctx);
+    await prisma.cashSession.updateMany({
+      where: { userId, companyId, status: "OPEN" },
+      data: { status: "CLOSED", closedAt: new Date() },
+    });
+    const openRes = await apiRequest("/api/cash", {
+      method: "POST",
+      body: JSON.stringify({ action: "open", openingAmount: 50000 }),
+    });
+    expect(openRes.status).toBe(201);
+
+    let product = await prisma.product.findFirst({ where: { companyId } });
+    if (!product) {
+      product = await prisma.product.create({
+        data: {
+          companyId,
+          name: `Export Test Product ${Date.now()}`,
+          salePrice: 10000,
+          costPrice: 5000,
+          stock: 100,
+          minStock: 5,
+        },
+      });
+    }
+
+    const saleRes = await apiRequest("/api/invoices", {
+      method: "POST",
+      body: JSON.stringify({
+        items: [{ productId: product.id, productName: product.name, quantity: 1, unitPrice: 10000 }],
+        paymentMethod: "CASH",
+        paidAmount: 10000,
+      }),
+    });
+    expect(saleRes.status).toBe(201);
+    const invoice = await saleRes.json();
+    invoiceId = invoice.id;
+
+    const res = await apiRequest(`/api/invoices/${invoiceId}/export?format=xml`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/xml");
+    const text = await res.text();
+    expect(text).toContain("<?xml");
+    expect(text.length).toBeGreaterThan(100);
+  });
+});
+
+describe("Company Config API", () => {
+  it("GET /api/company/config should return company config", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("retentionYears");
+    expect(typeof data.retentionYears).toBe("number");
+    expect(data).toHaveProperty("dianResolution");
+    expect(data).toHaveProperty("dianPrefix");
+    expect(data).toHaveProperty("dianRangeFrom");
+    expect(data).toHaveProperty("dianRangeTo");
+    expect(data).toHaveProperty("economicActivity");
+    expect(data).toHaveProperty("taxResponsibilities");
+  });
+});
+
+describe("Accounting API", () => {
+  it("GET /api/accounting/balance-sheet should return balance sheet data", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/accounting/balance-sheet");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("assets");
+    expect(Array.isArray(data.assets)).toBe(true);
+    expect(data).toHaveProperty("liabilities");
+    expect(Array.isArray(data.liabilities)).toBe(true);
+    expect(data).toHaveProperty("equity");
+    expect(Array.isArray(data.equity)).toBe(true);
+    expect(data).toHaveProperty("totals");
+    expect(data.totals).toHaveProperty("totalAssets");
+    expect(data.totals).toHaveProperty("totalLiabilities");
+    expect(data.totals).toHaveProperty("totalEquity");
+    expect(data.totals).toHaveProperty("balanced");
+  });
+
+  it("GET /api/accounting/income-statement should return income statement data", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/accounting/income-statement");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("income");
+    expect(Array.isArray(data.income)).toBe(true);
+    expect(data).toHaveProperty("costOfSales");
+    expect(Array.isArray(data.costOfSales)).toBe(true);
+    expect(data).toHaveProperty("expenses");
+    expect(Array.isArray(data.expenses)).toBe(true);
+    expect(data).toHaveProperty("totals");
+    expect(data.totals).toHaveProperty("totalIncome");
+    expect(data.totals).toHaveProperty("grossProfit");
+    expect(data.totals).toHaveProperty("netIncome");
+  });
+
+  it("GET /api/accounting/trial-balance should return trial balance data", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/accounting/trial-balance");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("accounts");
+    expect(Array.isArray(data.accounts)).toBe(true);
+    expect(data).toHaveProperty("totals");
+    expect(data.totals).toHaveProperty("totalDebits");
+    expect(data.totals).toHaveProperty("totalCredits");
+    expect(data.totals).toHaveProperty("balanced");
+  });
+});

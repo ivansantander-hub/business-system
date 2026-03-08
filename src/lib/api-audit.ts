@@ -2,8 +2,8 @@ import { getUserFromHeaders } from "@/lib/auth";
 import { auditLogger, extractRequestMeta } from "@/lib/audit-logger";
 
 /**
- * Audit middleware wrapper — call at end of each API handler to log the action.
- * Designed to be non-blocking (fire-and-forget).
+ * Audit middleware wrapper for API handlers.
+ * Supports before/after state capture for full traceability.
  */
 export function auditApiRequest(
   request: Request,
@@ -13,6 +13,9 @@ export function auditApiRequest(
     entityId?: string;
     statusCode?: number;
     details?: Record<string, unknown>;
+    beforeState?: Record<string, unknown> | null;
+    afterState?: Record<string, unknown> | null;
+    changeReason?: string;
     startTime?: number;
   } = {}
 ): void {
@@ -28,6 +31,9 @@ export function auditApiRequest(
     entity: opts.entity ?? null,
     entityId: opts.entityId ?? null,
     details: opts.details ?? null,
+    beforeState: opts.beforeState ?? null,
+    afterState: opts.afterState ?? null,
+    changeReason: opts.changeReason ?? null,
     ipAddress,
     userAgent,
     source: "backend",
@@ -37,4 +43,18 @@ export function auditApiRequest(
     path: url.pathname,
     method: request.method,
   });
+}
+
+/**
+ * Serialize an entity to a plain object suitable for before/after storage.
+ * Strips Prisma Decimal objects and nested relations for clean JSON.
+ */
+export function serializeEntity(entity: Record<string, unknown> | null): Record<string, unknown> | null {
+  if (!entity) return null;
+  return JSON.parse(JSON.stringify(entity, (_key, value) => {
+    if (value !== null && typeof value === "object" && typeof value.toNumber === "function") {
+      return Number(value);
+    }
+    return value;
+  }));
 }

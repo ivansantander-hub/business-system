@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export interface AuditLogEntry {
@@ -8,6 +10,9 @@ export interface AuditLogEntry {
   entity?: string | null;
   entityId?: string | null;
   details?: Record<string, unknown> | null;
+  beforeState?: Record<string, unknown> | null;
+  afterState?: Record<string, unknown> | null;
+  changeReason?: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
   source?: "backend" | "frontend";
@@ -18,9 +23,23 @@ export interface AuditLogEntry {
   method?: string | null;
 }
 
+function computeChecksum(entry: AuditLogEntry): string {
+  const payload = JSON.stringify({
+    a: entry.action,
+    e: entry.entity,
+    eid: entry.entityId,
+    u: entry.userId,
+    b: entry.beforeState,
+    af: entry.afterState,
+    d: entry.details,
+    t: Date.now(),
+  });
+  return createHash("sha256").update(payload).digest("hex");
+}
+
 class AuditLogger {
   private static instance: AuditLogger;
-  private queue: AuditLogEntry[] = [];
+  private queue: (AuditLogEntry & { checksum: string })[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly BATCH_SIZE = 50;
   private readonly FLUSH_INTERVAL_MS = 2000;
@@ -33,7 +52,8 @@ class AuditLogger {
   }
 
   log(entry: AuditLogEntry): void {
-    this.queue.push(entry);
+    const checksum = computeChecksum(entry);
+    this.queue.push({ ...entry, checksum });
 
     if (this.queue.length >= this.BATCH_SIZE) {
       this.flush();
@@ -73,7 +93,11 @@ class AuditLogger {
           action: e.action,
           entity: e.entity ?? null,
           entityId: e.entityId ?? null,
-          details: e.details ?? undefined,
+          details: (e.details ?? undefined) as Prisma.InputJsonValue | undefined,
+          beforeState: (e.beforeState ?? undefined) as Prisma.InputJsonValue | undefined,
+          afterState: (e.afterState ?? undefined) as Prisma.InputJsonValue | undefined,
+          changeReason: e.changeReason ?? null,
+          checksum: e.checksum,
           ipAddress: e.ipAddress ?? null,
           userAgent: e.userAgent ?? null,
           source: e.source ?? "backend",
@@ -86,7 +110,6 @@ class AuditLogger {
       });
     } catch (err) {
       console.error("AuditLogger flush failed:", err);
-      // Re-queue failed entries (limit to prevent memory leak)
       if (this.queue.length < 500) {
         this.queue.unshift(...batch);
       }
@@ -100,7 +123,6 @@ class AuditLogger {
 
 export const auditLogger = AuditLogger.getInstance();
 
-/** Extract IP and user agent from a Request */
 export function extractRequestMeta(request: Request): {
   ipAddress: string | null;
   userAgent: string | null;
@@ -111,7 +133,6 @@ export function extractRequestMeta(request: Request): {
   return { ipAddress, userAgent };
 }
 
-/** Log an API request/response with timing */
 export function logApiCall(
   request: Request,
   user: { userId?: string; name?: string; companyId?: string | null },

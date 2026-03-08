@@ -65,9 +65,12 @@ export async function GET(request: Request) {
   if (role !== "SUPER_ADMIN") {
     where.companyId = companyId;
   }
+  const entityId = searchParams.get("entityId");
+
   if (userId) where.userId = userId;
   if (action) where.action = { contains: action, mode: "insensitive" };
   if (entity) where.entity = entity;
+  if (entityId) where.entityId = entityId;
   if (level) where.level = level;
   if (source) where.source = source;
   if (search) {

@@ -167,12 +167,12 @@ export default function LogsPage() {
                         return (
                           <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 inline-flex items-center gap-1">
                             {getEntityLabel(log.entity)}
-                            {log.details?.name && (
-                              <span className="font-medium">{String(log.details.name)}</span>
-                            )}
-                            {log.details?.number && (
-                              <span className="font-mono opacity-70">{String(log.details.number)}</span>
-                            )}
+                            {(log.details as Record<string,unknown>)?.name ? (
+                              <span className="font-medium">{String((log.details as Record<string,unknown>).name)}</span>
+                            ) : null}
+                            {(log.details as Record<string,unknown>)?.number ? (
+                              <span className="font-mono opacity-70">{String((log.details as Record<string,unknown>).number)}</span>
+                            ) : null}
                             {url && (
                               <Link href={url} onClick={(e) => e.stopPropagation()} className="hover:underline ml-0.5">
                                 <ExternalLink className="w-3 h-3" />

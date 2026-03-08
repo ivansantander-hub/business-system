@@ -26,13 +26,14 @@ export type Permission =
   | "notifications"
   | "rbac"
   | "logs"
+  | "audit"
   | "test_runs";
 
 export const ALL_PERMISSIONS: Permission[] = [
   "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
   "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
   "users", "settings", "memberships", "checkin", "day_passes", "classes",
-  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "test_runs",
+  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs",
 ];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -61,6 +62,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   notifications: "Notificaciones",
   rbac: "Control de Acceso",
   logs: "Registro de Actividad",
+  audit: "Centro de Auditoría",
   test_runs: "Resultados de Tests",
 };
 
@@ -70,7 +72,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "dashboard", "products", "inventory", "pos", "tables", "orders",
     "invoices", "customers", "suppliers", "purchases", "accounting",
     "reports", "users", "settings", "memberships", "checkin", "day_passes",
-    "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs",
+    "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit",
   ],
   CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],

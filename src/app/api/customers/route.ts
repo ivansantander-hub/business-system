@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
-import { auditApiRequest } from "@/lib/api-audit";
+import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 
 export async function GET(request: Request) {
   const { companyId } = getUserFromHeaders(request);
@@ -82,6 +82,12 @@ export async function POST(request: Request) {
     });
   }
 
-  auditApiRequest(request, "customer.create", { entity: "Customer", entityId: customer.id, statusCode: 201, details: { name: customer.name } });
+  auditApiRequest(request, "customer.create", {
+    entity: "Customer",
+    entityId: customer.id,
+    statusCode: 201,
+    details: { name: customer.name },
+    afterState: serializeEntity(customer as unknown as Record<string, unknown>),
+  });
   return NextResponse.json(customer, { status: 201 });
 }

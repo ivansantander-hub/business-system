@@ -30,7 +30,13 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Test suite completa** — Concurrencia, API, Email, E2E, R2/PDF (ejecución unificada con `pnpm test:all`)
 - **Visor de resultados de tests** — Panel para SUPER_ADMIN con screenshots E2E desde R2
 - **Historial de actividad por usuario** — Desde gestión de usuarios, con links de navegación a entidades
+- **Centro de Auditoría** — Pista de auditoría completa con estado antes/después, checksums SHA-256, Línea de Vida por entidad
 - **Sistema de auditoría** — Logging centralizado (singleton), trazabilidad de usuario, visor de admin y perfil
+- **Exportación de facturas** — XML UBL 2.1, Excel y PDF
+- **Contabilidad ampliada** — Balance General, Estado de Resultados (P&L), Balance de Comprobación
+- **Preparación DIAN** — Resolución, prefijo, rangos y actividad económica configurables por empresa
+- **Política de retención** — Años de retención documental configurables por empresa
+- **Notas crédito/débito** — Modelo de notas asociadas a facturas
 - **Screenshots E2E** — Capturas automáticas de cada test, subidas a R2
 
 ## Requisitos previos
@@ -136,10 +142,10 @@ business-system/
 | `pnpm db:seed` | Ejecuta el seed (datos iniciales) |
 | `pnpm db:studio` | Abre Prisma Studio |
 | `pnpm setup` | `db:generate` + `db:push` + `db:seed` |
-| `pnpm test` | Ejecuta todos los tests (Vitest) — 72 tests |
+| `pnpm test` | Ejecuta todos los tests (Vitest) — 79 tests |
 | `pnpm test:watch` | Tests en modo watch |
 | `pnpm test:concurrency` | Tests de concurrencia (6 tests) |
-| `pnpm test:api` | Tests de API (32 tests, requiere servidor) |
+| `pnpm test:api` | Tests de API (39 tests, requiere servidor) |
 | `pnpm test:email` | Tests del sistema de email (17 tests) |
 | `pnpm test:r2` | Tests unitarios R2/PDF (9 tests) |
 | `pnpm test:r2-integration` | Tests integración R2 live (8 tests, requiere servidor + R2) |

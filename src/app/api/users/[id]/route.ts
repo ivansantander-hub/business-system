@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { role, companyId } = getUserFromHeaders(request);
@@ -37,6 +38,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   try {
+    const userBefore = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+    });
+
     const user = await prisma.user.update({
       where: { id: userId },
       data,
@@ -64,6 +70,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       });
     }
 
+    auditApiRequest(request, "user.update", {
+      entity: "User",
+      entityId: userId,
+      beforeState: serializeEntity({ ...userBefore, password: undefined } as unknown as Record<string, unknown>),
+      afterState: serializeEntity({ ...user, password: undefined } as unknown as Record<string, unknown>),
+    });
     return NextResponse.json(user);
   } catch {
     return NextResponse.json({ error: "Error al actualizar usuario" }, { status: 500 });

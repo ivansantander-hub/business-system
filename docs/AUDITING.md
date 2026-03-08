@@ -144,6 +144,14 @@ Available to `ADMIN` and `SUPER_ADMIN` roles. Supports filtering:
 
 Returns the authenticated user's own activity logs, scoped to their current company.
 
+### `GET /api/audit/stats` — Audit Statistics (Admin Only)
+
+Returns aggregated audit statistics: `totalLogs`, `byEntity`, `byUser`, `byAction`, and `recentActivity`. Used by the Centro de Auditoría dashboard.
+
+### `GET /api/audit/timeline` — Entity Timeline (Admin Only)
+
+Returns the Línea de Vida for a given entity. Requires `entity` and `entityId` query parameters. See [Entity Timeline (Línea de Vida)](#entity-timeline-línea-de-vida) above.
+
 ## Entity Details in Logs
 
 Audit log entries include structured `details` JSON for key entities. This enables:
@@ -171,6 +179,81 @@ Audit log entries include structured `details` JSON for key entities. This enabl
 The `getEntityUrl(entity, entityId)` function maps entity types to dashboard URLs. Used by the admin log viewer and user activity modals for clickable navigation.
 
 Supported entities: Invoice, Product, Customer, Supplier, Purchase, Expense, User, DayPass, Membership, CashSession, Order.
+
+## Immutable Audit Trail
+
+The audit system captures **before and after state** for key entity changes, providing a complete, tamper-evident history.
+
+### Before/After State Capture
+
+When entities are created, updated, or deleted, the system stores:
+
+- **`beforeState`**: Serialized snapshot of the entity before the change
+- **`afterState`**: Serialized snapshot after the change (or `null` for deletions)
+
+This enables full traceability: you can see exactly what changed, when, and by whom. State is captured for Product, Invoice, Purchase, Customer, User, CashSession, DayPass, and other instrumented entities.
+
+### SHA-256 Checksums for Tamper Detection
+
+Each audit log entry receives a **SHA-256 checksum** computed from:
+
+- Action, entity, entityId, userId
+- beforeState and afterState
+- details
+- Timestamp
+
+The checksum is stored with the log and displayed in the admin dashboard. Any modification to the stored record would invalidate the checksum, enabling tamper detection during audits.
+
+## Entity Timeline (Línea de Vida)
+
+The **Línea de Vida** feature (`GET /api/audit/timeline`) provides a chronological view of all audit events for a specific entity.
+
+| Parameter | Description |
+|-----------|-------------|
+| `entity` | Entity type (e.g. `Product`, `Invoice`, `Customer`) |
+| `entityId` | UUID of the entity |
+| `page` | Page number (default: 1) |
+| `limit` | Items per page (default: 50, max: 100) |
+
+Response includes `events`, `total`, `page`, `limit`, and `totalPages`. Use this to trace the complete lifecycle of any record.
+
+## Admin Audit Dashboard
+
+The **Centro de Auditoría** (`/dashboard/auditoria`) provides a full-featured admin interface:
+
+- **Dashboard tab**: Statistics (totalLogs, byEntity, byUser, byAction), recent activity
+- **Explorer tab**: Searchable log viewer with filters (entity, user, action, date range)
+- **Timeline tab**: Entity Línea de Vida — enter entity type and ID to view all events
+- **Diff viewer**: Side-by-side before/after comparison for state changes
+- **Checksum display**: SHA-256 hash for each entry (tamper detection)
+
+Requires `ADMIN` or `SUPER_ADMIN` role.
+
+## Invoice Cancellation and Reversal Entries
+
+When an invoice is cancelled (`PUT /api/invoices/:id` with `status: "CANCELLED"`), the system:
+
+1. Reverses inventory (restores stock for each item)
+2. Creates inventory movements with reason "Anulación factura"
+3. Updates the invoice status to `CANCELLED`
+4. **Creates reversal journal entries** — a new journal entry with reversed debits/credits to undo the original sale (income, tax, cash/receivables)
+5. Decrements `cashSession.salesTotal` if applicable
+
+The reversal entry uses description `Anulación factura {number}` and reference `ANU-{number}`. This ensures accounting integrity: cancelled sales are properly reversed in the books.
+
+## Alignment with HIPAA / 21 CFR Part 11 Principles
+
+The audit system is designed to support compliance with regulatory frameworks that require electronic record integrity and traceability:
+
+| Principle | Implementation |
+|-----------|-----------------|
+| **Audit trail** | Every significant action is logged with user, timestamp, IP, and entity context |
+| **Data integrity** | SHA-256 checksums enable tamper detection; before/after state captures full change history |
+| **Attribution** | Each log entry includes `userId`, `userName`, and optional `changeReason` |
+| **Non-repudiation** | Immutable logs with checksums support accountability |
+| **Electronic signatures** | Change reason can be captured for critical operations (e.g. invoice cancellation) |
+
+This does not constitute certification; implement additional controls (access, retention, backup) as required by your jurisdiction.
 
 ## UI
 

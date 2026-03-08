@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
-import { auditApiRequest } from "@/lib/api-audit";
+import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { companyId } = getUserFromHeaders(_req);
@@ -23,8 +23,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const existing = await prisma.product.findFirst({
     where: { id, companyId },
+    include: { category: true },
   });
   if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+  const beforeState = serializeEntity(existing as unknown as Record<string, unknown>);
 
   try {
     const body = await request.json();
@@ -44,7 +47,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       },
       include: { category: true },
     });
-    auditApiRequest(request, "product.update", { entity: "Product", entityId: id, statusCode: 200, details: { name: product.name } });
+    const afterState = serializeEntity(product as unknown as Record<string, unknown>);
+
+    auditApiRequest(request, "product.update", {
+      entity: "Product",
+      entityId: id,
+      statusCode: 200,
+      details: { name: product.name },
+      beforeState,
+      afterState,
+    });
     return NextResponse.json(product);
   } catch (error) {
     console.error("Update product error:", error);
@@ -57,12 +69,22 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const { id } = await params;
-  const result = await prisma.product.updateMany({
-    where: { id, companyId },
+  const existing = await prisma.product.findFirst({ where: { id, companyId } });
+  if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+  const beforeState = serializeEntity(existing as unknown as Record<string, unknown>);
+
+  await prisma.product.update({
+    where: { id },
     data: { isActive: false },
   });
-  if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  const product = await prisma.product.findFirst({ where: { id, companyId }, select: { name: true } });
-  auditApiRequest(_req, "product.delete", { entity: "Product", entityId: id, details: { name: product?.name ?? "" } });
+
+  auditApiRequest(_req, "product.delete", {
+    entity: "Product",
+    entityId: id,
+    details: { name: existing.name },
+    beforeState,
+    afterState: { ...beforeState, isActive: false },
+  });
   return NextResponse.json({ ok: true });
 }

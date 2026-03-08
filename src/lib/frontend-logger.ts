@@ -96,12 +96,12 @@ class FrontendLogger {
   }
 }
 
-export const frontendLogger = typeof window !== "undefined"
+export const frontendLogger: Pick<FrontendLogger, "info" | "warn" | "error" | "pageView" | "flush"> = typeof window !== "undefined"
   ? FrontendLogger.getInstance()
-  : ({
+  : {
       info: () => {},
       warn: () => {},
       error: () => {},
       pageView: () => {},
       flush: async () => {},
-    } as FrontendLogger);
+    };

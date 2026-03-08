@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
-import { auditApiRequest } from "@/lib/api-audit";
+import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailPurchaseReceived } from "@/lib/email";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -32,6 +32,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   if (body.status === "RECEIVED") {
     try {
+      let purchaseBeforeState: Record<string, unknown> | null = null;
       await prisma.$transaction(async (tx) => {
         // Lock the purchase row to prevent double-receive
         const purchase = await tx.purchase.findFirst({
@@ -41,6 +42,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         if (!purchase) {
           throw new Error("PURCHASE_NOT_FOUND_OR_ALREADY_RECEIVED");
         }
+        purchaseBeforeState = purchase as unknown as Record<string, unknown>;
 
         for (const item of purchase.items) {
           // Atomic stock increment
@@ -103,7 +105,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         ).catch(() => {});
       }
 
-      auditApiRequest(request, "purchase.receive", { entity: "Purchase", entityId: id });
+      const purchaseAfter = await prisma.purchase.findFirst({ where: { id, companyId } });
+      auditApiRequest(request, "purchase.receive", {
+        entity: "Purchase",
+        entityId: id,
+        beforeState: serializeEntity(purchaseBeforeState),
+        afterState: serializeEntity(purchaseAfter as unknown as Record<string, unknown>),
+      });
       return NextResponse.json({ ok: true });
     } catch (error) {
       if (error instanceof Error && error.message === "PURCHASE_NOT_FOUND_OR_ALREADY_RECEIVED") {
@@ -121,11 +129,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: "No se puede cancelar una compra ya recibida" }, { status: 409 });
     }
 
+    const beforeState = serializeEntity(existing as unknown as Record<string, unknown>);
     await prisma.purchase.update({
       where: { id },
       data: { status: "CANCELLED" },
     });
-    auditApiRequest(request, "purchase.cancel", { entity: "Purchase", entityId: id });
+    const purchaseAfter = await prisma.purchase.findFirst({ where: { id, companyId } });
+    auditApiRequest(request, "purchase.cancel", {
+      entity: "Purchase",
+      entityId: id,
+      beforeState,
+      afterState: serializeEntity(purchaseAfter as unknown as Record<string, unknown>),
+    });
     return NextResponse.json({ ok: true });
   }
 

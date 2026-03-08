@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 import { createJournalEntry } from "@/lib/accounting";
-import { auditApiRequest } from "@/lib/api-audit";
+import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 import { sendNotification, EMAIL_EVENTS, emailCashSessionClosed } from "@/lib/email";
 
 export async function GET(request: Request) {
@@ -77,6 +77,7 @@ export async function POST(request: Request) {
 
   if (body.action === "close") {
     try {
+      let sessionBeforeState: Record<string, unknown> | null = null;
       const updated = await prisma.$transaction(async (tx) => {
         // Lock the session to prevent double-close
         const session = await tx.cashSession.findFirst({
@@ -85,6 +86,7 @@ export async function POST(request: Request) {
         if (!session) {
           throw new Error("NO_OPEN_SESSION");
         }
+        sessionBeforeState = session as unknown as Record<string, unknown>;
 
         const expectedAmount = Number(session.openingAmount) + Number(session.salesTotal);
         const closingAmount = Number(body.closingAmount) || 0;
@@ -146,7 +148,13 @@ export async function POST(request: Request) {
         ).catch(() => {});
       }
 
-      auditApiRequest(request, "cash.close", { entity: "CashSession", entityId: updated.id, details: { salesTotal: Number(updated.salesTotal), closingAmount: Number(updated.closingAmount) } });
+      auditApiRequest(request, "cash.close", {
+        entity: "CashSession",
+        entityId: updated.id,
+        details: { salesTotal: Number(updated.salesTotal), closingAmount: Number(updated.closingAmount) },
+        beforeState: serializeEntity(sessionBeforeState),
+        afterState: serializeEntity(updated as unknown as Record<string, unknown>),
+      });
       return NextResponse.json(updated);
     } catch (error) {
       if (error instanceof Error && error.message === "NO_OPEN_SESSION") {

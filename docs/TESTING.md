@@ -95,7 +95,7 @@ tests/
 ├── helpers.ts               # Shared test utilities
 ├── email.test.ts            # Email template unit tests (17 tests)
 ├── concurrency.test.ts      # Concurrency tests (6 tests)
-├── api.test.ts              # API integration tests (32 tests)
+├── api.test.ts              # API integration tests (39 tests)
 ├── r2-pdf.test.ts           # R2 key generation and PDF generation tests (9 tests)
 ├── r2-integration.test.ts   # R2 live integration tests (8 tests)
 ├── e2e.py                   # E2E browser tests with screenshots (26 tests)
@@ -125,11 +125,11 @@ export default defineConfig({
 |-------|-------|-----------------|-------------|-------------|
 | `concurrency.test.ts` | 6 | No | No | Parallel database operation integrity |
 | `email.test.ts` | 17 | No | No | Email templates and event constants |
-| `api.test.ts` | 32 | Yes | No | REST API endpoint validation |
+| `api.test.ts` | 39 | Yes | No | REST API endpoint validation |
 | `r2-pdf.test.ts` | 9 | No | No | R2 key generation and PDF creation |
 | `r2-integration.test.ts` | 8 | Yes | Yes | Live R2 upload/download/delete + API flows |
 | `e2e.py` | 26 | Yes | No | Full browser-based user experience with screenshots |
-| **Total** | **98** | | | |
+| **Total** | **105** | | | |
 
 ## Test Suites Detail
 
@@ -169,6 +169,10 @@ export default defineConfig({
 | Profile | 3 | Get profile, update name, reject wrong password |
 | Invoice PDF | 1 | Returns 404 for non-existent invoice |
 | Purchase PDF | 1 | Returns 404 for non-existent purchase |
+| Audit | 2 | Audit stats (totalLogs, byEntity, byUser, byAction), entity timeline |
+| Invoice Export | 1 | XML export (create sale, then request XML) |
+| Company Config | 1 | retentionYears, DIAN fields |
+| Accounting | 3 | Balance sheet, income statement, trial balance |
 
 **Authentication:** Tests generate a JWT token using `signToken()` and send it as a cookie.
 

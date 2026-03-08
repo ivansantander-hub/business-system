@@ -44,7 +44,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (isR2Configured()) {
     const existing = await getBufferFromR2(r2Key);
     if (existing) {
-      return new Response(existing.buffer, {
+      return new Response(new Uint8Array(existing.buffer), {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `inline; filename="${invoice.number}.pdf"`,
@@ -90,7 +90,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     uploadToR2(r2Key, Buffer.from(pdfBytes), "application/pdf").catch(() => {});
   }
 
-  return new Response(Buffer.from(pdfBytes), {
+  return new Response(new Uint8Array(pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${invoice.number}.pdf"`,

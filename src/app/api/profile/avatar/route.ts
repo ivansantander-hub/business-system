@@ -60,7 +60,7 @@ export async function GET(request: Request) {
   const result = await getBufferFromR2(user.avatarUrl);
   if (!result) return NextResponse.json({ error: "Avatar no encontrado" }, { status: 404 });
 
-  return new Response(result.buffer, {
+  return new Response(new Uint8Array(result.buffer), {
     headers: {
       "Content-Type": result.contentType,
       "Cache-Control": "private, max-age=86400",
