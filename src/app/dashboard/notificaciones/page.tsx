@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/atoms";
-import { Bell, Users, Shield, ToggleLeft, ToggleRight, ChevronDown, ChevronRight } from "lucide-react";
+import { Bell, Users, Shield, ToggleLeft, ToggleRight, ChevronDown, ChevronRight, ExternalLink, Building2, Cog } from "lucide-react";
 
 interface NotifTemplate {
   eventType: string;
   label: string;
   enabled: boolean;
+  recipientType: "internal" | "external" | "system";
+  recipientLabel: string;
 }
 
 interface UserPref {
@@ -32,6 +34,12 @@ const ROLE_LABELS: Record<string, string> = {
   WAITER: "Mesero",
   ACCOUNTANT: "Contador",
   TRAINER: "Entrenador",
+};
+
+const RECIPIENT_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ComponentType<{ className?: string }> }> = {
+  internal: { label: "Internas (Empleados)", color: "text-blue-600 dark:text-blue-400", bgColor: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800", icon: Building2 },
+  external: { label: "Externas (Clientes / Proveedores)", color: "text-emerald-600 dark:text-emerald-400", bgColor: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800", icon: ExternalLink },
+  system: { label: "Sistema (Automáticas)", color: "text-gray-600 dark:text-gray-400", bgColor: "bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700", icon: Cog },
 };
 
 type Tab = "company" | "users" | "roles";
@@ -131,13 +139,19 @@ export default function NotificacionesPage() {
     );
   }
 
+  const groupedTemplates = {
+    external: templates.filter((t) => t.recipientType === "external"),
+    internal: templates.filter((t) => t.recipientType === "internal"),
+    system: templates.filter((t) => t.recipientType === "system"),
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notificaciones</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestiona las notificaciones por email de tu empresa
+            Gestiona las notificaciones por email de tu empresa, incluyendo las que llegan a clientes y proveedores
           </p>
         </div>
       </div>
@@ -160,35 +174,48 @@ export default function NotificacionesPage() {
       </div>
 
       {tab === "company" && (
-        <div className="card">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notificaciones de empresa</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Activa o desactiva tipos de notificación para toda la empresa
-            </p>
-          </div>
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {templates.map((t) => (
-              <div key={t.eventType} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{t.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t.eventType}</p>
+        <div className="space-y-4">
+          {(["external", "internal", "system"] as const).map((type) => {
+            const items = groupedTemplates[type];
+            if (items.length === 0) return null;
+            const cfg = RECIPIENT_CONFIG[type];
+            const Icon = cfg.icon;
+
+            return (
+              <div key={type} className="card overflow-hidden">
+                <div className={`p-4 border-b ${cfg.bgColor}`}>
+                  <div className="flex items-center gap-2">
+                    <Icon className={`w-4 h-4 ${cfg.color}`} />
+                    <h2 className={`text-sm font-semibold ${cfg.color}`}>{cfg.label}</h2>
+                  </div>
                 </div>
-                <button
-                  onClick={() => toggleCompany(t.eventType, !t.enabled)}
-                  disabled={saving === t.eventType}
-                  className="relative flex-shrink-0"
-                  aria-label={t.enabled ? "Desactivar" : "Activar"}
-                >
-                  {t.enabled ? (
-                    <ToggleRight className="w-10 h-10 text-primary-500" />
-                  ) : (
-                    <ToggleLeft className="w-10 h-10 text-gray-300 dark:text-gray-600" />
-                  )}
-                </button>
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {items.map((t) => (
+                    <div key={t.eventType} className="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white text-sm">{t.label}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                          Destinatario: {t.recipientLabel}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleCompany(t.eventType, !t.enabled)}
+                        disabled={saving === t.eventType}
+                        className="relative flex-shrink-0"
+                        aria-label={t.enabled ? "Desactivar" : "Activar"}
+                      >
+                        {t.enabled ? (
+                          <ToggleRight className="w-10 h-10 text-primary-500" />
+                        ) : (
+                          <ToggleLeft className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 
@@ -231,7 +258,18 @@ export default function NotificacionesPage() {
                         const key = `role-${group.role}-${t.eventType}`;
                         return (
                           <div key={t.eventType} className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                            <span className="text-sm text-gray-700 dark:text-gray-300">{t.label}</span>
+                            <div>
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{t.label}</span>
+                              <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                                t.recipientType === "external"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                                  : t.recipientType === "system"
+                                    ? "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400"
+                                    : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                              }`}>
+                                {t.recipientType === "external" ? "Externo" : t.recipientType === "system" ? "Sistema" : "Interno"}
+                              </span>
+                            </div>
                             <button
                               onClick={() => toggleRole(group.role, t.eventType, !allEnabled)}
                               disabled={saving === key}
@@ -295,7 +333,16 @@ export default function NotificacionesPage() {
                         const key = `${userId}-${t.eventType}`;
                         return (
                           <div key={t.eventType} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                            <span className="text-sm text-gray-700 dark:text-gray-300">{t.label}</span>
+                            <div>
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{t.label}</span>
+                              <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                                t.recipientType === "external"
+                                  ? "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                              }`}>
+                                {t.recipientType === "external" ? "Externo" : "Interno"}
+                              </span>
+                            </div>
                             <button
                               onClick={() => toggleUser(userId, t.eventType, !enabled)}
                               disabled={saving === key}

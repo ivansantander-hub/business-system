@@ -58,10 +58,10 @@ python -m playwright install chromium
 tests/
 ├── setup.ts              # Global setup (Prisma disconnect)
 ├── helpers.ts            # Shared test utilities
-├── email.test.ts         # Email template unit tests (13 tests)
+├── email.test.ts         # Email template unit tests (17 tests)
 ├── concurrency.test.ts   # Concurrency tests (6 tests)
-├── api.test.ts           # API integration tests (17 tests)
-└── e2e.py                # E2E browser tests (15 tests)
+├── api.test.ts           # API integration tests (27 tests)
+└── e2e.py                # E2E browser tests (18 tests)
 ```
 
 ### Configuration
@@ -174,24 +174,29 @@ def test_my_feature(page):
 
 ## Email Tests (`tests/email.test.ts`)
 
-Unit tests for the email/notification system. These do not require a running server or Brevo credentials.
+Unit tests for the email/notification system. These do not require a running server or SMTP credentials.
 
 | Test Group | Tests | Description |
 |------------|-------|-------------|
 | Email Event Constants | 2 | Validates all event types and labels are defined |
+| Event Meta / Recipient Types | 4 | Validates external/internal/system classification |
 | formatCurrency | 2 | COP currency formatting |
 | Email Template Functions | 9 | Validates each template function generates correct params |
 
-### API Tests for Notifications
+### API Tests for Notifications & RBAC
 
 The `tests/api.test.ts` file includes additional integration tests:
 
 - `POST /api/auth/forgot-password` — Always returns 200
 - `POST /api/auth/reset-password` — Rejects invalid tokens
-- `GET /api/notifications` — Returns event templates
+- `GET /api/notifications` — Returns event templates with recipient info
 - `PUT /api/notifications` — Toggles a notification
 - `GET /api/notifications/users` — Returns user preferences
 - `GET /api/notifications/roles` — Returns role groups
+- `GET /api/rbac` — Returns role permission configs per company
+- `PUT /api/rbac` — Toggles a single permission for a role
+- `POST /api/rbac` — Bulk-updates permissions for a role
+- `PUT /api/rbac (invalid role)` — Rejects non-configurable roles
 
 ## Environment Variables
 

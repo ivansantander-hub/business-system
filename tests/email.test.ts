@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   EMAIL_EVENTS,
   EVENT_LABELS,
+  EVENT_META,
   emailUserCreated,
   emailPasswordReset,
   emailSaleCompleted,
@@ -33,6 +34,29 @@ describe("Email Event Constants", () => {
       expect(EVENT_LABELS[eventType]).toBeDefined();
       expect(typeof EVENT_LABELS[eventType]).toBe("string");
     }
+  });
+
+  it("should have meta (recipientType) for all events", () => {
+    for (const eventType of Object.values(EMAIL_EVENTS)) {
+      expect(EVENT_META[eventType]).toBeDefined();
+      expect(EVENT_META[eventType].recipientType).toMatch(/^(internal|external|system)$/);
+      expect(typeof EVENT_META[eventType].recipientLabel).toBe("string");
+    }
+  });
+
+  it("should classify sale_completed and membership_created as external", () => {
+    expect(EVENT_META.sale_completed.recipientType).toBe("external");
+    expect(EVENT_META.membership_created.recipientType).toBe("external");
+    expect(EVENT_META.daypass_created.recipientType).toBe("external");
+  });
+
+  it("should classify purchase_created and cash_session_closed as internal", () => {
+    expect(EVENT_META.purchase_created.recipientType).toBe("internal");
+    expect(EVENT_META.cash_session_closed.recipientType).toBe("internal");
+  });
+
+  it("should classify password_reset as system", () => {
+    expect(EVENT_META.password_reset.recipientType).toBe("system");
   });
 });
 

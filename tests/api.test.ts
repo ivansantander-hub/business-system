@@ -296,7 +296,7 @@ describe("Forgot Password API", () => {
 });
 
 describe("Notifications API", () => {
-  it("GET /api/notifications should return event templates", async (ctx) => {
+  it("GET /api/notifications should return event templates with recipient info", async (ctx) => {
     requireServer(ctx);
     const res = await apiRequest("/api/notifications");
     expect(res.status).toBe(200);
@@ -306,6 +306,10 @@ describe("Notifications API", () => {
     expect(data[0]).toHaveProperty("eventType");
     expect(data[0]).toHaveProperty("label");
     expect(data[0]).toHaveProperty("enabled");
+    expect(data[0]).toHaveProperty("recipientType");
+    expect(data[0]).toHaveProperty("recipientLabel");
+    const external = data.find((t: { eventType: string }) => t.eventType === "sale_completed");
+    if (external) expect(external.recipientType).toBe("external");
   });
 
   it("PUT /api/notifications should toggle a notification", async (ctx) => {
@@ -341,5 +345,62 @@ describe("Notifications API", () => {
     expect(res.status).toBe(200);
     const data = await res.json();
     expect(Array.isArray(data)).toBe(true);
+  });
+});
+
+describe("RBAC API", () => {
+  it("GET /api/rbac should return role permission configs", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/rbac");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty("role");
+    expect(data[0]).toHaveProperty("permissions");
+    expect(Array.isArray(data[0].permissions)).toBe(true);
+    expect(data[0].permissions[0]).toHaveProperty("permission");
+    expect(data[0].permissions[0]).toHaveProperty("label");
+    expect(data[0].permissions[0]).toHaveProperty("enabled");
+  });
+
+  it("PUT /api/rbac should toggle a single permission", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/rbac", {
+      method: "PUT",
+      body: JSON.stringify({ role: "CASHIER", permission: "reports", enabled: true }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+  });
+
+  it("POST /api/rbac should bulk-update permissions for a role", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/rbac", {
+      method: "POST",
+      body: JSON.stringify({
+        role: "WAITER",
+        permissions: [
+          { permission: "dashboard", enabled: true },
+          { permission: "tables", enabled: true },
+          { permission: "orders", enabled: true },
+          { permission: "products", enabled: false },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+    expect(data.updated).toBeGreaterThan(0);
+  });
+
+  it("PUT /api/rbac should reject invalid role", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/rbac", {
+      method: "PUT",
+      body: JSON.stringify({ role: "SUPER_ADMIN", permission: "dashboard", enabled: true }),
+    });
+    expect(res.status).toBe(400);
   });
 });

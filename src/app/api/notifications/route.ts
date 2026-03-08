@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/auth";
-import { EMAIL_EVENTS, EVENT_LABELS, type EmailEvent } from "@/lib/email";
+import { EMAIL_EVENTS, EVENT_LABELS, EVENT_META, type EmailEvent } from "@/lib/email";
 
 export async function GET(request: Request) {
   let companyId: string;
@@ -17,11 +17,16 @@ export async function GET(request: Request) {
 
   const templateMap = new Map(templates.map((t) => [t.eventType, t.enabled]));
 
-  const result = Object.values(EMAIL_EVENTS).map((eventType) => ({
-    eventType,
-    label: EVENT_LABELS[eventType as EmailEvent],
-    enabled: templateMap.get(eventType) ?? true,
-  }));
+  const result = Object.values(EMAIL_EVENTS).map((eventType) => {
+    const meta = EVENT_META[eventType as EmailEvent];
+    return {
+      eventType,
+      label: EVENT_LABELS[eventType as EmailEvent],
+      enabled: templateMap.get(eventType) ?? true,
+      recipientType: meta?.recipientType || "internal",
+      recipientLabel: meta?.recipientLabel || "",
+    };
+  });
 
   return NextResponse.json(result);
 }

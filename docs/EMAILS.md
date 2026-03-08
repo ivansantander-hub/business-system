@@ -39,18 +39,26 @@ All email sends are **fire-and-forget** (`.catch(() => {})`) to avoid blocking t
 
 ## Email Events
 
-| Event Type | Constant | Trigger | Recipient |
-|------------|----------|---------|-----------|
-| `user_created` | `EMAIL_EVENTS.USER_CREATED` | New user created | The new user |
-| `password_reset` | `EMAIL_EVENTS.PASSWORD_RESET` | Forgot password request | The user |
-| `sale_completed` | `EMAIL_EVENTS.SALE_COMPLETED` | Invoice created via POS | The customer |
-| `invoice_generated` | `EMAIL_EVENTS.INVOICE_GENERATED` | Reserved for future use | — |
-| `purchase_created` | `EMAIL_EVENTS.PURCHASE_CREATED` | New purchase order | The user who created it |
-| `purchase_received` | `EMAIL_EVENTS.PURCHASE_RECEIVED` | Purchase marked as received | The user who received it |
-| `membership_created` | `EMAIL_EVENTS.MEMBERSHIP_CREATED` | New membership sold | The customer |
-| `daypass_created` | `EMAIL_EVENTS.DAYPASS_CREATED` | New day pass sold | The customer |
-| `cash_session_closed` | `EMAIL_EVENTS.CASH_SESSION_CLOSED` | Cash session closed | The cashier |
-| `order_paid` | `EMAIL_EVENTS.ORDER_PAID` | Reserved for future use | — |
+Each event has a **recipient type** that determines who receives the email:
+
+- **External** — Sent to customers or suppliers (configurable per company)
+- **Internal** — Sent to employees/staff who performed the action
+- **System** — Automatic, always sent (e.g., password recovery)
+
+| Event Type | Constant | Trigger | Recipient | Type |
+|------------|----------|---------|-----------|------|
+| `user_created` | `EMAIL_EVENTS.USER_CREATED` | New user created | The new user | Internal |
+| `password_reset` | `EMAIL_EVENTS.PASSWORD_RESET` | Forgot password request | The user | System |
+| `sale_completed` | `EMAIL_EVENTS.SALE_COMPLETED` | Invoice created via POS | The customer | External |
+| `invoice_generated` | `EMAIL_EVENTS.INVOICE_GENERATED` | Reserved for future use | The customer | External |
+| `purchase_created` | `EMAIL_EVENTS.PURCHASE_CREATED` | New purchase order | The user who created it | Internal |
+| `purchase_received` | `EMAIL_EVENTS.PURCHASE_RECEIVED` | Purchase marked as received | The user who received it | Internal |
+| `membership_created` | `EMAIL_EVENTS.MEMBERSHIP_CREATED` | New membership sold | The customer/member | External |
+| `daypass_created` | `EMAIL_EVENTS.DAYPASS_CREATED` | New day pass sold | The customer/member | External |
+| `cash_session_closed` | `EMAIL_EVENTS.CASH_SESSION_CLOSED` | Cash session closed | The cashier | Internal |
+| `order_paid` | `EMAIL_EVENTS.ORDER_PAID` | Reserved for future use | The customer | External |
+
+The notification admin panel groups events by recipient type, so the administrator can clearly see which notifications reach customers and suppliers.
 
 ## Notification Preferences
 

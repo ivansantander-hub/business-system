@@ -223,6 +223,7 @@ model Company {
   lockers                 Locker[]
   notificationTemplates   NotificationTemplate[]
   userNotifPreferences    UserNotificationPreference[]
+  rolePermissions         RolePermission[]
 
   @@schema("public")
   @@map("companies")
@@ -625,6 +626,23 @@ model Setting {
   @@unique([companyId, key])
   @@schema("tenant")
   @@map("settings")
+}
+
+// =============================================
+// RBAC — Per-company role permission overrides
+// =============================================
+
+model RolePermission {
+  id         String  @id @default(uuid())
+  companyId  String  @map("company_id")
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role       String
+  permission String
+  enabled    Boolean @default(true)
+
+  @@unique([companyId, role, permission])
+  @@schema("tenant")
+  @@map("role_permissions")
 }
 
 // =============================================

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
-import { getPermissions } from "@/lib/rbac";
+import { getPermissionsFromDB } from "@/lib/rbac";
 
 export async function GET(request: Request) {
   const { userId, companyId, role } = getUserFromHeaders(request);
@@ -32,6 +32,10 @@ export async function GET(request: Request) {
 
   const effectiveRole = role || user.role;
 
+  const permissions = companyId
+    ? await getPermissionsFromDB(companyId, effectiveRole, companyType)
+    : (await import("@/lib/rbac")).getPermissions(effectiveRole, companyType);
+
   return NextResponse.json({
     id: user.id,
     name: user.name,
@@ -40,7 +44,7 @@ export async function GET(request: Request) {
     companyId,
     companyName: activeAssignment?.company.name || null,
     companyType,
-    permissions: getPermissions(effectiveRole, companyType),
+    permissions,
     companies: activeCompanies.map((uc) => ({
       id: uc.company.id,
       name: uc.company.name,

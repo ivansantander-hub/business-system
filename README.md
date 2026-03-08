@@ -13,7 +13,7 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 ## Características principales
 
 - **Multi-tenant** — Varias empresas en una sola instancia, con cambio de contexto
-- **Control de acceso basado en roles (RBAC)** — Super Admin, Admin, Cajero, Mesero, Contador, Entrenador
+- **Control de acceso basado en roles (RBAC)** — Permisos personalizables por empresa con panel administrativo
 - **Contabilidad colombiana** — Plan Único de Cuentas (PUC), IVA 19%, moneda COP
 - **Punto de venta (POS)** — Ventas, mesas, órdenes, facturación
 - **Gestión de gimnasio** — Membresías, check-in, tiqueteras, clases, casilleros, medidas corporales

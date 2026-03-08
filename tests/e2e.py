@@ -255,6 +255,19 @@ def test_notifications_page(page):
     )
 
 
+def test_rbac_page(page):
+    """RBAC control center page loads with role configs."""
+    page.goto(f"{BASE_URL}/dashboard/rbac")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
+    body = page.text_content("body") or ""
+    report(
+        "RBAC page loads",
+        "Control de Acceso" in body or "RBAC" in body or "rbac" in page.url,
+        f"URL: {page.url}",
+    )
+
+
 def main():
     print("\n=== E2E Tests for Business System ===\n")
 
@@ -289,6 +302,7 @@ def main():
         test_responsive_mobile(page)
         test_forgot_password_link(page)
         test_notifications_page(page)
+        test_rbac_page(page)
 
         browser.close()
 

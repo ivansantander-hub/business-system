@@ -52,6 +52,27 @@ export const EVENT_LABELS: Record<EmailEvent, string> = {
   order_paid: "Orden pagada",
 };
 
+export type RecipientType = "internal" | "external" | "system";
+
+export interface EventMeta {
+  label: string;
+  recipientType: RecipientType;
+  recipientLabel: string;
+}
+
+export const EVENT_META: Record<EmailEvent, EventMeta> = {
+  user_created: { label: "Usuario creado", recipientType: "internal", recipientLabel: "El nuevo usuario" },
+  password_reset: { label: "Recuperación de contraseña", recipientType: "system", recipientLabel: "El usuario solicitante" },
+  sale_completed: { label: "Venta completada", recipientType: "external", recipientLabel: "El cliente" },
+  invoice_generated: { label: "Factura generada", recipientType: "external", recipientLabel: "El cliente" },
+  purchase_created: { label: "Compra creada", recipientType: "internal", recipientLabel: "El usuario que creó la compra" },
+  purchase_received: { label: "Compra recibida", recipientType: "internal", recipientLabel: "El usuario que recibió la compra" },
+  membership_created: { label: "Membresía creada", recipientType: "external", recipientLabel: "El cliente / miembro" },
+  daypass_created: { label: "Tiquetera creada", recipientType: "external", recipientLabel: "El cliente / miembro" },
+  cash_session_closed: { label: "Cierre de caja", recipientType: "internal", recipientLabel: "El cajero" },
+  order_paid: { label: "Orden pagada", recipientType: "external", recipientLabel: "El cliente" },
+};
+
 interface SendEmailParams {
   to: string;
   toName?: string;

@@ -295,6 +295,31 @@ Sale Request
 
 All account balance updates use Prisma's atomic `{ increment: balanceChange }` to prevent lost-update anomalies. The `createJournalEntry` function validates debit/credit balance before persisting.
 
+## RBAC Control Center
+
+The system supports per-company role permission customization through a database-backed RBAC (Role-Based Access Control) center.
+
+### How It Works
+
+1. **Default permissions** are defined in `src/lib/rbac.ts` as hardcoded `ROLE_PERMISSIONS` and `COMPANY_TYPE_PERMISSIONS` maps.
+2. The admin can override these defaults per company via the RBAC admin panel at `/dashboard/rbac`.
+3. Overrides are stored in the `RolePermission` table (`tenant` schema): `(companyId, role, permission, enabled)`.
+4. When resolving permissions (`getPermissionsFromDB`), the system checks for DB overrides first, falling back to the hardcoded defaults if none exist.
+5. The `/api/auth/me` endpoint uses `getPermissionsFromDB` to resolve the effective permissions for the logged-in user.
+
+### Key Components
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| RBAC library | `src/lib/rbac.ts` | Permission types, defaults, DB resolver |
+| RBAC API | `src/app/api/rbac/` | GET/PUT/POST for role permission CRUD |
+| RBAC admin panel | `src/app/dashboard/rbac/` | UI for managing role permissions |
+| Auth resolver | `src/app/api/auth/me/` | Resolves effective permissions from DB |
+
+### Permission Groups
+
+Permissions are organized into visual groups in the admin UI: General, Ventas, Gimnasio, Inventario, Finanzas, and Sistema. The admin can toggle individual permissions per role, or use bulk actions (enable/disable all).
+
 ## Email & Notification System
 
 The system integrates with **Brevo SMTP** (via `nodemailer`) for transactional emails. Emails are sent as fire-and-forget (non-blocking) after business actions complete.
