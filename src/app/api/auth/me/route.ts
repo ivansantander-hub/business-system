@@ -4,7 +4,7 @@ import { getUserFromHeaders } from "@/lib/auth";
 import { getPermissions } from "@/lib/rbac";
 
 export async function GET(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId, role } = getUserFromHeaders(request);
   if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
@@ -16,8 +16,9 @@ export async function GET(request: Request) {
       name: true,
       email: true,
       role: true,
-      companyId: true,
-      company: { select: { id: true, name: true } },
+      companies: {
+        include: { company: { select: { id: true, name: true, isActive: true } } },
+      },
     },
   });
 
@@ -25,9 +26,23 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
   }
 
+  const activeCompanies = user.companies.filter((uc) => uc.company.isActive);
+  const activeAssignment = activeCompanies.find((uc) => uc.companyId === companyId);
+
+  const effectiveRole = role || user.role;
+
   return NextResponse.json({
-    ...user,
-    companyName: user.company?.name || null,
-    permissions: getPermissions(user.role),
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: effectiveRole,
+    companyId,
+    companyName: activeAssignment?.company.name || null,
+    permissions: getPermissions(effectiveRole),
+    companies: activeCompanies.map((uc) => ({
+      id: uc.company.id,
+      name: uc.company.name,
+      role: uc.role,
+    })),
   });
 }

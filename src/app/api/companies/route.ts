@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
 
   const companies = await prisma.company.findMany({
-    include: { _count: { select: { users: true } } },
+    include: { _count: { select: { userCompanies: true } } },
     orderBy: { createdAt: "desc" },
   });
 

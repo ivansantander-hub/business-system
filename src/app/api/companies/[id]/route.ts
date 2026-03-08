@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const company = await prisma.company.findUnique({
     where: { id: Number(id) },
     include: {
-      _count: { select: { users: true, products: true, invoices: true } },
+      _count: { select: { userCompanies: true, products: true, invoices: true } },
     },
   });
 

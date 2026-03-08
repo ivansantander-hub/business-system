@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, UtensilsCrossed,
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
-  BarChart3, Settings, LogOut, X, Menu, Building2,
+  BarChart3, Settings, LogOut, X, Menu, Building2, PanelLeftClose, PanelLeftOpen,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { Permission } from "@/lib/rbac";
@@ -15,6 +15,11 @@ interface MenuItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   permission: Permission;
+}
+
+interface SidebarProps {
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
 const allMenuItems: MenuItem[] = [
@@ -35,9 +40,9 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings, permission: "settings" },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [userRole, setUserRole] = useState<string>("");
   const [permissions, setPermissions] = useState<string[]>([]);
 
@@ -60,41 +65,63 @@ export default function Sidebar() {
     window.location.href = "/login";
   }
 
-  const nav = (
+  const navContent = (isMobile: boolean) => (
     <div className="flex flex-col h-full">
-      <div className="p-5 border-b border-slate-700">
-        <h1 className="text-xl font-bold text-white">SGC</h1>
-        <p className="text-xs text-slate-400 mt-1">
-          {userRole === "SUPER_ADMIN" ? "Panel Maestro" : "Sistema de Gestión"}
-        </p>
+      <div className={`border-b border-slate-700 ${collapsed && !isMobile ? "p-3 flex justify-center" : "p-5"}`}>
+        {collapsed && !isMobile ? (
+          <span className="text-lg font-bold text-white">S</span>
+        ) : (
+          <>
+            <h1 className="text-xl font-bold text-white">SGC</h1>
+            <p className="text-xs text-slate-400 mt-1">
+              {userRole === "SUPER_ADMIN" ? "Panel Maestro" : "Sistema de Gestión"}
+            </p>
+          </>
+        )}
       </div>
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className={`flex-1 overflow-y-auto py-4 ${collapsed && !isMobile ? "px-2" : "px-3"} space-y-1`}>
         {menuItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              onClick={() => setMobileOpen(false)}
+              title={collapsed && !isMobile ? item.label : undefined}
+              className={`flex items-center ${collapsed && !isMobile ? "justify-center" : ""} gap-3 ${collapsed && !isMobile ? "px-2" : "px-3"} py-2.5 rounded-lg text-sm transition-colors ${
                 isActive
                   ? "bg-indigo-600 text-white"
                   : "text-slate-300 hover:bg-slate-700 hover:text-white"
               }`}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
-              {item.label}
+              {(!collapsed || isMobile) && <span>{item.label}</span>}
             </Link>
           );
         })}
       </nav>
-      <div className="p-3 border-t border-slate-700">
+      <div className={`border-t border-slate-700 ${collapsed && !isMobile ? "p-2" : "p-3"} space-y-1`}>
+        <button
+          onClick={onToggle}
+          className={`hidden lg:flex items-center ${collapsed && !isMobile ? "justify-center" : ""} gap-3 ${collapsed && !isMobile ? "px-2" : "px-3"} py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors w-full`}
+          title={collapsed ? "Expandir menú" : "Colapsar menú"}
+        >
+          {collapsed && !isMobile ? (
+            <PanelLeftOpen className="w-5 h-5" />
+          ) : (
+            <>
+              <PanelLeftClose className="w-5 h-5" />
+              <span>Colapsar</span>
+            </>
+          )}
+        </button>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors w-full"
+          className={`flex items-center ${collapsed && !isMobile ? "justify-center" : ""} gap-3 ${collapsed && !isMobile ? "px-2" : "px-3"} py-2.5 rounded-lg text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors w-full`}
+          title={collapsed && !isMobile ? "Cerrar Sesión" : undefined}
         >
           <LogOut className="w-5 h-5" />
-          Cerrar Sesión
+          {(!collapsed || isMobile) && <span>Cerrar Sesión</span>}
         </button>
       </div>
     </div>
@@ -103,25 +130,27 @@ export default function Sidebar() {
   return (
     <>
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 text-white rounded-lg"
       >
         <Menu className="w-5 h-5" />
       </button>
 
-      {open && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)}>
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMobileOpen(false)}>
           <div className="w-64 h-full bg-slate-800" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setOpen(false)} className="absolute top-4 right-4 text-slate-400">
+            <button onClick={() => setMobileOpen(false)} className="absolute top-4 right-4 text-slate-400">
               <X className="w-5 h-5" />
             </button>
-            {nav}
+            {navContent(true)}
           </div>
         </div>
       )}
 
-      <aside className="hidden lg:block w-64 bg-slate-800 min-h-screen fixed left-0 top-0 z-30">
-        {nav}
+      <aside
+        className={`hidden lg:block ${collapsed ? "w-16" : "w-64"} bg-slate-800 min-h-screen fixed left-0 top-0 z-30 transition-all duration-300`}
+      >
+        {navContent(false)}
       </aside>
     </>
   );

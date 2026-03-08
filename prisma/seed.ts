@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  // ===== Create tenant schema =====
   await prisma.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS tenant`);
 
   // ===== SUPER_ADMIN (master user, no company) =====
@@ -17,7 +16,6 @@ async function main() {
       email: "master@sistema.com",
       password: masterPassword,
       role: "SUPER_ADMIN",
-      companyId: null,
     },
   });
 
@@ -41,58 +39,36 @@ async function main() {
 
   const companyId = company.id;
 
-  // ===== Company users =====
-  const adminPassword = await bcrypt.hash("admin123", 10);
-  await prisma.user.upsert({
-    where: { email: "admin@miempresa.com" },
-    update: {},
-    create: {
-      name: "Administrador",
-      email: "admin@miempresa.com",
-      password: adminPassword,
-      role: "ADMIN",
-      companyId,
-    },
-  });
+  // ===== Company users with UserCompany assignments =====
+  const userDefs = [
+    { name: "Administrador", email: "admin@miempresa.com", password: "admin123", role: "ADMIN" as const },
+    { name: "Cajero Principal", email: "cajero@miempresa.com", password: "cajero123", role: "CASHIER" as const },
+    { name: "Mesero 1", email: "mesero@miempresa.com", password: "mesero123", role: "WAITER" as const },
+    { name: "Contador", email: "contador@miempresa.com", password: "contador123", role: "ACCOUNTANT" as const },
+  ];
 
-  const cashierPassword = await bcrypt.hash("cajero123", 10);
-  await prisma.user.upsert({
-    where: { email: "cajero@miempresa.com" },
-    update: {},
-    create: {
-      name: "Cajero Principal",
-      email: "cajero@miempresa.com",
-      password: cashierPassword,
-      role: "CASHIER",
-      companyId,
-    },
-  });
+  for (const def of userDefs) {
+    const hashed = await bcrypt.hash(def.password, 10);
+    const user = await prisma.user.upsert({
+      where: { email: def.email },
+      update: {},
+      create: {
+        name: def.name,
+        email: def.email,
+        password: hashed,
+        role: def.role,
+      },
+    });
 
-  const waiterPassword = await bcrypt.hash("mesero123", 10);
-  await prisma.user.upsert({
-    where: { email: "mesero@miempresa.com" },
-    update: {},
-    create: {
-      name: "Mesero 1",
-      email: "mesero@miempresa.com",
-      password: waiterPassword,
-      role: "WAITER",
-      companyId,
-    },
-  });
-
-  const accountantPassword = await bcrypt.hash("contador123", 10);
-  await prisma.user.upsert({
-    where: { email: "contador@miempresa.com" },
-    update: {},
-    create: {
-      name: "Contador",
-      email: "contador@miempresa.com",
-      password: accountantPassword,
-      role: "ACCOUNTANT",
-      companyId,
-    },
-  });
+    const existing = await prisma.userCompany.findUnique({
+      where: { userId_companyId: { userId: user.id, companyId } },
+    });
+    if (!existing) {
+      await prisma.userCompany.create({
+        data: { userId: user.id, companyId, role: def.role },
+      });
+    }
+  }
 
   // ===== Categories =====
   const categories = ["General", "Alimentos", "Bebidas", "Postres", "Servicios"];
@@ -105,15 +81,15 @@ async function main() {
 
   // ===== Sample products (prices in COP) =====
   const products = [
-    { name: "Hamburguesa Clásica", categoryId: null, costPrice: 8000, salePrice: 22000, stock: 50, unit: "unidad", taxRate: 0.08 },
-    { name: "Pizza Mediana", categoryId: null, costPrice: 12000, salePrice: 35000, stock: 30, unit: "unidad", taxRate: 0.08 },
-    { name: "Ensalada César", categoryId: null, costPrice: 6000, salePrice: 18000, stock: 40, unit: "unidad", taxRate: 0.08 },
-    { name: "Coca Cola 400ml", categoryId: null, costPrice: 1500, salePrice: 4000, stock: 100, unit: "unidad", taxRate: 0.19 },
-    { name: "Agua Cristal 600ml", categoryId: null, costPrice: 800, salePrice: 2500, stock: 150, unit: "unidad", taxRate: 0.19 },
-    { name: "Jugo Natural", categoryId: null, costPrice: 3000, salePrice: 8000, stock: 60, unit: "unidad", taxRate: 0.19 },
-    { name: "Torta de Chocolate", categoryId: null, costPrice: 5000, salePrice: 12000, stock: 20, unit: "unidad", taxRate: 0.08 },
-    { name: "Flan de Caramelo", categoryId: null, costPrice: 3000, salePrice: 8000, stock: 25, unit: "unidad", taxRate: 0.08 },
-    { name: "Servicio de Domicilio", categoryId: null, costPrice: 0, salePrice: 5000, stock: 9999, unit: "servicio", taxRate: 0.19 },
+    { name: "Hamburguesa Clásica", costPrice: 8000, salePrice: 22000, stock: 50, unit: "unidad", taxRate: 0.08 },
+    { name: "Pizza Mediana", costPrice: 12000, salePrice: 35000, stock: 30, unit: "unidad", taxRate: 0.08 },
+    { name: "Ensalada César", costPrice: 6000, salePrice: 18000, stock: 40, unit: "unidad", taxRate: 0.08 },
+    { name: "Coca Cola 400ml", costPrice: 1500, salePrice: 4000, stock: 100, unit: "unidad", taxRate: 0.19 },
+    { name: "Agua Cristal 600ml", costPrice: 800, salePrice: 2500, stock: 150, unit: "unidad", taxRate: 0.19 },
+    { name: "Jugo Natural", costPrice: 3000, salePrice: 8000, stock: 60, unit: "unidad", taxRate: 0.19 },
+    { name: "Torta de Chocolate", costPrice: 5000, salePrice: 12000, stock: 20, unit: "unidad", taxRate: 0.08 },
+    { name: "Flan de Caramelo", costPrice: 3000, salePrice: 8000, stock: 25, unit: "unidad", taxRate: 0.08 },
+    { name: "Servicio de Domicilio", costPrice: 0, salePrice: 5000, stock: 9999, unit: "servicio", taxRate: 0.19 },
   ];
 
   const catAlimentos = await prisma.category.findFirst({ where: { companyId, name: "Alimentos" } });
@@ -191,7 +167,6 @@ async function main() {
     { code: "15", name: "Propiedad, Planta y Equipo", type: "ASSET" as const },
     { code: "1524", name: "Equipo de Oficina", type: "ASSET" as const },
     { code: "1528", name: "Equipo de Computación y Comunicación", type: "ASSET" as const },
-
     { code: "2", name: "PASIVO", type: "LIABILITY" as const },
     { code: "21", name: "Obligaciones Financieras", type: "LIABILITY" as const },
     { code: "2105", name: "Bancos Nacionales", type: "LIABILITY" as const },
@@ -218,7 +193,6 @@ async function main() {
     { code: "2515", name: "Intereses sobre Cesantías", type: "LIABILITY" as const },
     { code: "2520", name: "Prima de Servicios", type: "LIABILITY" as const },
     { code: "2525", name: "Vacaciones Consolidadas", type: "LIABILITY" as const },
-
     { code: "3", name: "PATRIMONIO", type: "EQUITY" as const },
     { code: "31", name: "Capital Social", type: "EQUITY" as const },
     { code: "3105", name: "Capital Suscrito y Pagado", type: "EQUITY" as const },
@@ -231,7 +205,6 @@ async function main() {
     { code: "37", name: "Resultados de Ejercicios Anteriores", type: "EQUITY" as const },
     { code: "3705", name: "Utilidades Acumuladas", type: "EQUITY" as const },
     { code: "3710", name: "Pérdidas Acumuladas", type: "EQUITY" as const },
-
     { code: "4", name: "INGRESOS", type: "INCOME" as const },
     { code: "41", name: "Operacionales", type: "INCOME" as const },
     { code: "4135", name: "Comercio al por Mayor y al por Menor", type: "INCOME" as const },
@@ -239,7 +212,6 @@ async function main() {
     { code: "42", name: "No Operacionales", type: "INCOME" as const },
     { code: "4210", name: "Financieros", type: "INCOME" as const },
     { code: "4250", name: "Recuperaciones", type: "INCOME" as const },
-
     { code: "5", name: "GASTOS", type: "EXPENSE" as const },
     { code: "51", name: "Operacionales de Administración", type: "EXPENSE" as const },
     { code: "5105", name: "Gastos de Personal", type: "EXPENSE" as const },
@@ -264,7 +236,6 @@ async function main() {
     { code: "5305", name: "Financieros", type: "EXPENSE" as const },
     { code: "530505", name: "Gastos Bancarios", type: "EXPENSE" as const },
     { code: "530515", name: "Comisiones", type: "EXPENSE" as const },
-
     { code: "6", name: "COSTOS DE VENTAS", type: "COST" as const },
     { code: "61", name: "Costo de Ventas y de Prestación de Servicios", type: "COST" as const },
     { code: "6135", name: "Comercio al por Mayor y al por Menor", type: "COST" as const },

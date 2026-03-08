@@ -18,7 +18,7 @@ interface Company {
   taxRegime: string | null;
   isActive: boolean;
   createdAt: string;
-  _count: { users: number };
+  _count: { userCompanies: number };
 }
 
 const DEPARTMENTS = [
@@ -165,7 +165,7 @@ export default function EmpresasPage() {
               {c.city && <p>{c.city}{c.department ? `, ${c.department}` : ""}</p>}
               {c.phone && <p>{c.phone}</p>}
               {c.taxRegime && <p className="text-xs">{c.taxRegime}</p>}
-              <p className="text-xs text-gray-400">{c._count.users} usuario(s)</p>
+              <p className="text-xs text-gray-400">{c._count.userCompanies} usuario(s)</p>
             </div>
             <div className="mt-4 flex gap-2">
               <button onClick={() => openEdit(c)} className="btn-secondary text-xs flex items-center gap-1">
@@ -183,7 +183,7 @@ export default function EmpresasPage() {
         <div className="text-center py-12 text-gray-500">No se encontraron empresas</div>
       )}
 
-      <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingCompany ? "Editar Empresa" : "Nueva Empresa"} size="lg">
+      <Modal open={showModal} onClose={() => setShowModal(false)} title={editingCompany ? "Editar Empresa" : "Nueva Empresa"} size="lg">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>

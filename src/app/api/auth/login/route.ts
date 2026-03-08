@@ -13,15 +13,15 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { company: { select: { id: true, name: true, isActive: true } } },
+      include: {
+        companies: {
+          include: { company: { select: { id: true, name: true, isActive: true } } },
+        },
+      },
     });
 
     if (!user || !user.isActive) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
-    }
-
-    if (user.company && !user.company.isActive) {
-      return NextResponse.json({ error: "La empresa está inactiva. Contacte al administrador." }, { status: 403 });
     }
 
     const valid = await bcrypt.compare(password, user.password);
@@ -29,21 +29,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
     }
 
+    let activeCompanyId: number | null = null;
+    let activeRole = user.role as string;
+    let activeCompanyName: string | null = null;
+
+    if (user.role !== "SUPER_ADMIN") {
+      const activeAssignments = user.companies.filter((uc) => uc.company.isActive);
+      if (activeAssignments.length === 0) {
+        return NextResponse.json({ error: "No tiene empresas activas asignadas. Contacte al administrador." }, { status: 403 });
+      }
+      activeCompanyId = activeAssignments[0].companyId;
+      activeRole = activeAssignments[0].role;
+      activeCompanyName = activeAssignments[0].company.name;
+    }
+
     const token = await signToken({
       userId: user.id,
-      role: user.role,
+      role: activeRole,
       name: user.name,
-      companyId: user.companyId,
+      companyId: activeCompanyId,
     });
+
+    const companiesList = user.companies
+      .filter((uc) => uc.company.isActive)
+      .map((uc) => ({
+        id: uc.company.id,
+        name: uc.company.name,
+        role: uc.role,
+      }));
 
     const response = NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        companyId: user.companyId,
-        companyName: user.company?.name || null,
+        role: activeRole,
+        companyId: activeCompanyId,
+        companyName: activeCompanyName,
+        companies: companiesList,
       },
     });
 
