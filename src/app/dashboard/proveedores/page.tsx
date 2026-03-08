@@ -19,7 +19,8 @@ export default function ProveedoresPage() {
 
   const load = useCallback(async () => {
     const params = search ? `?search=${encodeURIComponent(search)}` : "";
-    setSuppliers(await fetch(`/api/suppliers${params}`).then(r => r.json()));
+    const res = await fetch(`/api/suppliers${params}`);
+    setSuppliers(res.ok ? await res.json() : []);
   }, [search]);
 
   useEffect(() => { load(); }, [load]);

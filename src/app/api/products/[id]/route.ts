@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(_req);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  const product = await prisma.product.findUnique({
-    where: { id: Number(id) },
+  const product = await prisma.product.findFirst({
+    where: { id: Number(id), companyId },
     include: { category: true },
   });
   if (!product) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -12,7 +16,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
+  const existing = await prisma.product.findFirst({
+    where: { id: Number(id), companyId },
+  });
+  if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
   try {
     const body = await request.json();
     const product = await prisma.product.update({
@@ -39,7 +51,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(_req);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  await prisma.product.update({ where: { id: Number(id) }, data: { isActive: false } });
+  const result = await prisma.product.updateMany({
+    where: { id: Number(id), companyId },
+    data: { isActive: false },
+  });
+  if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ShoppingBag, Plus, Eye, CheckCircle, XCircle } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Purchase {
   id: number; number: string; date: string; subtotal: string; tax: string; total: string; status: string; notes: string | null;
@@ -22,12 +23,15 @@ export default function ComprasPage() {
   const [form, setForm] = useState({ supplierId: "", notes: "", items: [{ productId: "", quantity: "1", unitPrice: "" }] });
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-  const load = useCallback(async () => { setPurchases(await fetch("/api/purchases").then(r => r.json())); }, []);
+  const load = useCallback(async () => {
+    const res = await fetch("/api/purchases");
+    setPurchases(res.ok ? await res.json() : []);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    fetch("/api/suppliers").then(r => r.json()).then(setSuppliers);
-    fetch("/api/products?active=true").then(r => r.json()).then(setProducts);
+    fetch("/api/suppliers").then(r => r.ok ? r.json() : []).then(setSuppliers);
+    fetch("/api/products?active=true").then(r => r.ok ? r.json() : []).then(setProducts);
   }, []);
 
   function addItemRow() {
@@ -86,9 +90,9 @@ export default function ComprasPage() {
             {purchases.map(p => (
               <tr key={p.id} className="hover:bg-gray-50">
                 <td className="table-cell font-medium">{p.number}</td><td className="table-cell">{p.supplier.name}</td>
-                <td className="table-cell text-right font-semibold">Q {Number(p.total).toFixed(2)}</td>
+                <td className="table-cell text-right font-semibold">{formatCurrency(p.total)}</td>
                 <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[p.status]}`}>{statusLabels[p.status]}</span></td>
-                <td className="table-cell">{new Date(p.date).toLocaleDateString("es-GT")}</td>
+                <td className="table-cell">{formatDate(p.date)}</td>
                 <td className="table-cell"><button onClick={() => setShowDetail(p)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Eye className="w-4 h-4 text-indigo-600" /></button></td>
               </tr>
             ))}
@@ -115,7 +119,7 @@ export default function ComprasPage() {
                 </select>
                 <input type="number" min="1" className="input-field w-24" placeholder="Cant" value={item.quantity} onChange={e => updateItem(i, "quantity", e.target.value)} />
                 <input type="number" step="0.01" className="input-field w-32" placeholder="P/U" value={item.unitPrice} onChange={e => updateItem(i, "unitPrice", e.target.value)} />
-                <span className="input-field w-32 bg-gray-50 flex items-center">Q {(Number(item.quantity) * Number(item.unitPrice) || 0).toFixed(2)}</span>
+                <span className="input-field w-32 bg-gray-50 flex items-center">{formatCurrency(Number(item.quantity) * Number(item.unitPrice) || 0)}</span>
                 {form.items.length > 1 && <button type="button" onClick={() => removeItem(i)} className="text-red-500 px-2"><XCircle className="w-5 h-5" /></button>}
               </div>
             ))}
@@ -123,7 +127,7 @@ export default function ComprasPage() {
           </div>
 
           <div className="bg-gray-50 rounded-lg p-3 text-right">
-            <p className="font-bold text-lg">Subtotal: Q {form.items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0).toFixed(2)}</p>
+            <p className="font-bold text-lg">Subtotal: {formatCurrency(form.items.reduce((s, i) => s + Number(i.quantity) * Number(i.unitPrice), 0))}</p>
           </div>
 
           <div className="flex justify-end gap-3"><button type="button" onClick={() => setShowCreate(false)} className="btn-secondary">Cancelar</button><button type="submit" className="btn-primary">Crear Orden</button></div>
@@ -136,8 +140,8 @@ export default function ComprasPage() {
           <div className="space-y-4">
             <div className="text-sm grid grid-cols-2 gap-2"><div>Proveedor: <b>{showDetail.supplier.name}</b></div><div>Estado: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[showDetail.status]}`}>{statusLabels[showDetail.status]}</span></div></div>
             <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
-              <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">Q {Number(item.unitPrice).toFixed(2)}</td><td className="table-cell text-right font-medium">Q {Number(item.total).toFixed(2)}</td></tr>))}</tbody></table>
-            <div className="bg-gray-50 rounded-lg p-3 text-right font-bold text-lg">Total: Q {Number(showDetail.total).toFixed(2)}</div>
+              <tbody>{showDetail.items.map(item => (<tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>))}</tbody></table>
+            <div className="bg-gray-50 rounded-lg p-3 text-right font-bold text-lg">Total: {formatCurrency(showDetail.total)}</div>
             {showDetail.status === "PENDING" && (
               <div className="flex gap-3"><button onClick={() => updateStatus(showDetail.id, "RECEIVED")} className="btn-success flex items-center gap-2 flex-1"><CheckCircle className="w-4 h-4" /> Marcar Recibida</button><button onClick={() => updateStatus(showDetail.id, "CANCELLED")} className="btn-danger flex items-center gap-2"><XCircle className="w-4 h-4" /> Cancelar</button></div>
             )}

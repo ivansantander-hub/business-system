@@ -66,7 +66,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field pl-10"
-                  placeholder="admin@sistema.com"
+                  placeholder="usuario@empresa.com"
                   required
                 />
               </div>
@@ -95,9 +95,10 @@ export default function LoginPage() {
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-500 font-medium mb-2">Credenciales de prueba:</p>
-            <p className="text-xs text-gray-600">Admin: admin@sistema.com / admin123</p>
-            <p className="text-xs text-gray-600">Cajero: cajero@sistema.com / cajero123</p>
-            <p className="text-xs text-gray-600">Mesero: mesero@sistema.com / mesero123</p>
+            <p className="text-xs text-gray-600">Master: master@sistema.com / master123</p>
+            <p className="text-xs text-gray-600">Admin: admin@miempresa.com / admin123</p>
+            <p className="text-xs text-gray-600">Cajero: cajero@miempresa.com / cajero123</p>
+            <p className="text-xs text-gray-600">Mesero: mesero@miempresa.com / mesero123</p>
           </div>
         </div>
       </div>

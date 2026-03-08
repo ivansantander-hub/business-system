@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromHeaders } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
+
   const entries = await prisma.journalEntry.findMany({
+    where: { companyId },
     include: {
       lines: {
         include: { account: { select: { code: true, name: true } } },
@@ -15,6 +22,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   // Validate debits = credits
@@ -28,6 +40,7 @@ export async function POST(request: Request) {
   const entry = await prisma.$transaction(async (tx) => {
     const je = await tx.journalEntry.create({
       data: {
+        companyId,
         date: body.date ? new Date(body.date) : new Date(),
         description: body.description,
         reference: body.reference || null,
@@ -45,9 +58,11 @@ export async function POST(request: Request) {
       },
     });
 
-    // Update account balances
+    // Update account balances (accounts must belong to company)
     for (const line of body.lines) {
-      const account = await tx.account.findUnique({ where: { id: Number(line.accountId) } });
+      const account = await tx.account.findFirst({
+        where: { id: Number(line.accountId), companyId },
+      });
       if (!account) continue;
 
       let balanceChange = Number(line.debit) - Number(line.credit);

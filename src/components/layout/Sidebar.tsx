@@ -5,30 +5,55 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, UtensilsCrossed,
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
-  BarChart3, Settings, LogOut, X, Menu,
+  BarChart3, Settings, LogOut, X, Menu, Building2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { Permission } from "@/lib/rbac";
 
-const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/productos", label: "Productos", icon: Package },
-  { href: "/dashboard/inventario", label: "Inventario", icon: Warehouse },
-  { href: "/dashboard/pos", label: "Punto de Venta", icon: ShoppingCart },
-  { href: "/dashboard/mesas", label: "Mesas", icon: UtensilsCrossed },
-  { href: "/dashboard/ordenes", label: "Órdenes", icon: ClipboardList },
-  { href: "/dashboard/facturas", label: "Facturas", icon: FileText },
-  { href: "/dashboard/clientes", label: "Clientes", icon: Users },
-  { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck },
-  { href: "/dashboard/compras", label: "Compras", icon: ShoppingBag },
-  { href: "/dashboard/contabilidad", label: "Contabilidad", icon: Calculator },
-  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3 },
-  { href: "/dashboard/usuarios", label: "Usuarios", icon: Users },
-  { href: "/dashboard/configuracion", label: "Configuración", icon: Settings },
+interface MenuItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  permission: Permission;
+}
+
+const allMenuItems: MenuItem[] = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard" },
+  { href: "/dashboard/empresas", label: "Empresas", icon: Building2, permission: "companies" },
+  { href: "/dashboard/productos", label: "Productos", icon: Package, permission: "products" },
+  { href: "/dashboard/inventario", label: "Inventario", icon: Warehouse, permission: "inventory" },
+  { href: "/dashboard/pos", label: "Punto de Venta", icon: ShoppingCart, permission: "pos" },
+  { href: "/dashboard/mesas", label: "Mesas", icon: UtensilsCrossed, permission: "tables" },
+  { href: "/dashboard/ordenes", label: "Órdenes", icon: ClipboardList, permission: "orders" },
+  { href: "/dashboard/facturas", label: "Facturas", icon: FileText, permission: "invoices" },
+  { href: "/dashboard/clientes", label: "Clientes", icon: Users, permission: "customers" },
+  { href: "/dashboard/proveedores", label: "Proveedores", icon: Truck, permission: "suppliers" },
+  { href: "/dashboard/compras", label: "Compras", icon: ShoppingBag, permission: "purchases" },
+  { href: "/dashboard/contabilidad", label: "Contabilidad", icon: Calculator, permission: "accounting" },
+  { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports" },
+  { href: "/dashboard/usuarios", label: "Usuarios", icon: Users, permission: "users" },
+  { href: "/dashboard/configuracion", label: "Configuración", icon: Settings, permission: "settings" },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string>("");
+  const [permissions, setPermissions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        setUserRole(data.role || "");
+        setPermissions(data.permissions || []);
+      })
+      .catch(() => {});
+  }, []);
+
+  const menuItems = allMenuItems.filter((item) =>
+    permissions.includes(item.permission)
+  );
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -39,7 +64,9 @@ export default function Sidebar() {
     <div className="flex flex-col h-full">
       <div className="p-5 border-b border-slate-700">
         <h1 className="text-xl font-bold text-white">SGC</h1>
-        <p className="text-xs text-slate-400 mt-1">Sistema de Gestión</p>
+        <p className="text-xs text-slate-400 mt-1">
+          {userRole === "SUPER_ADMIN" ? "Panel Maestro" : "Sistema de Gestión"}
+        </p>
       </div>
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
         {menuItems.map((item) => {
@@ -75,7 +102,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 text-white rounded-lg"
@@ -83,7 +109,6 @@ export default function Sidebar() {
         <Menu className="w-5 h-5" />
       </button>
 
-      {/* Mobile overlay */}
       {open && (
         <div className="lg:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setOpen(false)}>
           <div className="w-64 h-full bg-slate-800" onClick={(e) => e.stopPropagation()}>
@@ -95,7 +120,6 @@ export default function Sidebar() {
         </div>
       )}
 
-      {/* Desktop sidebar */}
       <aside className="hidden lg:block w-64 bg-slate-800 min-h-screen fixed left-0 top-0 z-30">
         {nav}
       </aside>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Calculator, Plus, BookOpen, Receipt } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Account { id: number; code: string; name: string; type: string; balance: string; }
 interface JournalEntry {
@@ -26,12 +27,14 @@ export default function ContabilidadPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [acc, je, exp] = await Promise.all([
-      fetch("/api/accounting/accounts").then(r => r.json()),
-      fetch("/api/accounting/journal").then(r => r.json()),
-      fetch("/api/accounting/expenses").then(r => r.json()),
+    const [accRes, jeRes, expRes] = await Promise.all([
+      fetch("/api/accounting/accounts"),
+      fetch("/api/accounting/journal"),
+      fetch("/api/accounting/expenses"),
     ]);
-    setAccounts(acc); setEntries(je); setExpenses(exp);
+    setAccounts(accRes.ok ? await accRes.json() : []);
+    setEntries(jeRes.ok ? await jeRes.json() : []);
+    setExpenses(expRes.ok ? await expRes.json() : []);
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
@@ -96,7 +99,7 @@ export default function ContabilidadPage() {
                   <td className="table-cell font-mono">{a.code}</td>
                   <td className={`table-cell ${a.code.length <= 2 ? "font-bold" : ""}`} style={{ paddingLeft: `${(a.code.split(".").length - 1) * 20 + 16}px` }}>{a.name}</td>
                   <td className={`table-cell ${typeColors[a.type]}`}>{typeLabels[a.type]}</td>
-                  <td className="table-cell text-right font-semibold">Q {Number(a.balance).toFixed(2)}</td>
+                  <td className="table-cell text-right font-semibold">{formatCurrency(a.balance)}</td>
                 </tr>
               ))}
             </tbody>
@@ -110,15 +113,15 @@ export default function ContabilidadPage() {
             <div key={entry.id} className="card">
               <div className="flex justify-between mb-3">
                 <div><span className="font-semibold">{entry.description}</span>{entry.reference && <span className="text-gray-400 ml-2">Ref: {entry.reference}</span>}</div>
-                <span className="text-sm text-gray-500">{new Date(entry.date).toLocaleDateString("es-GT")}</span>
+                <span className="text-sm text-gray-500">{formatDate(entry.date)}</span>
               </div>
               <table className="w-full">
                 <thead><tr><th className="table-header">Cuenta</th><th className="table-header text-right">Debe</th><th className="table-header text-right">Haber</th></tr></thead>
                 <tbody>
                   {entry.lines.map(l => (
                     <tr key={l.id}><td className="table-cell">{l.account.code} - {l.account.name}</td>
-                      <td className="table-cell text-right">{Number(l.debit) > 0 ? `Q ${Number(l.debit).toFixed(2)}` : ""}</td>
-                      <td className="table-cell text-right">{Number(l.credit) > 0 ? `Q ${Number(l.credit).toFixed(2)}` : ""}</td></tr>
+                      <td className="table-cell text-right">{Number(l.debit) > 0 ? formatCurrency(l.debit) : ""}</td>
+                      <td className="table-cell text-right">{Number(l.credit) > 0 ? formatCurrency(l.credit) : ""}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -137,9 +140,9 @@ export default function ContabilidadPage() {
                 <tr key={exp.id} className="hover:bg-gray-50">
                   <td className="table-cell"><span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">{exp.category}</span></td>
                   <td className="table-cell">{exp.description}</td>
-                  <td className="table-cell text-right font-semibold text-red-600">Q {Number(exp.amount).toFixed(2)}</td>
+                  <td className="table-cell text-right font-semibold text-red-600">{formatCurrency(exp.amount)}</td>
                   <td className="table-cell">{exp.paymentMethod}</td>
-                  <td className="table-cell">{new Date(exp.date).toLocaleDateString("es-GT")}</td>
+                  <td className="table-cell">{formatDate(exp.date)}</td>
                   <td className="table-cell">{exp.user.name}</td>
                 </tr>
               ))}

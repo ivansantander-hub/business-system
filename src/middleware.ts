@@ -5,7 +5,6 @@ import { verifyToken } from "@/lib/auth";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Public routes
   if (
     pathname === "/login" ||
     pathname.startsWith("/api/auth/login") ||
@@ -38,6 +37,9 @@ export async function middleware(request: NextRequest) {
   response.headers.set("x-user-id", String(payload.userId));
   response.headers.set("x-user-role", payload.role);
   response.headers.set("x-user-name", payload.name);
+  if (payload.companyId) {
+    response.headers.set("x-company-id", String(payload.companyId));
+  }
   return response;
 }
 

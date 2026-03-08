@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { UtensilsCrossed, Plus, Users } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface TableData {
   id: number; number: string; capacity: number; section: string | null; status: string;
@@ -21,12 +22,14 @@ export default function MesasPage() {
   const [selectedWaiter, setSelectedWaiter] = useState("");
 
   const load = useCallback(async () => {
-    const [t, users] = await Promise.all([
-      fetch("/api/tables").then(r => r.json()),
-      fetch("/api/users").then(r => r.json()).catch(() => []),
+    const [tRes, usersRes] = await Promise.all([
+      fetch("/api/tables"),
+      fetch("/api/users"),
     ]);
+    const t = tRes.ok ? await tRes.json() : [];
+    const users = usersRes.ok ? await usersRes.json() : [];
     setTables(t);
-    setWaiters(users.filter ? users.filter((u: { role: string }) => u.role === "WAITER") : []);
+    setWaiters(Array.isArray(users) ? users.filter((u: { role: string }) => u.role === "WAITER") : []);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -94,7 +97,7 @@ export default function MesasPage() {
                 </div>
                 {table.orders.length > 0 && (
                   <p className="text-sm font-semibold text-indigo-600 mt-2">
-                    Q {Number(table.orders[0].total).toFixed(2)}
+                    {formatCurrency(table.orders[0].total)}
                   </p>
                 )}
               </button>
@@ -141,13 +144,13 @@ export default function MesasPage() {
                   {showOrder.orders[0].items.map((item, idx) => (
                     <div key={idx} className="flex justify-between text-sm py-1">
                       <span>{Number(item.quantity).toFixed(0)}x {item.product.name}</span>
-                      <span className="font-medium">Q {Number(item.total).toFixed(2)}</span>
+                      <span className="font-medium">{formatCurrency(item.total)}</span>
                     </div>
                   ))}
                 </div>
                 <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                   <span>Total</span>
-                  <span>Q {Number(showOrder.orders[0].total).toFixed(2)}</span>
+                  <span>{formatCurrency(showOrder.orders[0].total)}</span>
                 </div>
                 <a href={`/dashboard/ordenes?id=${showOrder.orders[0].id}`} className="btn-primary w-full mt-3 block text-center">
                   Ver Orden Completa

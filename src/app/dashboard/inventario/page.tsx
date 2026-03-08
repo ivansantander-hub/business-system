@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Warehouse, Plus, ArrowDownCircle, ArrowUpCircle, RotateCcw } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatDateTime } from "@/lib/utils";
 
 interface Product { id: number; name: string; stock: string; minStock: string; unit: string; }
 interface Movement {
@@ -20,12 +21,12 @@ export default function InventarioPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const load = useCallback(async () => {
-    const [prods, movs] = await Promise.all([
-      fetch("/api/products?active=true").then(r => r.json()),
-      fetch("/api/inventory").then(r => r.json()),
+    const [prodsRes, movsRes] = await Promise.all([
+      fetch("/api/products?active=true"),
+      fetch("/api/inventory"),
     ]);
-    setProducts(prods);
-    setMovements(movs);
+    setProducts(prodsRes.ok ? await prodsRes.json() : []);
+    setMovements(movsRes.ok ? await movsRes.json() : []);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -110,7 +111,7 @@ export default function InventarioPage() {
                   <td className="table-cell text-right">{Number(m.newStock).toFixed(0)}</td>
                   <td className="table-cell text-gray-500">{m.reason || "-"}</td>
                   <td className="table-cell">{m.user.name}</td>
-                  <td className="table-cell">{new Date(m.createdAt).toLocaleString("es-GT")}</td>
+                  <td className="table-cell">{formatDateTime(m.createdAt)}</td>
                 </tr>
               ))}
               {movements.length === 0 && (

@@ -3,11 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const type = searchParams.get("type");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { companyId };
   if (status) where.status = status;
   if (type) where.type = type;
 
@@ -27,11 +30,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const body = await request.json();
 
   const order = await prisma.order.create({
     data: {
+      companyId,
       tableId: body.tableId ? Number(body.tableId) : null,
       customerId: body.customerId ? Number(body.customerId) : null,
       userId,

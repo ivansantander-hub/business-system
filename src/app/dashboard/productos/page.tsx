@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Plus, Search, Pencil, Trash2, Package } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface Product {
   id: number; name: string; description: string | null; barcode: string | null;
@@ -30,12 +31,16 @@ export default function ProductosPage() {
     if (search) params.set("search", search);
     if (filterCategory) params.set("categoryId", filterCategory);
     const res = await fetch(`/api/products?${params}`);
-    setProducts(await res.json());
+    if (res.ok) {
+      setProducts(await res.json());
+    } else {
+      setProducts([]);
+    }
   }, [search, filterCategory]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(setCategories);
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then(setCategories);
   }, []);
 
   function openCreate() {
@@ -121,8 +126,8 @@ export default function ProductosPage() {
                   <td className="table-cell font-medium">{p.name}</td>
                   <td className="table-cell">{p.category?.name || "-"}</td>
                   <td className="table-cell text-gray-500">{p.barcode || "-"}</td>
-                  <td className="table-cell text-right">Q {Number(p.costPrice).toFixed(2)}</td>
-                  <td className="table-cell text-right font-semibold">Q {Number(p.salePrice).toFixed(2)}</td>
+                  <td className="table-cell text-right">{formatCurrency(p.costPrice)}</td>
+                  <td className="table-cell text-right font-semibold">{formatCurrency(p.salePrice)}</td>
                   <td className={`table-cell text-right font-semibold ${Number(p.stock) <= Number(p.minStock) ? "text-red-600" : "text-gray-700"}`}>
                     {Number(p.stock).toFixed(0)}
                   </td>

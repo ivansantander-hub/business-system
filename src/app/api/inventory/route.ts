@@ -3,11 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
   const productId = searchParams.get("productId");
   const type = searchParams.get("type");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { companyId };
   if (productId) where.productId = Number(productId);
   if (type) where.type = type;
 
@@ -24,10 +27,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const body = await request.json();
 
-  const product = await prisma.product.findUnique({ where: { id: Number(body.productId) } });
+  const product = await prisma.product.findFirst({
+    where: { id: Number(body.productId), companyId },
+  });
   if (!product) {
     return NextResponse.json({ error: "Producto no encontrado" }, { status: 404 });
   }
@@ -49,6 +56,7 @@ export async function POST(request: Request) {
   const [movement] = await prisma.$transaction([
     prisma.inventoryMovement.create({
       data: {
+        companyId,
         productId: Number(body.productId),
         userId,
         type: body.type,
@@ -59,8 +67,8 @@ export async function POST(request: Request) {
       },
       include: { product: { select: { name: true } }, user: { select: { name: true } } },
     }),
-    prisma.product.update({
-      where: { id: Number(body.productId) },
+    prisma.product.updateMany({
+      where: { id: Number(body.productId), companyId },
       data: { stock: newStock },
     }),
   ]);

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ShoppingCart, Search, Plus, Minus, Trash2, CreditCard, Banknote, Building2, X } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface Product { id: number; name: string; salePrice: string; stock: string; category: { name: string } | null; barcode: string | null; }
 interface CartItem { product: Product; quantity: number; unitPrice: number; total: number; }
@@ -19,7 +20,7 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [paidAmount, setPaidAmount] = useState("");
   const [customerName, setCustomerName] = useState("Consumidor Final");
-  const [customerNit, setCustomerNit] = useState("CF");
+  const [customerNit, setCustomerNit] = useState("222222222");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [cashSession, setCashSession] = useState<{ id: number } | null>(null);
   const [showCashOpen, setShowCashOpen] = useState(false);
@@ -30,13 +31,17 @@ export default function POSPage() {
     if (search) params.set("search", search);
     if (selectedCategory) params.set("categoryId", selectedCategory);
     const res = await fetch(`/api/products?${params}`);
-    setProducts(await res.json());
+    if (res.ok) {
+      setProducts(await res.json());
+    } else {
+      setProducts([]);
+    }
   }, [search, selectedCategory]);
 
   useEffect(() => { loadProducts(); }, [loadProducts]);
   useEffect(() => {
-    fetch("/api/categories").then(r => r.json()).then(setCategories);
-    fetch("/api/cash?action=current").then(r => r.json()).then(session => {
+    fetch("/api/categories").then(r => r.ok ? r.json() : []).then(setCategories);
+    fetch("/api/cash?action=current").then(r => r.ok ? r.json() : null).then(session => {
       if (session) setCashSession(session);
     });
   }, []);
@@ -68,7 +73,7 @@ export default function POSPage() {
   }
 
   const subtotal = cart.reduce((sum, i) => sum + i.total, 0);
-  const tax = subtotal * 0.12;
+  const tax = subtotal * 0.19;
   const total = subtotal + tax;
   const change = Number(paidAmount) - total;
 
@@ -120,7 +125,7 @@ export default function POSPage() {
       setShowPayment(false);
       setPaidAmount("");
       setCustomerName("Consumidor Final");
-      setCustomerNit("CF");
+      setCustomerNit("222222222");
       loadProducts();
       setToast({ message: "Venta registrada exitosamente", type: "success" });
     } else {
@@ -177,7 +182,7 @@ export default function POSPage() {
                 <p className="font-medium text-gray-900 text-sm truncate">{p.name}</p>
                 <p className="text-xs text-gray-400 mt-1">{p.category?.name}</p>
                 <div className="flex items-center justify-between mt-3">
-                  <span className="text-lg font-bold text-indigo-600">Q {Number(p.salePrice).toFixed(2)}</span>
+                  <span className="text-lg font-bold text-indigo-600">{formatCurrency(Number(p.salePrice))}</span>
                   <span className="text-xs text-gray-400">Stock: {Number(p.stock).toFixed(0)}</span>
                 </div>
               </button>
@@ -215,7 +220,7 @@ export default function POSPage() {
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
-                <span className="font-semibold text-gray-900">Q {item.total.toFixed(2)}</span>
+                <span className="font-semibold text-gray-900">{formatCurrency(item.total)}</span>
               </div>
             </div>
           ))}
@@ -223,13 +228,13 @@ export default function POSPage() {
 
         <div className="border-t border-gray-200 p-4 space-y-2">
           <div className="flex justify-between text-sm text-gray-500">
-            <span>Subtotal</span><span>Q {subtotal.toFixed(2)}</span>
+            <span>Subtotal</span><span>{formatCurrency(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm text-gray-500">
-            <span>IVA (12%)</span><span>Q {tax.toFixed(2)}</span>
+            <span>IVA (19%)</span><span>{formatCurrency(tax)}</span>
           </div>
           <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t">
-            <span>Total</span><span>Q {total.toFixed(2)}</span>
+            <span>Total</span><span>{formatCurrency(total)}</span>
           </div>
           <button onClick={() => { setShowPayment(true); setPaidAmount(total.toFixed(2)); }} disabled={cart.length === 0}
             className="btn-success w-full py-3 text-lg mt-3 flex items-center justify-center gap-2">
@@ -273,7 +278,7 @@ export default function POSPage() {
 
           <div className="bg-gray-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-lg font-bold">
-              <span>Total a Cobrar</span><span className="text-indigo-600">Q {total.toFixed(2)}</span>
+              <span>Total a Cobrar</span><span className="text-indigo-600">{formatCurrency(total)}</span>
             </div>
             {paymentMethod === "CASH" && (
               <>
@@ -284,7 +289,7 @@ export default function POSPage() {
                 </div>
                 {change >= 0 && Number(paidAmount) > 0 && (
                   <div className="flex justify-between text-xl font-bold text-emerald-600 pt-2">
-                    <span>Cambio</span><span>Q {change.toFixed(2)}</span>
+                    <span>Cambio</span><span>{formatCurrency(change)}</span>
                   </div>
                 )}
               </>

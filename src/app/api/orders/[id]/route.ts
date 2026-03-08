@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromHeaders } from "@/lib/auth";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  const order = await prisma.order.findUnique({
-    where: { id: Number(id) },
+  const order = await prisma.order.findFirst({
+    where: { id: Number(id), companyId },
     include: {
       table: true,
       customer: true,
@@ -18,23 +22,27 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
   const body = await request.json();
 
-  if (body.status === "CANCELLED") {
-    const order = await prisma.order.findUnique({
-      where: { id: Number(id) },
-      select: { tableId: true },
-    });
+  const existing = await prisma.order.findFirst({
+    where: { id: Number(id), companyId },
+    select: { id: true, tableId: true },
+  });
+  if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
+  if (body.status === "CANCELLED") {
     await prisma.order.update({
-      where: { id: Number(id) },
+      where: { id: existing.id },
       data: { status: "CANCELLED" },
     });
 
-    if (order?.tableId) {
+    if (existing.tableId) {
       await prisma.restaurantTable.update({
-        where: { id: order.tableId },
+        where: { id: existing.tableId },
         data: { status: "AVAILABLE" },
       });
     }
@@ -43,7 +51,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const order = await prisma.order.update({
-    where: { id: Number(id) },
+    where: { id: existing.id },
     data: {
       status: body.status,
       notes: body.notes,

@@ -3,12 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const from = searchParams.get("from");
   const to = searchParams.get("to");
   const category = searchParams.get("category");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { companyId };
   if (category) where.category = category;
   if (from || to) {
     where.date = {};
@@ -26,11 +31,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   const expense = await prisma.expense.create({
     data: {
+      companyId,
       category: body.category,
       description: body.description,
       amount: Number(body.amount),

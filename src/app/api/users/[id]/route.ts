@@ -4,12 +4,27 @@ import { getUserFromHeaders } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { role } = getUserFromHeaders(request);
-  if (role !== "ADMIN") {
+  const { role, companyId } = getUserFromHeaders(request);
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
   }
 
   const { id } = await params;
+  const userId = Number(id);
+
+  if (role === "ADMIN") {
+    if (companyId === null) {
+      return NextResponse.json({ error: "Company context required" }, { status: 403 });
+    }
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { companyId: true },
+    });
+    if (!targetUser || targetUser.companyId !== companyId) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+  }
+
   const body = await request.json();
 
   const data: Record<string, unknown> = {
@@ -24,7 +39,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const user = await prisma.user.update({
-    where: { id: Number(id) },
+    where: { id: userId },
     data,
     select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
   });
@@ -32,12 +47,27 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { role } = getUserFromHeaders(request);
-  if (role !== "ADMIN") {
+  const { role, companyId } = getUserFromHeaders(request);
+  if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
     return NextResponse.json({ error: "Solo administradores" }, { status: 403 });
   }
 
   const { id } = await params;
-  await prisma.user.update({ where: { id: Number(id) }, data: { isActive: false } });
+  const userId = Number(id);
+
+  if (role === "ADMIN") {
+    if (companyId === null) {
+      return NextResponse.json({ error: "Company context required" }, { status: 403 });
+    }
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { companyId: true },
+    });
+    if (!targetUser || targetUser.companyId !== companyId) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+  }
+
+  await prisma.user.update({ where: { id: userId }, data: { isActive: false } });
   return NextResponse.json({ ok: true });
 }

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ClipboardList, Search, Plus, Eye } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface Order {
   id: number; type: string; status: string; subtotal: string; tax: string; total: string; notes: string | null;
@@ -27,11 +28,15 @@ export default function OrdenesPage() {
     const params = new URLSearchParams();
     if (statusFilter) params.set("status", statusFilter);
     const res = await fetch(`/api/orders?${params}`);
-    setOrders(await res.json());
+    if (res.ok) {
+      setOrders(await res.json());
+    } else {
+      setOrders([]);
+    }
   }, [statusFilter]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { fetch("/api/products?active=true").then(r => r.json()).then(setProducts); }, []);
+  useEffect(() => { fetch("/api/products?active=true").then(r => r.ok ? r.json() : []).then(setProducts); }, []);
 
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
@@ -43,8 +48,8 @@ export default function OrdenesPage() {
     if (res.ok) {
       setShowAddItem(false);
       // Refresh order detail
-      const updated = await fetch(`/api/orders/${showDetail.id}`).then(r => r.json());
-      setShowDetail(updated);
+      const updRes = await fetch(`/api/orders/${showDetail.id}`);
+      if (updRes.ok) setShowDetail(await updRes.json());
       load();
       setToast({ message: "Producto agregado", type: "success" });
     }
@@ -109,9 +114,9 @@ export default function OrdenesPage() {
                   <td className="table-cell">{typeLabels[o.type]}</td>
                   <td className="table-cell">{o.table?.number || "-"}</td>
                   <td className="table-cell">{o.waiter?.name || "-"}</td>
-                  <td className="table-cell text-right font-semibold">Q {Number(o.total).toFixed(2)}</td>
+                  <td className="table-cell text-right font-semibold">{formatCurrency(o.total)}</td>
                   <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[o.status]}`}>{statusLabels[o.status]}</span></td>
-                  <td className="table-cell">{new Date(o.createdAt).toLocaleString("es-GT")}</td>
+                  <td className="table-cell">{formatDateTime(o.createdAt)}</td>
                   <td className="table-cell">
                     <button onClick={() => setShowDetail(o)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Eye className="w-4 h-4 text-indigo-600" /></button>
                   </td>
@@ -137,16 +142,16 @@ export default function OrdenesPage() {
                 <thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">Precio</th><th className="table-header text-right">Total</th><th className="table-header">Estado</th></tr></thead>
                 <tbody>
                   {showDetail.items.map(item => (
-                    <tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">Q {Number(item.unitPrice).toFixed(2)}</td><td className="table-cell text-right font-medium">Q {Number(item.total).toFixed(2)}</td><td className="table-cell"><span className={`px-2 py-0.5 rounded-full text-xs ${statusColors[item.status] || "bg-gray-100"}`}>{item.status}</span></td></tr>
+                    <tr key={item.id}><td className="table-cell">{item.product.name}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td><td className="table-cell"><span className={`px-2 py-0.5 rounded-full text-xs ${statusColors[item.status] || "bg-gray-100"}`}>{item.status}</span></td></tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>Q {Number(showDetail.subtotal).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>IVA</span><span>Q {Number(showDetail.tax).toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-base pt-1 border-t"><span>Total</span><span>Q {Number(showDetail.total).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(showDetail.subtotal)}</span></div>
+              <div className="flex justify-between"><span>IVA</span><span>{formatCurrency(showDetail.tax)}</span></div>
+              <div className="flex justify-between font-bold text-base pt-1 border-t"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
             </div>
 
             {showDetail.status === "OPEN" && (
@@ -170,7 +175,7 @@ export default function OrdenesPage() {
             {filteredProducts.slice(0, 20).map(p => (
               <button key={p.id} type="button" onClick={() => setItemForm({...itemForm, productId: String(p.id)})}
                 className={`w-full flex justify-between p-2 rounded-lg text-sm ${String(p.id) === itemForm.productId ? "bg-indigo-50 border border-indigo-300" : "hover:bg-gray-50"}`}>
-                <span>{p.name}</span><span className="font-medium">Q {Number(p.salePrice).toFixed(2)}</span>
+                <span>{p.name}</span><span className="font-medium">{formatCurrency(p.salePrice)}</span>
               </button>
             ))}
           </div>

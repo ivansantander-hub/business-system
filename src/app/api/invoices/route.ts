@@ -3,12 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { companyId };
   if (status) where.status = status;
   if (from || to) {
     where.date = {};
@@ -30,128 +33,142 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
-  const body = await request.json();
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
-  // Get next invoice number
-  const setting = await prisma.setting.findUnique({ where: { key: "invoice_next_number" } });
-  const prefix = (await prisma.setting.findUnique({ where: { key: "invoice_prefix" } }))?.value || "FAC-";
-  const nextNum = Number(setting?.value || 1);
-  const invoiceNumber = `${prefix}${String(nextNum).padStart(8, "0")}`;
+  try {
+    const body = await request.json();
 
-  const taxRate = Number(
-    (await prisma.setting.findUnique({ where: { key: "tax_rate" } }))?.value || "0.12"
-  );
-
-  let subtotal = 0;
-  const itemsData = body.items.map(
-    (item: { productId?: number; productName: string; quantity: number; unitPrice: number }) => {
-      const total = Number(item.quantity) * Number(item.unitPrice);
-      subtotal += total;
-      return {
-        productId: item.productId ? Number(item.productId) : null,
-        productName: item.productName,
-        quantity: Number(item.quantity),
-        unitPrice: Number(item.unitPrice),
-        total,
-      };
-    }
-  );
-
-  const discount = Number(body.discount) || 0;
-  const taxableAmount = subtotal - discount;
-  const tax = taxableAmount * taxRate;
-  const total = taxableAmount + tax;
-  const paidAmount = Number(body.paidAmount) || total;
-  const changeAmount = paidAmount - total;
-
-  const invoice = await prisma.$transaction(async (tx) => {
-    const inv = await tx.invoice.create({
-      data: {
-        orderId: body.orderId ? Number(body.orderId) : null,
-        customerId: body.customerId ? Number(body.customerId) : null,
-        userId,
-        number: invoiceNumber,
-        subtotal,
-        taxRate,
-        tax,
-        discount,
-        total,
-        paidAmount,
-        changeAmount: changeAmount > 0 ? changeAmount : 0,
-        paymentMethod: body.paymentMethod || "CASH",
-        status: body.paymentMethod === "CREDIT" ? "PENDING" : "PAID",
-        notes: body.notes || null,
-        items: { create: itemsData },
-      },
-      include: {
-        customer: { select: { name: true, nit: true } },
-        items: true,
-      },
+    const setting = await prisma.setting.findFirst({
+      where: { companyId, key: "invoice_next_number" },
     });
-
-    // Update invoice number counter
-    await tx.setting.update({
-      where: { key: "invoice_next_number" },
-      data: { value: String(nextNum + 1) },
+    const prefixSetting = await prisma.setting.findFirst({
+      where: { companyId, key: "invoice_prefix" },
     });
+    const prefix = prefixSetting?.value || "FE-";
+    const nextNum = Number(setting?.value || 1);
+    const invoiceNumber = `${prefix}${String(nextNum).padStart(8, "0")}`;
 
-    // Deduct stock for each item
-    for (const item of itemsData) {
-      if (item.productId) {
-        const product = await tx.product.findUnique({ where: { id: item.productId } });
-        if (product) {
-          const previousStock = Number(product.stock);
-          const newStock = previousStock - Number(item.quantity);
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: Math.max(0, newStock) },
-          });
-          await tx.inventoryMovement.create({
-            data: {
-              productId: item.productId,
-              userId,
-              type: "OUT",
-              quantity: Number(item.quantity),
-              previousStock,
-              newStock: Math.max(0, newStock),
-              reason: `Venta ${invoiceNumber}`,
-              referenceId: inv.id,
-              referenceType: "invoice",
-            },
-          });
-        }
+    const taxRateSetting = await prisma.setting.findFirst({
+      where: { companyId, key: "tax_rate" },
+    });
+    const taxRate = Number(taxRateSetting?.value || "0.19");
+
+    let subtotal = 0;
+    const itemsData = body.items.map(
+      (item: { productId?: number; productName: string; quantity: number; unitPrice: number }) => {
+        const total = Number(item.quantity) * Number(item.unitPrice);
+        subtotal += total;
+        return {
+          productId: item.productId ? Number(item.productId) : null,
+          productName: item.productName,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          total,
+        };
       }
-    }
+    );
 
-    // Close order if linked
-    if (body.orderId) {
-      const order = await tx.order.findUnique({ where: { id: Number(body.orderId) } });
-      await tx.order.update({
-        where: { id: Number(body.orderId) },
-        data: { status: "PAID" },
+    const discount = Number(body.discount) || 0;
+    const taxableAmount = subtotal - discount;
+    const tax = taxableAmount * taxRate;
+    const total = taxableAmount + tax;
+    const paidAmount = Number(body.paidAmount) || total;
+    const changeAmount = Math.max(0, paidAmount - total);
+
+    const invoice = await prisma.$transaction(async (tx) => {
+      const inv = await tx.invoice.create({
+        data: {
+          companyId,
+          orderId: body.orderId ? Number(body.orderId) : null,
+          customerId: body.customerId ? Number(body.customerId) : null,
+          userId,
+          number: invoiceNumber,
+          subtotal,
+          taxRate,
+          tax,
+          discount,
+          total,
+          paidAmount,
+          changeAmount,
+          paymentMethod: body.paymentMethod || "CASH",
+          status: body.paymentMethod === "CREDIT" ? "PENDING" : "PAID",
+          notes: body.notes || null,
+          items: { create: itemsData },
+        },
+        include: {
+          customer: { select: { name: true, nit: true } },
+          items: true,
+        },
       });
-      if (order?.tableId) {
-        await tx.restaurantTable.update({
-          where: { id: order.tableId },
-          data: { status: "AVAILABLE" },
+
+      if (setting) {
+        await tx.setting.update({
+          where: { id: setting.id },
+          data: { value: String(nextNum + 1) },
         });
       }
-    }
 
-    // Update cash session if open
-    const cashSession = await tx.cashSession.findFirst({
-      where: { userId, status: "OPEN" },
-    });
-    if (cashSession) {
-      await tx.cashSession.update({
-        where: { id: cashSession.id },
-        data: { salesTotal: { increment: total } },
+      for (const item of itemsData) {
+        if (item.productId) {
+          const product = await tx.product.findUnique({ where: { id: item.productId } });
+          if (product) {
+            const previousStock = Number(product.stock);
+            const newStock = Math.max(0, previousStock - Number(item.quantity));
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: newStock },
+            });
+            await tx.inventoryMovement.create({
+              data: {
+                companyId,
+                productId: item.productId,
+                userId,
+                type: "OUT",
+                quantity: Number(item.quantity),
+                previousStock,
+                newStock,
+                reason: `Venta ${invoiceNumber}`,
+                referenceId: inv.id,
+                referenceType: "invoice",
+              },
+            });
+          }
+        }
+      }
+
+      if (body.orderId) {
+        const order = await tx.order.findFirst({ where: { id: Number(body.orderId), companyId } });
+        if (order) {
+          await tx.order.update({
+            where: { id: order.id },
+            data: { status: "PAID" },
+          });
+          if (order.tableId) {
+            await tx.restaurantTable.update({
+              where: { id: order.tableId },
+              data: { status: "AVAILABLE" },
+            });
+          }
+        }
+      }
+
+      const cashSession = await tx.cashSession.findFirst({
+        where: { userId, companyId, status: "OPEN" },
       });
-    }
+      if (cashSession) {
+        await tx.cashSession.update({
+          where: { id: cashSession.id },
+          data: { salesTotal: { increment: total } },
+        });
+      }
 
-    return inv;
-  });
+      return inv;
+    });
 
-  return NextResponse.json(invoice, { status: 201 });
+    return NextResponse.json(invoice, { status: 201 });
+  } catch (error) {
+    console.error("Create invoice error:", error);
+    return NextResponse.json({ error: "Error al crear factura" }, { status: 500 });
+  }
 }

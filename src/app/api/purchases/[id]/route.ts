@@ -3,9 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(_req);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  const purchase = await prisma.purchase.findUnique({
-    where: { id: Number(id) },
+  const purchase = await prisma.purchase.findFirst({
+    where: { id: Number(id), companyId },
     include: {
       supplier: true,
       user: { select: { name: true } },
@@ -17,13 +20,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  const { userId } = getUserFromHeaders(request);
   const body = await request.json();
 
   if (body.status === "RECEIVED") {
-    const purchase = await prisma.purchase.findUnique({
-      where: { id: Number(id) },
+    const purchase = await prisma.purchase.findFirst({
+      where: { id: Number(id), companyId },
       include: { items: true },
     });
     if (!purchase) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
@@ -43,6 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
         await tx.inventoryMovement.create({
           data: {
+            companyId,
             productId: item.productId,
             userId,
             type: "IN",
@@ -66,6 +72,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   if (body.status === "CANCELLED") {
+    const existing = await prisma.purchase.findFirst({ where: { id: Number(id), companyId } });
+    if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
     await prisma.purchase.update({
       where: { id: Number(id) },
       data: { status: "CANCELLED" },

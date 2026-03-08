@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const purchases = await prisma.purchase.findMany({
+    where: { companyId },
     include: {
       supplier: { select: { name: true } },
       user: { select: { name: true } },
@@ -15,10 +19,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const body = await request.json();
 
-  const count = await prisma.purchase.count();
+  const count = await prisma.purchase.count({ where: { companyId } });
   const number = `OC-${String(count + 1).padStart(6, "0")}`;
 
   let subtotal = 0;
@@ -33,12 +39,13 @@ export async function POST(request: Request) {
     };
   });
 
-  const taxRate = 0.12;
+  const taxRate = 0.19;
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
   const purchase = await prisma.purchase.create({
     data: {
+      companyId,
       supplierId: Number(body.supplierId),
       userId,
       number,

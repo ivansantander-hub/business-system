@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromHeaders } from "@/lib/auth";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
-  const invoice = await prisma.invoice.findUnique({
-    where: { id: Number(id) },
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: Number(id), companyId },
     include: {
       customer: true,
       user: { select: { name: true } },
@@ -17,12 +21,15 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { id } = await params;
   const body = await request.json();
 
   if (body.status === "CANCELLED") {
-    const invoice = await prisma.invoice.findUnique({
-      where: { id: Number(id) },
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: Number(id), companyId },
       include: { items: true },
     });
 
@@ -31,7 +38,6 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     await prisma.$transaction(async (tx) => {
-      // Restore stock
       for (const item of invoice.items) {
         if (item.productId) {
           await tx.product.update({

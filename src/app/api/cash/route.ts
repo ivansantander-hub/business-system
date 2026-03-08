@@ -5,11 +5,15 @@ import { getUserFromHeaders } from "@/lib/auth";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action");
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
 
   if (action === "current") {
     const session = await prisma.cashSession.findFirst({
-      where: { userId, status: "OPEN" },
+      where: { userId, companyId, status: "OPEN" },
       include: { user: { select: { name: true } } },
     });
     return NextResponse.json(session);
@@ -17,6 +21,7 @@ export async function GET(request: Request) {
 
   // List sessions
   const sessions = await prisma.cashSession.findMany({
+    where: { companyId },
     include: { user: { select: { name: true } } },
     orderBy: { openedAt: "desc" },
     take: 50,
@@ -25,12 +30,16 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, companyId } = getUserFromHeaders(request);
+  if (companyId === null) {
+    return NextResponse.json({ error: "Company context required" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   if (body.action === "open") {
     const existing = await prisma.cashSession.findFirst({
-      where: { userId, status: "OPEN" },
+      where: { userId, companyId, status: "OPEN" },
     });
     if (existing) {
       return NextResponse.json({ error: "Ya tiene una caja abierta" }, { status: 400 });
@@ -38,6 +47,7 @@ export async function POST(request: Request) {
 
     const session = await prisma.cashSession.create({
       data: {
+        companyId,
         userId,
         openingAmount: Number(body.openingAmount) || 0,
       },
@@ -48,7 +58,7 @@ export async function POST(request: Request) {
 
   if (body.action === "close") {
     const session = await prisma.cashSession.findFirst({
-      where: { userId, status: "OPEN" },
+      where: { userId, companyId, status: "OPEN" },
     });
     if (!session) {
       return NextResponse.json({ error: "No tiene caja abierta" }, { status: 400 });

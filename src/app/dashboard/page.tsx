@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { DollarSign, ShoppingCart, AlertTriangle, ClipboardList, TrendingUp } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface DashboardData {
   todaySales: number;
@@ -14,12 +15,42 @@ interface DashboardData {
   lowStockProducts: { id: number; name: string; stock: string; min_stock: string }[];
 }
 
+const emptyData: DashboardData = {
+  todaySales: 0,
+  todayTransactions: 0,
+  openOrders: 0,
+  lowStockCount: 0,
+  salesByDay: [],
+  recentInvoices: [],
+  lowStockProducts: [],
+};
+
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/reports?type=dashboard");
-    setData(await res.json());
+    try {
+      const res = await fetch("/api/reports?type=dashboard");
+      if (!res.ok) {
+        setData(emptyData);
+        setError(res.status === 403 ? "Sin acceso a datos de empresa" : "Error al cargar datos");
+        return;
+      }
+      const json = await res.json();
+      setData({
+        todaySales: json.todaySales ?? 0,
+        todayTransactions: json.todayTransactions ?? 0,
+        openOrders: json.openOrders ?? 0,
+        lowStockCount: json.lowStockCount ?? 0,
+        salesByDay: json.salesByDay ?? [],
+        recentInvoices: json.recentInvoices ?? [],
+        lowStockProducts: json.lowStockProducts ?? [],
+      });
+    } catch {
+      setData(emptyData);
+      setError("Error de conexión");
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -27,7 +58,7 @@ export default function DashboardPage() {
   if (!data) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>;
 
   const cards = [
-    { label: "Ventas Hoy", value: `Q ${data.todaySales.toFixed(2)}`, icon: DollarSign, color: "bg-emerald-500" },
+    { label: "Ventas Hoy", value: formatCurrency(data.todaySales), icon: DollarSign, color: "bg-emerald-500" },
     { label: "Transacciones", value: data.todayTransactions, icon: ShoppingCart, color: "bg-blue-500" },
     { label: "Órdenes Abiertas", value: data.openOrders, icon: ClipboardList, color: "bg-amber-500" },
     { label: "Stock Bajo", value: data.lowStockCount, icon: AlertTriangle, color: "bg-red-500" },
@@ -36,6 +67,12 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+
+      {error && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card) => (
@@ -52,7 +89,6 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales chart */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-indigo-600" />
@@ -63,13 +99,12 @@ export default function DashboardPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="date" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
-              <Tooltip formatter={(value: number) => [`Q ${value.toFixed(2)}`, "Ventas"]} />
+              <Tooltip formatter={(value: number) => [formatCurrency(value), "Ventas"]} />
               <Bar dataKey="total" fill="#4f46e5" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Low stock alerts */}
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
@@ -92,7 +127,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent sales */}
       <div className="card">
         <h2 className="font-semibold text-gray-900 mb-4">Ventas Recientes</h2>
         <div className="overflow-x-auto">
@@ -110,8 +144,8 @@ export default function DashboardPage() {
                 <tr key={inv.id}>
                   <td className="table-cell font-medium">{inv.number}</td>
                   <td className="table-cell">{inv.customer?.name || "Consumidor Final"}</td>
-                  <td className="table-cell font-semibold">Q {Number(inv.total).toFixed(2)}</td>
-                  <td className="table-cell">{new Date(inv.date).toLocaleDateString("es-GT")}</td>
+                  <td className="table-cell font-semibold">{formatCurrency(Number(inv.total))}</td>
+                  <td className="table-cell">{formatDate(inv.date)}</td>
                 </tr>
               ))}
               {data.recentInvoices.length === 0 && (

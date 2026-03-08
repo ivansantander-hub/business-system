@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Users, Plus, Pencil, Shield } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatDate } from "@/lib/utils";
 
 interface User { id: number; name: string; email: string; role: string; isActive: boolean; createdAt: string; }
 
@@ -75,7 +76,7 @@ export default function UsuariosPage() {
                     {u.isActive ? "Activo" : "Inactivo"}
                   </button>
                 </td>
-                <td className="table-cell">{new Date(u.createdAt).toLocaleDateString("es-GT")}</td>
+                <td className="table-cell">{formatDate(u.createdAt)}</td>
                 <td className="table-cell"><button onClick={() => openEdit(u)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Pencil className="w-4 h-4 text-indigo-600" /></button></td>
               </tr>
             ))}

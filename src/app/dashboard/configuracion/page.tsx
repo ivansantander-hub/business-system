@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Settings, Save, DollarSign, Banknote } from "lucide-react";
 import Toast from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 export default function ConfiguracionPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -13,12 +14,15 @@ export default function ConfiguracionPage() {
   const [cashSession, setCashSession] = useState<{ id: number; openingAmount: string; salesTotal: string; openedAt: string } | null>(null);
 
   const load = useCallback(async () => {
-    const [s, cs] = await Promise.all([
-      fetch("/api/settings").then(r => r.json()),
-      fetch("/api/cash?action=current").then(r => r.json()),
+    const [sRes, csRes] = await Promise.all([
+      fetch("/api/settings"),
+      fetch("/api/cash?action=current"),
     ]);
-    setSettings(s);
-    if (cs) setCashSession(cs);
+    if (sRes.ok) setSettings(await sRes.json());
+    if (csRes.ok) {
+      const cs = await csRes.json();
+      if (cs) setCashSession(cs);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -91,11 +95,11 @@ export default function ConfiguracionPage() {
               <div className="space-y-3">
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                   <p className="text-sm text-emerald-700 font-medium">Caja Abierta</p>
-                  <p className="text-xs text-emerald-600">Desde: {new Date(cashSession.openedAt).toLocaleString("es-GT")}</p>
+                  <p className="text-xs text-emerald-600">Desde: {formatDateTime(cashSession.openedAt)}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-gray-500">Monto Inicial:</span> <span className="font-semibold">Q {Number(cashSession.openingAmount).toFixed(2)}</span></div>
-                  <div><span className="text-gray-500">Ventas:</span> <span className="font-semibold text-emerald-600">Q {Number(cashSession.salesTotal).toFixed(2)}</span></div>
+                  <div><span className="text-gray-500">Monto Inicial:</span> <span className="font-semibold">{formatCurrency(cashSession.openingAmount)}</span></div>
+                  <div><span className="text-gray-500">Ventas:</span> <span className="font-semibold text-emerald-600">{formatCurrency(cashSession.salesTotal)}</span></div>
                 </div>
                 <button onClick={() => setShowCashClose(true)} className="btn-danger w-full">Cerrar Caja</button>
               </div>
@@ -111,16 +115,16 @@ export default function ConfiguracionPage() {
         {cashSession && (
           <form onSubmit={closeCash} className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-3 space-y-1 text-sm">
-              <div className="flex justify-between"><span>Monto Inicial:</span><span>Q {Number(cashSession.openingAmount).toFixed(2)}</span></div>
-              <div className="flex justify-between"><span>Ventas del Turno:</span><span className="font-semibold">Q {Number(cashSession.salesTotal).toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold border-t pt-1"><span>Esperado:</span><span>Q {(Number(cashSession.openingAmount) + Number(cashSession.salesTotal)).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Monto Inicial:</span><span>{formatCurrency(cashSession.openingAmount)}</span></div>
+              <div className="flex justify-between"><span>Ventas del Turno:</span><span className="font-semibold">{formatCurrency(cashSession.salesTotal)}</span></div>
+              <div className="flex justify-between font-bold border-t pt-1"><span>Esperado:</span><span>{formatCurrency(Number(cashSession.openingAmount) + Number(cashSession.salesTotal))}</span></div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Monto Contado en Caja</label>
               <input type="number" step="0.01" className="input-field text-lg font-bold text-center" value={closingAmount} onChange={e => setClosingAmount(e.target.value)} required autoFocus />
             </div>
             {closingAmount && (
               <div className={`text-center text-lg font-bold ${Number(closingAmount) - (Number(cashSession.openingAmount) + Number(cashSession.salesTotal)) >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                Diferencia: Q {(Number(closingAmount) - (Number(cashSession.openingAmount) + Number(cashSession.salesTotal))).toFixed(2)}
+                Diferencia: {formatCurrency(Number(closingAmount) - (Number(cashSession.openingAmount) + Number(cashSession.salesTotal)))}
               </div>
             )}
             <div className="flex gap-3"><button type="button" onClick={() => setShowCashClose(false)} className="btn-secondary flex-1">Cancelar</button><button type="submit" className="btn-danger flex-1">Cerrar Caja</button></div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Users, Plus, Search, Pencil, Trash2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency } from "@/lib/utils";
 
 interface Customer { id: number; name: string; nit: string | null; phone: string | null; email: string | null; address: string | null; creditLimit: string; balance: string; }
 
@@ -19,7 +20,8 @@ export default function ClientesPage() {
 
   const load = useCallback(async () => {
     const params = search ? `?search=${encodeURIComponent(search)}` : "";
-    setCustomers(await fetch(`/api/customers${params}`).then(r => r.json()));
+    const res = await fetch(`/api/customers${params}`);
+    setCustomers(res.ok ? await res.json() : []);
   }, [search]);
 
   useEffect(() => { load(); }, [load]);
@@ -60,8 +62,8 @@ export default function ClientesPage() {
               {customers.map(c => (
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="table-cell font-medium">{c.name}</td><td className="table-cell">{c.nit || "-"}</td><td className="table-cell">{c.phone || "-"}</td>
-                  <td className="table-cell">{c.email || "-"}</td><td className="table-cell text-right">Q {Number(c.creditLimit).toFixed(2)}</td>
-                  <td className="table-cell text-right font-semibold">Q {Number(c.balance).toFixed(2)}</td>
+                  <td className="table-cell">{c.email || "-"}</td><td className="table-cell text-right">{formatCurrency(c.creditLimit)}</td>
+                  <td className="table-cell text-right font-semibold">{formatCurrency(c.balance)}</td>
                   <td className="table-cell"><div className="flex gap-1"><button onClick={() => openEdit(c)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Pencil className="w-4 h-4 text-indigo-600" /></button><button onClick={() => handleDelete(c.id)} className="p-1.5 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-500" /></button></div></td>
                 </tr>
               ))}

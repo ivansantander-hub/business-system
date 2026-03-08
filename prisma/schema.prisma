@@ -5,25 +5,37 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public", "tenant"]
 }
 
+// =============================================
+// ENUMS
+// =============================================
+
 enum Role {
+  SUPER_ADMIN
   ADMIN
   CASHIER
   WAITER
   ACCOUNTANT
+
+  @@schema("public")
 }
 
 enum TableStatus {
   AVAILABLE
   OCCUPIED
   RESERVED
+
+  @@schema("tenant")
 }
 
 enum OrderType {
   TABLE
   TAKEOUT
   DELIVERY
+
+  @@schema("tenant")
 }
 
 enum OrderStatus {
@@ -31,6 +43,8 @@ enum OrderStatus {
   READY
   PAID
   CANCELLED
+
+  @@schema("tenant")
 }
 
 enum OrderItemStatus {
@@ -39,12 +53,16 @@ enum OrderItemStatus {
   READY
   DELIVERED
   CANCELLED
+
+  @@schema("tenant")
 }
 
 enum InvoiceStatus {
   PAID
   PENDING
   CANCELLED
+
+  @@schema("tenant")
 }
 
 enum PaymentMethod {
@@ -52,18 +70,24 @@ enum PaymentMethod {
   CARD
   TRANSFER
   CREDIT
+
+  @@schema("tenant")
 }
 
 enum MovementType {
   IN
   OUT
   ADJUSTMENT
+
+  @@schema("tenant")
 }
 
 enum PurchaseStatus {
   PENDING
   RECEIVED
   CANCELLED
+
+  @@schema("tenant")
 }
 
 enum AccountType {
@@ -72,15 +96,60 @@ enum AccountType {
   EQUITY
   INCOME
   EXPENSE
+  COST
+
+  @@schema("tenant")
 }
 
 enum CashSessionStatus {
   OPEN
   CLOSED
+
+  @@schema("tenant")
+}
+
+// =============================================
+// PUBLIC SCHEMA — Master / Multi-tenant
+// =============================================
+
+model Company {
+  id         Int      @id @default(autoincrement())
+  name       String
+  legalName  String?  @map("legal_name")
+  nit        String   @unique
+  address    String?
+  city       String?
+  department String?
+  phone      String?
+  email      String?
+  taxRegime  String?  @map("tax_regime")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  users            User[]
+  categories       Category[]
+  products         Product[]
+  inventoryMoves   InventoryMovement[]
+  suppliers        Supplier[]
+  purchases        Purchase[]
+  customers        Customer[]
+  restaurantTables RestaurantTable[]
+  orders           Order[]
+  invoices         Invoice[]
+  cashSessions     CashSession[]
+  accounts         Account[]
+  journalEntries   JournalEntry[]
+  expenses         Expense[]
+  settings         Setting[]
+
+  @@schema("public")
+  @@map("companies")
 }
 
 model User {
   id        Int      @id @default(autoincrement())
+  companyId Int?     @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id])
   name      String
   email     String   @unique
   password  String
@@ -96,11 +165,18 @@ model User {
   expenses       Expense[]
   inventoryMoves InventoryMovement[]
 
+  @@schema("public")
   @@map("users")
 }
 
+// =============================================
+// TENANT SCHEMA — Company-scoped business data
+// =============================================
+
 model Category {
   id          Int        @id @default(autoincrement())
+  companyId   Int        @map("company_id")
+  company     Company    @relation(fields: [companyId], references: [id])
   name        String
   description String?
   parentId    Int?       @map("parent_id")
@@ -108,34 +184,41 @@ model Category {
   children    Category[] @relation("CategoryTree")
   products    Product[]
 
+  @@schema("tenant")
   @@map("categories")
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
-  categoryId  Int?     @map("category_id")
+  id          Int       @id @default(autoincrement())
+  companyId   Int       @map("company_id")
+  company     Company   @relation(fields: [companyId], references: [id])
+  categoryId  Int?      @map("category_id")
   category    Category? @relation(fields: [categoryId], references: [id])
   name        String
   description String?
-  barcode     String?  @unique
-  unit        String   @default("unidad")
-  costPrice   Decimal  @default(0) @map("cost_price")
-  salePrice   Decimal  @default(0) @map("sale_price")
-  stock       Decimal  @default(0)
-  minStock    Decimal  @default(5) @map("min_stock")
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
+  barcode     String?   @unique
+  unit        String    @default("unidad")
+  costPrice   Decimal   @default(0) @map("cost_price")
+  salePrice   Decimal   @default(0) @map("sale_price")
+  taxRate     Decimal   @default(0.19) @map("tax_rate")
+  stock       Decimal   @default(0)
+  minStock    Decimal   @default(5) @map("min_stock")
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   orderItems     OrderItem[]
   invoiceItems   InvoiceItem[]
   purchaseItems  PurchaseItem[]
   inventoryMoves InventoryMovement[]
 
+  @@schema("tenant")
   @@map("products")
 }
 
 model InventoryMovement {
   id            Int          @id @default(autoincrement())
+  companyId     Int          @map("company_id")
+  company       Company      @relation(fields: [companyId], references: [id])
   productId     Int          @map("product_id")
   product       Product      @relation(fields: [productId], references: [id])
   userId        Int          @map("user_id")
@@ -149,26 +232,32 @@ model InventoryMovement {
   referenceType String?      @map("reference_type")
   createdAt     DateTime     @default(now()) @map("created_at")
 
+  @@schema("tenant")
   @@map("inventory_movements")
 }
 
 model Supplier {
-  id          Int       @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
+  companyId   Int        @map("company_id")
+  company     Company    @relation(fields: [companyId], references: [id])
   name        String
   nit         String?
-  contactName String?   @map("contact_name")
+  contactName String?    @map("contact_name")
   phone       String?
   email       String?
   address     String?
-  isActive    Boolean   @default(true) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
   purchases   Purchase[]
 
+  @@schema("tenant")
   @@map("suppliers")
 }
 
 model Purchase {
   id           Int            @id @default(autoincrement())
+  companyId    Int            @map("company_id")
+  company      Company        @relation(fields: [companyId], references: [id])
   supplierId   Int            @map("supplier_id")
   supplier     Supplier       @relation(fields: [supplierId], references: [id])
   userId       Int            @map("user_id")
@@ -184,6 +273,7 @@ model Purchase {
   createdAt    DateTime       @default(now()) @map("created_at")
   items        PurchaseItem[]
 
+  @@schema("tenant")
   @@map("purchases")
 }
 
@@ -197,11 +287,14 @@ model PurchaseItem {
   unitPrice  Decimal  @map("unit_price")
   total      Decimal
 
+  @@schema("tenant")
   @@map("purchase_items")
 }
 
 model Customer {
   id          Int       @id @default(autoincrement())
+  companyId   Int       @map("company_id")
+  company     Company   @relation(fields: [companyId], references: [id])
   name        String
   nit         String?
   phone       String?
@@ -214,42 +307,50 @@ model Customer {
   orders      Order[]
   invoices    Invoice[]
 
+  @@schema("tenant")
   @@map("customers")
 }
 
 model RestaurantTable {
-  id       Int         @id @default(autoincrement())
-  number   String      @unique
-  capacity Int         @default(4)
-  section  String?
-  status   TableStatus @default(AVAILABLE)
-  orders   Order[]
+  id        Int         @id @default(autoincrement())
+  companyId Int         @map("company_id")
+  company   Company     @relation(fields: [companyId], references: [id])
+  number    String
+  capacity  Int         @default(4)
+  section   String?
+  status    TableStatus @default(AVAILABLE)
+  orders    Order[]
 
+  @@unique([companyId, number])
+  @@schema("tenant")
   @@map("restaurant_tables")
 }
 
 model Order {
-  id         Int             @id @default(autoincrement())
-  tableId    Int?            @map("table_id")
+  id         Int              @id @default(autoincrement())
+  companyId  Int              @map("company_id")
+  company    Company          @relation(fields: [companyId], references: [id])
+  tableId    Int?             @map("table_id")
   table      RestaurantTable? @relation(fields: [tableId], references: [id])
-  customerId Int?            @map("customer_id")
-  customer   Customer?       @relation(fields: [customerId], references: [id])
-  userId     Int             @map("user_id")
-  user       User            @relation("OrderUser", fields: [userId], references: [id])
-  waiterId   Int?            @map("waiter_id")
-  waiter     User?           @relation("OrderWaiter", fields: [waiterId], references: [id])
-  type       OrderType       @default(TABLE)
-  status     OrderStatus     @default(OPEN)
-  subtotal   Decimal         @default(0)
-  tax        Decimal         @default(0)
-  discount   Decimal         @default(0)
-  total      Decimal         @default(0)
+  customerId Int?             @map("customer_id")
+  customer   Customer?        @relation(fields: [customerId], references: [id])
+  userId     Int              @map("user_id")
+  user       User             @relation("OrderUser", fields: [userId], references: [id])
+  waiterId   Int?             @map("waiter_id")
+  waiter     User?            @relation("OrderWaiter", fields: [waiterId], references: [id])
+  type       OrderType        @default(TABLE)
+  status     OrderStatus      @default(OPEN)
+  subtotal   Decimal          @default(0)
+  tax        Decimal          @default(0)
+  discount   Decimal          @default(0)
+  total      Decimal          @default(0)
   notes      String?
-  createdAt  DateTime        @default(now()) @map("created_at")
-  updatedAt  DateTime        @updatedAt @map("updated_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
   items      OrderItem[]
   invoices   Invoice[]
 
+  @@schema("tenant")
   @@map("orders")
 }
 
@@ -265,11 +366,14 @@ model OrderItem {
   status    OrderItemStatus @default(PENDING)
   notes     String?
 
+  @@schema("tenant")
   @@map("order_items")
 }
 
 model Invoice {
   id            Int           @id @default(autoincrement())
+  companyId     Int           @map("company_id")
+  company       Company       @relation(fields: [companyId], references: [id])
   orderId       Int?          @map("order_id")
   order         Order?        @relation(fields: [orderId], references: [id])
   customerId    Int?          @map("customer_id")
@@ -279,7 +383,7 @@ model Invoice {
   number        String        @unique
   date          DateTime      @default(now())
   subtotal      Decimal       @default(0)
-  taxRate       Decimal       @default(0.12) @map("tax_rate")
+  taxRate       Decimal       @default(0.19) @map("tax_rate")
   tax           Decimal       @default(0)
   discount      Decimal       @default(0)
   total         Decimal       @default(0)
@@ -291,6 +395,7 @@ model Invoice {
   createdAt     DateTime      @default(now()) @map("created_at")
   items         InvoiceItem[]
 
+  @@schema("tenant")
   @@map("invoices")
 }
 
@@ -305,28 +410,34 @@ model InvoiceItem {
   unitPrice   Decimal  @map("unit_price")
   total       Decimal
 
+  @@schema("tenant")
   @@map("invoice_items")
 }
 
 model CashSession {
-  id             Int              @id @default(autoincrement())
-  userId         Int              @map("user_id")
-  user           User             @relation(fields: [userId], references: [id])
-  openingAmount  Decimal          @default(0) @map("opening_amount")
-  closingAmount  Decimal?         @map("closing_amount")
-  expectedAmount Decimal?         @map("expected_amount")
+  id             Int               @id @default(autoincrement())
+  companyId      Int               @map("company_id")
+  company        Company           @relation(fields: [companyId], references: [id])
+  userId         Int               @map("user_id")
+  user           User              @relation(fields: [userId], references: [id])
+  openingAmount  Decimal           @default(0) @map("opening_amount")
+  closingAmount  Decimal?          @map("closing_amount")
+  expectedAmount Decimal?          @map("expected_amount")
   difference     Decimal?
-  salesTotal     Decimal          @default(0) @map("sales_total")
-  openedAt       DateTime         @default(now()) @map("opened_at")
-  closedAt       DateTime?        @map("closed_at")
+  salesTotal     Decimal           @default(0) @map("sales_total")
+  openedAt       DateTime          @default(now()) @map("opened_at")
+  closedAt       DateTime?         @map("closed_at")
   status         CashSessionStatus @default(OPEN)
 
+  @@schema("tenant")
   @@map("cash_sessions")
 }
 
 model Account {
   id           Int           @id @default(autoincrement())
-  code         String        @unique
+  companyId    Int           @map("company_id")
+  company      Company       @relation(fields: [companyId], references: [id])
+  code         String
   name         String
   type         AccountType
   parentId     Int?          @map("parent_id")
@@ -336,17 +447,22 @@ model Account {
   isActive     Boolean       @default(true) @map("is_active")
   journalLines JournalLine[]
 
+  @@unique([companyId, code])
+  @@schema("tenant")
   @@map("accounts")
 }
 
 model JournalEntry {
   id          Int           @id @default(autoincrement())
+  companyId   Int           @map("company_id")
+  company     Company       @relation(fields: [companyId], references: [id])
   date        DateTime      @default(now())
   description String
   reference   String?
   createdAt   DateTime      @default(now()) @map("created_at")
   lines       JournalLine[]
 
+  @@schema("tenant")
   @@map("journal_entries")
 }
 
@@ -360,11 +476,14 @@ model JournalLine {
   credit      Decimal      @default(0)
   description String?
 
+  @@schema("tenant")
   @@map("journal_lines")
 }
 
 model Expense {
   id            Int           @id @default(autoincrement())
+  companyId     Int           @map("company_id")
+  company       Company       @relation(fields: [companyId], references: [id])
   category      String
   description   String
   amount        Decimal
@@ -376,12 +495,18 @@ model Expense {
   notes         String?
   createdAt     DateTime      @default(now()) @map("created_at")
 
+  @@schema("tenant")
   @@map("expenses")
 }
 
 model Setting {
-  key   String @id
-  value String
+  id        Int     @id @default(autoincrement())
+  companyId Int     @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+  key       String
+  value     String
 
+  @@unique([companyId, key])
+  @@schema("tenant")
   @@map("settings")
 }

@@ -9,6 +9,7 @@ export interface JWTPayload {
   userId: number;
   role: string;
   name: string;
+  companyId: number | null;
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
@@ -35,9 +36,28 @@ export async function getSession(): Promise<JWTPayload | null> {
   return verifyToken(token);
 }
 
-export function getUserFromHeaders(request: Request): { userId: number; role: string; name: string } {
+export function getUserFromHeaders(request: Request): {
+  userId: number;
+  role: string;
+  name: string;
+  companyId: number | null;
+} {
   const userId = Number(request.headers.get("x-user-id") || "0");
   const role = request.headers.get("x-user-role") || "CASHIER";
   const name = request.headers.get("x-user-name") || "";
-  return { userId, role, name };
+  const rawCompanyId = request.headers.get("x-company-id");
+  const companyId = rawCompanyId ? Number(rawCompanyId) : null;
+  return { userId, role, name, companyId };
+}
+
+export function requireCompanyId(request: Request): number {
+  const { companyId, role } = getUserFromHeaders(request);
+  if (role === "SUPER_ADMIN") {
+    const url = new URL(request.url);
+    const qsCompanyId = url.searchParams.get("companyId");
+    if (qsCompanyId) return Number(qsCompanyId);
+    throw new Error("SUPER_ADMIN must specify companyId");
+  }
+  if (!companyId) throw new Error("Company context required");
+  return companyId;
 }

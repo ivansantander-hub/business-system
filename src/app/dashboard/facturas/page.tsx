@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { FileText, Search, Eye, XCircle, Printer } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Toast from "@/components/ui/Toast";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface Invoice {
   id: number; number: string; date: string; subtotal: string; tax: string; taxRate: string;
@@ -28,7 +29,11 @@ export default function FacturasPage() {
     if (dateFrom) params.set("from", dateFrom);
     if (dateTo) params.set("to", dateTo);
     const res = await fetch(`/api/invoices?${params}`);
-    setInvoices(await res.json());
+    if (res.ok) {
+      setInvoices(await res.json());
+    } else {
+      setInvoices([]);
+    }
   }, [statusFilter, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
@@ -85,9 +90,9 @@ export default function FacturasPage() {
                   <td className="table-cell font-medium">{inv.number}</td>
                   <td className="table-cell">{inv.customer?.name || "C/F"}</td>
                   <td className="table-cell">{paymentLabels[inv.paymentMethod]}</td>
-                  <td className="table-cell text-right font-semibold">Q {Number(inv.total).toFixed(2)}</td>
+                  <td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td>
                   <td className="table-cell"><span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[inv.status]}`}>{statusLabels[inv.status]}</span></td>
-                  <td className="table-cell">{new Date(inv.date).toLocaleDateString("es-GT")}</td>
+                  <td className="table-cell">{formatDate(inv.date)}</td>
                   <td className="table-cell">
                     <button onClick={() => setShowDetail(inv)} className="p-1.5 hover:bg-indigo-50 rounded-lg"><Eye className="w-4 h-4 text-indigo-600" /></button>
                   </td>
@@ -105,7 +110,7 @@ export default function FacturasPage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div><p className="text-gray-500">Cliente: <span className="font-medium text-gray-900">{showDetail.customer?.name || "Consumidor Final"}</span></p>
                 <p className="text-gray-500">NIT: <span className="font-medium">{showDetail.customer?.nit || "CF"}</span></p></div>
-              <div className="text-right"><p className="text-gray-500">Fecha: <span className="font-medium">{new Date(showDetail.date).toLocaleDateString("es-GT")}</span></p>
+              <div className="text-right"><p className="text-gray-500">Fecha: <span className="font-medium">{formatDate(showDetail.date)}</span></p>
                 <p className="text-gray-500">Pago: <span className="font-medium">{paymentLabels[showDetail.paymentMethod]}</span></p></div>
             </div>
 
@@ -113,20 +118,20 @@ export default function FacturasPage() {
               <thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cant</th><th className="table-header text-right">P/U</th><th className="table-header text-right">Total</th></tr></thead>
               <tbody>
                 {showDetail.items.map(item => (
-                  <tr key={item.id}><td className="table-cell">{item.productName}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">Q {Number(item.unitPrice).toFixed(2)}</td><td className="table-cell text-right font-medium">Q {Number(item.total).toFixed(2)}</td></tr>
+                  <tr key={item.id}><td className="table-cell">{item.productName}</td><td className="table-cell text-right">{Number(item.quantity).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(item.unitPrice)}</td><td className="table-cell text-right font-medium">{formatCurrency(item.total)}</td></tr>
                 ))}
               </tbody>
             </table>
 
             <div className="bg-gray-50 rounded-lg p-4 space-y-1 text-sm">
-              <div className="flex justify-between"><span>Subtotal</span><span>Q {Number(showDetail.subtotal).toFixed(2)}</span></div>
-              {Number(showDetail.discount) > 0 && <div className="flex justify-between text-red-600"><span>Descuento</span><span>-Q {Number(showDetail.discount).toFixed(2)}</span></div>}
-              <div className="flex justify-between"><span>IVA ({(Number(showDetail.taxRate) * 100).toFixed(0)}%)</span><span>Q {Number(showDetail.tax).toFixed(2)}</span></div>
-              <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>Q {Number(showDetail.total).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(showDetail.subtotal)}</span></div>
+              {Number(showDetail.discount) > 0 && <div className="flex justify-between text-red-600"><span>Descuento</span><span>-{formatCurrency(showDetail.discount)}</span></div>}
+              <div className="flex justify-between"><span>IVA ({(Number(showDetail.taxRate) * 100).toFixed(0)}%)</span><span>{formatCurrency(showDetail.tax)}</span></div>
+              <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>{formatCurrency(showDetail.total)}</span></div>
               {showDetail.paymentMethod === "CASH" && (
                 <>
-                  <div className="flex justify-between"><span>Recibido</span><span>Q {Number(showDetail.paidAmount).toFixed(2)}</span></div>
-                  <div className="flex justify-between text-emerald-600 font-medium"><span>Cambio</span><span>Q {Number(showDetail.changeAmount).toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Recibido</span><span>{formatCurrency(showDetail.paidAmount)}</span></div>
+                  <div className="flex justify-between text-emerald-600 font-medium"><span>Cambio</span><span>{formatCurrency(showDetail.changeAmount)}</span></div>
                 </>
               )}
             </div>

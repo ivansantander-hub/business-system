@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { BarChart3, TrendingUp, Package, DollarSign } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type ReportType = "sales" | "inventory" | "income-expense" | "top-products";
 
@@ -19,7 +20,11 @@ export default function ReportesPage() {
     if (dateFrom) params.set("from", dateFrom);
     if (dateTo) params.set("to", dateTo);
     const res = await fetch(`/api/reports?${params}`);
-    setData(await res.json());
+    if (res.ok) {
+      setData(await res.json());
+    } else {
+      setData(null);
+    }
   }, [reportType, dateFrom, dateTo]);
 
   useEffect(() => { load(); }, [load]);
@@ -64,13 +69,13 @@ export default function ReportesPage() {
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="card"><p className="text-sm text-gray-500">Total Ventas</p><p className="text-2xl font-bold text-emerald-600">Q {d.summary.total.toFixed(2)}</p></div>
-                  <div className="card"><p className="text-sm text-gray-500">IVA Generado</p><p className="text-2xl font-bold text-blue-600">Q {d.summary.tax.toFixed(2)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Total Ventas</p><p className="text-2xl font-bold text-emerald-600">{formatCurrency(d.summary.total)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">IVA Generado</p><p className="text-2xl font-bold text-blue-600">{formatCurrency(d.summary.tax)}</p></div>
                   <div className="card"><p className="text-sm text-gray-500">Transacciones</p><p className="text-2xl font-bold text-gray-900">{d.summary.count}</p></div>
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Factura</th><th className="table-header">Cliente</th><th className="table-header text-right">Total</th><th className="table-header">Fecha</th></tr></thead>
-                    <tbody>{d.invoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{inv.number}</td><td className="table-cell">{inv.customer?.name || "C/F"}</td><td className="table-cell text-right font-semibold">Q {Number(inv.total).toFixed(2)}</td><td className="table-cell">{new Date(inv.date).toLocaleDateString("es-GT")}</td></tr>))}</tbody></table>
+                    <tbody>{d.invoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{inv.number}</td><td className="table-cell">{inv.customer?.name || "C/F"}</td><td className="table-cell text-right font-semibold">{formatCurrency(inv.total)}</td><td className="table-cell">{formatDate(inv.date)}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );
@@ -82,12 +87,12 @@ export default function ReportesPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div className="card"><p className="text-sm text-gray-500">Total Productos</p><p className="text-2xl font-bold text-gray-900">{d.summary.totalProducts}</p></div>
-                  <div className="card"><p className="text-sm text-gray-500">Valor al Costo</p><p className="text-2xl font-bold text-blue-600">Q {d.summary.totalValue.toFixed(2)}</p></div>
-                  <div className="card"><p className="text-sm text-gray-500">Valor a Venta</p><p className="text-2xl font-bold text-emerald-600">Q {d.summary.totalSaleValue.toFixed(2)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Valor al Costo</p><p className="text-2xl font-bold text-blue-600">{formatCurrency(d.summary.totalValue)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Valor a Venta</p><p className="text-2xl font-bold text-emerald-600">{formatCurrency(d.summary.totalSaleValue)}</p></div>
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header">Categoría</th><th className="table-header text-right">Stock</th><th className="table-header text-right">Costo</th><th className="table-header text-right">Precio</th><th className="table-header text-right">Valor</th></tr></thead>
-                    <tbody>{d.products.map(p => (<tr key={p.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">Q {Number(p.costPrice).toFixed(2)}</td><td className="table-cell text-right">Q {Number(p.salePrice).toFixed(2)}</td><td className="table-cell text-right font-semibold">Q {(Number(p.stock) * Number(p.salePrice)).toFixed(2)}</td></tr>))}</tbody></table>
+                    <tbody>{d.products.map(p => (<tr key={p.id} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.name}</td><td className="table-cell">{p.category?.name || "-"}</td><td className="table-cell text-right">{Number(p.stock).toFixed(0)}</td><td className="table-cell text-right">{formatCurrency(p.costPrice)}</td><td className="table-cell text-right">{formatCurrency(p.salePrice)}</td><td className="table-cell text-right font-semibold">{formatCurrency(Number(p.stock) * Number(p.salePrice))}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );
@@ -99,9 +104,9 @@ export default function ReportesPage() {
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="card"><p className="text-sm text-gray-500">Ingresos</p><p className="text-2xl font-bold text-emerald-600">Q {d.totalIncome.toFixed(2)}</p></div>
-                  <div className="card"><p className="text-sm text-gray-500">Gastos</p><p className="text-2xl font-bold text-red-600">Q {d.totalExpenses.toFixed(2)}</p></div>
-                  <div className="card"><p className="text-sm text-gray-500">Utilidad</p><p className={`text-2xl font-bold ${d.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>Q {d.profit.toFixed(2)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Ingresos</p><p className="text-2xl font-bold text-emerald-600">{formatCurrency(d.totalIncome)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Gastos</p><p className="text-2xl font-bold text-red-600">{formatCurrency(d.totalExpenses)}</p></div>
+                  <div className="card"><p className="text-sm text-gray-500">Utilidad</p><p className={`text-2xl font-bold ${d.profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>{formatCurrency(d.profit)}</p></div>
                 </div>
                 {chartData.length > 0 && (
                   <div className="card">
@@ -111,7 +116,7 @@ export default function ReportesPage() {
                         <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                           {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                         </Pie>
-                        <Tooltip formatter={(value: number) => `Q ${value.toFixed(2)}`} />
+                        <Tooltip formatter={(value: number) => formatCurrency(value)} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -130,13 +135,13 @@ export default function ReportesPage() {
                   <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={chartData} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" /><XAxis type="number" /><YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 12 }} />
-                      <Tooltip formatter={(value: number) => `Q ${value.toFixed(2)}`} /><Bar dataKey="total" fill="#4f46e5" radius={[0, 4, 4, 0]} />
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} /><Bar dataKey="total" fill="#4f46e5" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="card overflow-x-auto">
                   <table className="w-full"><thead><tr><th className="table-header">Producto</th><th className="table-header text-right">Cantidad</th><th className="table-header text-right">Total</th></tr></thead>
-                    <tbody>{d.map((p, i) => (<tr key={i} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.productName}</td><td className="table-cell text-right">{Number(p._sum.quantity).toFixed(0)}</td><td className="table-cell text-right font-semibold">Q {Number(p._sum.total).toFixed(2)}</td></tr>))}</tbody></table>
+                    <tbody>{d.map((p, i) => (<tr key={i} className="hover:bg-gray-50"><td className="table-cell font-medium">{p.productName}</td><td className="table-cell text-right">{Number(p._sum.quantity).toFixed(0)}</td><td className="table-cell text-right font-semibold">{formatCurrency(p._sum.total)}</td></tr>))}</tbody></table>
                 </div>
               </div>
             );

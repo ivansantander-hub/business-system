@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User } from "lucide-react";
+import { User, Building2 } from "lucide-react";
+
+interface UserInfo {
+  name: string;
+  role: string;
+  companyName?: string;
+}
 
 export default function Header() {
-  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [user, setUser] = useState<UserInfo | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -14,6 +20,7 @@ export default function Header() {
   }, []);
 
   const roleLabels: Record<string, string> = {
+    SUPER_ADMIN: "Super Administrador",
     ADMIN: "Administrador",
     CASHIER: "Cajero",
     WAITER: "Mesero",
@@ -22,7 +29,14 @@ export default function Header() {
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-      <div />
+      <div>
+        {user?.companyName && (
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Building2 className="w-4 h-4" />
+            <span className="font-medium">{user.companyName}</span>
+          </div>
+        )}
+      </div>
       <div className="flex items-center gap-3">
         {user && (
           <>

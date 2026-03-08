@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") || "";
   const categoryId = searchParams.get("categoryId");
   const active = searchParams.get("active");
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { companyId };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -27,10 +31,14 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const { companyId } = getUserFromHeaders(request);
+  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+
   try {
     const body = await request.json();
     const product = await prisma.product.create({
       data: {
+        companyId,
         name: body.name,
         description: body.description || null,
         barcode: body.barcode || null,
