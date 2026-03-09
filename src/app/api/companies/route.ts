@@ -41,6 +41,16 @@ export async function POST(request: Request) {
 
     await seedCompanyDefaults(company.id, body.type || "RESTAURANT");
 
+    await prisma.branch.create({
+      data: {
+        companyId: company.id,
+        name: "Sede Principal",
+        address: body.address || null,
+        city: body.city || null,
+        phone: body.phone || null,
+      },
+    });
+
     return NextResponse.json(company, { status: 201 });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Error al crear empresa";

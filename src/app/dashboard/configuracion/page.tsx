@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Settings, Save, DollarSign, Banknote, Shield, FileText } from "lucide-react";
+import Image from "next/image";
+import { Settings, Save, DollarSign, Banknote, Shield, FileText, ImageIcon } from "lucide-react";
 import Toast from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/atoms";
 import { PageHeader } from "@/components/molecules";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
+import { useAtomValue, useSetAtom } from "jotai";
+import { companyLogoAtom, fetchAuthAtom } from "@/store";
 
 export default function ConfiguracionPage() {
   const [settings, setSettings] = useState<Record<string, string>>({});
@@ -31,6 +34,9 @@ export default function ConfiguracionPage() {
   const [showCashClose, setShowCashClose] = useState(false);
   const [closingAmount, setClosingAmount] = useState("");
   const [cashSession, setCashSession] = useState<{ id: string; openingAmount: string; salesTotal: string; openedAt: string } | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const companyLogoUrl = useAtomValue(companyLogoAtom);
+  const fetchAuth = useSetAtom(fetchAuthAtom);
 
   const load = useCallback(async () => {
     const [sRes, csRes, ccRes] = await Promise.all([
@@ -81,6 +87,29 @@ export default function ConfiguracionPage() {
     if (res.ok) setToast({ message: "Configuración DIAN guardada", type: "success" });
   }
 
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("logo", file);
+      const res = await fetch("/api/company/logo", { method: "POST", body: formData });
+      const data = await res.json();
+      if (res.ok) {
+        setToast({ message: "Logo actualizado correctamente", type: "success" });
+        await fetchAuth();
+      } else {
+        setToast({ message: data.error || "Error al subir el logo", type: "error" });
+      }
+    } catch {
+      setToast({ message: "Error al subir el logo", type: "error" });
+    } finally {
+      setLogoUploading(false);
+      e.target.value = "";
+    }
+  }
+
   async function closeCash(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch("/api/cash", {
@@ -100,6 +129,49 @@ export default function ConfiguracionPage() {
       <PageHeader icon={<Settings className="w-full h-full" />} title="Configuración" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        {/* Company logo */}
+        <div className="card">
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <ImageIcon className="w-5 h-5" /> Logo de la empresa
+          </h2>
+          <div className="flex flex-col sm:flex-row items-start gap-4">
+            <div className="w-24 h-24 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {companyLogoUrl ? (
+                <Image
+                  src={companyLogoUrl}
+                  alt="Logo de la empresa"
+                  width={96}
+                  height={96}
+                  className="w-full h-full object-contain"
+                  unoptimized
+                />
+              ) : (
+                <ImageIcon className="w-12 h-12 text-slate-400" />
+              )}
+            </div>
+            <div className="flex-1 space-y-2">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                JPG, PNG, WebP o GIF. Máximo 2 MB.
+              </p>
+              <label className="inline-flex cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleLogoUpload}
+                  disabled={logoUploading}
+                  className="sr-only"
+                />
+                <Button type="button" disabled={logoUploading} loading={logoUploading}>
+                  {logoUploading ? "Subiendo..." : "Subir logo"}
+                </Button>
+              </label>
+              {logoUploading && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">Procesando...</p>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Business info */}
         <div className="card">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Información del Negocio</h2>

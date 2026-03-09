@@ -42,6 +42,18 @@ export async function getOrCreateTestCompany() {
   return company;
 }
 
+export async function getOrCreateTestBranch(companyId: string) {
+  let branch = await prisma.branch.findFirst({
+    where: { companyId, name: "Test Branch" },
+  });
+  if (!branch) {
+    branch = await prisma.branch.create({
+      data: { companyId, name: "Test Branch", address: "Test Address" },
+    });
+  }
+  return branch;
+}
+
 export async function getOrCreateTestUser(companyId: string) {
   let user = await prisma.user.findFirst({
     where: { email: "test-concurrency@test.com" },
@@ -69,10 +81,38 @@ export async function getOrCreateTestUser(companyId: string) {
   return user;
 }
 
-export async function createTestProduct(companyId: string, stock = 100) {
+export async function getOrCreateSecondTestUser(companyId: string) {
+  let user = await prisma.user.findFirst({
+    where: { email: "test-messaging@test.com" },
+  });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        name: "Test Messaging User",
+        email: "test-messaging@test.com",
+        password: await hash("test123", 10),
+      },
+    });
+  }
+
+  const uc = await prisma.userCompany.findFirst({
+    where: { userId: user.id, companyId },
+  });
+  if (!uc) {
+    await prisma.userCompany.create({
+      data: { userId: user.id, companyId, role: "CASHIER" },
+    });
+  }
+
+  return user;
+}
+
+export async function createTestProduct(companyId: string, stock = 100, branchId?: string) {
   return prisma.product.create({
     data: {
       companyId,
+      branchId: branchId || null,
       name: `Test Product ${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       salePrice: 10000,
       costPrice: 5000,
@@ -82,9 +122,9 @@ export async function createTestProduct(companyId: string, stock = 100) {
   });
 }
 
-export async function openCashSession(userId: string, companyId: string) {
+export async function openCashSession(userId: string, companyId: string, branchId?: string) {
   const existing = await prisma.cashSession.findFirst({
-    where: { userId, companyId, status: "OPEN" },
+    where: { userId, companyId, status: "OPEN", ...(branchId ? { branchId } : {}) },
   });
   if (existing) return existing;
 
@@ -92,6 +132,7 @@ export async function openCashSession(userId: string, companyId: string) {
     data: {
       companyId,
       userId,
+      branchId: branchId || null,
       openingAmount: 100000,
     },
   });
@@ -114,4 +155,6 @@ export async function cleanupTestData(companyId: string) {
   await prisma.purchase.deleteMany({ where: { companyId } });
   await prisma.product.deleteMany({ where: { companyId } });
   await prisma.setting.deleteMany({ where: { companyId } });
+  await prisma.userBranch.deleteMany({ where: { branch: { companyId } } });
+  await prisma.branch.deleteMany({ where: { companyId } });
 }

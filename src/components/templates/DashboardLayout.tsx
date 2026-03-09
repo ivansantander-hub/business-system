@@ -9,20 +9,23 @@
 
 import { useState, useEffect } from "react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { authUserAtom, fetchAuthAtom } from "@/store";
-import { Sidebar, Header } from "../organisms";
+import { authUserAtom, fetchAuthAtom, permissionsAtom } from "@/store";
+import { Sidebar, Header, ChatWidget } from "../organisms";
 import { usePageTracking } from "@/hooks/usePageTracking";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const user = useAtomValue(authUserAtom);
   const fetchAuth = useSetAtom(fetchAuthAtom);
+  const permissions = useAtomValue(permissionsAtom);
 
   usePageTracking();
 
   useEffect(() => {
     if (!user) fetchAuth();
   }, [user, fetchAuth]);
+
+  const hasMessaging = permissions.includes("messaging");
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0a0e1a] transition-colors">
@@ -33,6 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+      {hasMessaging && <ChatWidget />}
     </div>
   );
 }

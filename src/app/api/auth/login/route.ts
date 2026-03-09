@@ -44,11 +44,30 @@ export async function POST(request: Request) {
       activeCompanyName = activeAssignments[0].company.name;
     }
 
+    let activeBranchId: string | null = null;
+    if (activeCompanyId) {
+      const firstBranch = await prisma.userBranch.findFirst({
+        where: { userId: user.id, branch: { companyId: activeCompanyId, isActive: true } },
+        include: { branch: { select: { id: true } } },
+        orderBy: { branch: { createdAt: "asc" } },
+      });
+      activeBranchId = firstBranch?.branch.id ?? null;
+
+      if (!activeBranchId) {
+        const defaultBranch = await prisma.branch.findFirst({
+          where: { companyId: activeCompanyId, isActive: true },
+          orderBy: { createdAt: "asc" },
+        });
+        activeBranchId = defaultBranch?.id ?? null;
+      }
+    }
+
     const token = await signToken({
       userId: user.id,
       role: activeRole,
       name: user.name,
       companyId: activeCompanyId,
+      branchId: activeBranchId,
     });
 
     const companiesList = user.companies

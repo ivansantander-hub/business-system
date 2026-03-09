@@ -26,6 +26,20 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
+export function formatTimeAgo(date: string | Date): string {
+  const d = new Date(date);
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return "Hace un momento";
+  if (diffMins < 60) return `Hace ${diffMins} min`;
+  if (diffHours < 24) return `Hace ${diffHours} h`;
+  if (diffDays < 7) return `Hace ${diffDays} días`;
+  return d.toLocaleDateString("es-CO", { day: "numeric", month: "short", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined });
+}
+
 export function formatNit(nit: string): string {
   const clean = nit.replaceAll(/\D/g, "");
   if (clean.length < 2) return nit;

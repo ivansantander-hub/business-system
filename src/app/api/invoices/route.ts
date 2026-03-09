@@ -7,7 +7,7 @@ import { sendNotification, EMAIL_EVENTS, emailSaleCompleted } from "@/lib/email"
 import { generateAndUploadInvoicePdf } from "@/lib/pdf-worker";
 
 export async function GET(request: Request) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, branchId } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
   const { searchParams } = new URL(request.url);
@@ -18,6 +18,7 @@ export async function GET(request: Request) {
   const take = limitParam ? Math.min(Math.max(1, Number.parseInt(limitParam, 10)), 500) : 200;
 
   const where: Record<string, unknown> = { companyId };
+  if (branchId) where.branchId = branchId;
   if (status) where.status = status;
   if (from || to) {
     where.date = {};
@@ -39,8 +40,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId, companyId } = getUserFromHeaders(request);
+  const { userId, companyId, branchId } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (!branchId) return NextResponse.json({ error: "Debe seleccionar una sucursal" }, { status: 400 });
 
   try {
     const body = await request.json();
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
     const result = await createSale({
       companyId,
       userId,
+      branchId,
       items: body.items,
       paymentMethod: body.paymentMethod || "CASH",
       paidAmount: body.paidAmount ? Number(body.paidAmount) : undefined,

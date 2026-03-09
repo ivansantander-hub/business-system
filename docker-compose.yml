@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: business_system
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/business_system"
+      JWT_SECRET: "${JWT_SECRET:-cambiar-esta-clave-en-produccion}"
+      NEXT_PUBLIC_APP_NAME: "${NEXT_PUBLIC_APP_NAME:-Sistema de Gestión Comercial}"
+      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-http://localhost:3000}"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASS: "${SMTP_PASS:-}"
+      SMTP_FROM_EMAIL: "${SMTP_FROM_EMAIL:-}"
+      SMTP_FROM_NAME: "${SMTP_FROM_NAME:-SGC}"
+      R2_ACCOUNT_ID: "${R2_ACCOUNT_ID:-}"
+      R2_ACCESS_KEY_ID: "${R2_ACCESS_KEY_ID:-}"
+      R2_SECRET_ACCESS_KEY: "${R2_SECRET_ACCESS_KEY:-}"
+      R2_BUCKET_NAME: "${R2_BUCKET_NAME:-}"
+      R2_ENDPOINT: "${R2_ENDPOINT:-}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: deps
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/business_system"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma db push --skip-generate && npx tsx prisma/seed.ts"
+    working_dir: /app
+    volumes:
+      - ./prisma:/app/prisma
+
+volumes:
+  pgdata:

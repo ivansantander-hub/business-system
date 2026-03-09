@@ -9,22 +9,24 @@ import { sendNotification, EMAIL_EVENTS, emailCashSessionClosed } from "@/lib/em
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const action = searchParams.get("action");
-  const { userId, companyId } = getUserFromHeaders(request);
+  const { userId, companyId, branchId } = getUserFromHeaders(request);
 
   if (companyId === null) {
     return NextResponse.json({ error: "Company context required" }, { status: 403 });
   }
 
+  const baseWhere = { companyId, ...(branchId && { branchId }) };
+
   if (action === "current") {
     const session = await prisma.cashSession.findFirst({
-      where: { userId, companyId, status: "OPEN" },
+      where: { userId, ...baseWhere, status: "OPEN" },
       include: { user: { select: { name: true } } },
     });
     return NextResponse.json(session);
   }
 
   const sessions = await prisma.cashSession.findMany({
-    where: { companyId },
+    where: baseWhere,
     include: { user: { select: { name: true } } },
     orderBy: { openedAt: "desc" },
     take: 50,
@@ -33,7 +35,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId, companyId } = getUserFromHeaders(request);
+  const { userId, companyId, branchId } = getUserFromHeaders(request);
   if (companyId === null) {
     return NextResponse.json({ error: "Company context required" }, { status: 403 });
   }
@@ -41,11 +43,12 @@ export async function POST(request: Request) {
   const body = await request.json();
 
   if (body.action === "open") {
+    if (!branchId) return NextResponse.json({ error: "Debe seleccionar una sucursal" }, { status: 400 });
     try {
       // Serializable to prevent two sessions opening simultaneously
       const session = await prisma.$transaction(async (tx) => {
         const existing = await tx.cashSession.findFirst({
-          where: { userId, companyId, status: "OPEN" },
+          where: { userId, companyId, branchId, status: "OPEN" },
         });
         if (existing) {
           throw new Error("ALREADY_OPEN");
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
           data: {
             companyId,
             userId,
+            branchId,
             openingAmount: Number(body.openingAmount) || 0,
           },
           include: { user: { select: { name: true } } },
@@ -80,8 +84,9 @@ export async function POST(request: Request) {
       let sessionBeforeState: Record<string, unknown> | null = null;
       const updated = await prisma.$transaction(async (tx) => {
         // Lock the session to prevent double-close
+        const closeWhere = { userId, companyId, status: "OPEN" as const, ...(branchId && { branchId }) };
         const session = await tx.cashSession.findFirst({
-          where: { userId, companyId, status: "OPEN" },
+          where: closeWhere,
         });
         if (!session) {
           throw new Error("NO_OPEN_SESSION");

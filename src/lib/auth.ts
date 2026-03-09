@@ -10,6 +10,7 @@ export interface JWTPayload {
   role: string;
   name: string;
   companyId: string | null;
+  branchId: string | null;
 }
 
 export async function signToken(payload: JWTPayload): Promise<string> {
@@ -41,12 +42,18 @@ export function getUserFromHeaders(request: Request): {
   role: string;
   name: string;
   companyId: string | null;
+  branchId: string | null;
 } {
   const userId = request.headers.get("x-user-id") || "";
   const role = request.headers.get("x-user-role") || "CASHIER";
   const name = request.headers.get("x-user-name") || "";
   const companyId = request.headers.get("x-company-id") || null;
-  return { userId, role, name, companyId };
+  const branchId = request.headers.get("x-branch-id") || null;
+  return { userId, role, name, companyId, branchId };
+}
+
+export function getActiveBranchId(request: Request): string | null {
+  return getUserFromHeaders(request).branchId;
 }
 
 export function requireCompanyId(request: Request): string {

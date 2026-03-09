@@ -41,6 +41,12 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Política de retención** — Años de retención documental configurables por empresa
 - **Notas crédito/débito** — Modelo de notas asociadas a facturas
 - **Screenshots E2E** — Capturas automáticas de cada test, subidas a R2
+- **Sistema de sucursales** — Empresas con múltiples sucursales; usuarios asignados por sucursal; entidades (facturas, compras, etc.) con alcance por sucursal
+- **Notificaciones internas** — Emails almacenados como notificaciones en BD; seguimiento leído/no leído por usuario; campana en header; bandeja de entrada
+- **Mensajería interna** — DMs usuario a usuario y conversaciones grupales; adjuntos; emojis; controlado por RBAC
+- **Logo de empresa** — Subida de icono vía R2; mostrado en sidebar y página de configuración
+- **Ejecutor manual de tests** — SUPER_ADMIN puede ejecutar tests E2E desde la UI y ver resultados en vivo
+- **Facturación electrónica por terceros** — Modelo de proveedores (Factus, Carvajal, WorldOffice, Siigo) en lugar de integración directa con DIAN
 
 ## Requisitos previos
 
@@ -161,11 +167,15 @@ business-system/
 - [Arquitectura](docs/ARCHITECTURE.md) — Multi-tenant, autenticación, contabilidad
 - [Componentes](docs/COMPONENTS.md) — Atomic Design, átomos, moléculas, organismos
 - [Sistema de diseño](docs/DESIGN-SYSTEM.md) — Colores, tipografía, clases CSS
-- [Testing](docs/TESTING.md) — Vitest, Playwright, estrategia de pruebas
+- [Testing](docs/TESTING.md) — Vitest, Playwright, ejecutor manual, estrategia de pruebas
 - [Concurrencia](docs/CONCURRENCY.md) — Transacciones, aislamiento, reintentos
 - [Emails y notificaciones](docs/EMAILS.md) — Brevo, templates, preferencias
+- [Notificaciones internas](docs/NOTIFICATIONS.md) — Bandeja de entrada, DB, leído/no leído
 - [Auditoría](docs/AUDITING.md) — Sistema de logging, singleton, visor admin
-- [Facturación Electrónica](docs/ELECTRONIC-INVOICING.md) — Módulo DIAN, CUFE, rangos, configuración
+- [Facturación Electrónica](docs/ELECTRONIC-INVOICING.md) — Proveedores terceros, CUFE, rangos
+- [Sucursales](docs/BRANCHES.md) — API, configuración, asignación de usuarios
+- [Mensajería](docs/MESSAGING.md) — DMs, grupos, adjuntos, RBAC
+- [Referencia API](docs/API-REFERENCE.md) — Endpoints REST
 
 ## Licencia
 

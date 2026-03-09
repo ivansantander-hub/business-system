@@ -93,10 +93,20 @@ async function main() {
       manifest.e2e.passed = results.passed;
       manifest.e2e.failed = results.failed;
       manifest.e2e.screenshots = (results.screenshots || []).length;
+      manifest.e2e.story = results.story || [];
     } catch { /* ignore parse errors */ }
   }
 
   manifest.vitest.hasOutput = fs.existsSync(vitestLogPath);
+  if (manifest.vitest.hasOutput) {
+    try {
+      const vitestContent = fs.readFileSync(vitestLogPath, "utf-8");
+      const passMatch = vitestContent.match(/(\d+)\s+passed/);
+      const failMatch = vitestContent.match(/(\d+)\s+failed/);
+      manifest.vitest.passed = passMatch ? parseInt(passMatch[1]) : 0;
+      manifest.vitest.failed = failMatch ? parseInt(failMatch[1]) : 0;
+    } catch { /* ignore */ }
+  }
 
   await uploadBuffer(
     Buffer.from(JSON.stringify(manifest, null, 2)),

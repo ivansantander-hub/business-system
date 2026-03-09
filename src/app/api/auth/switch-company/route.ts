@@ -25,11 +25,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No tiene acceso a esta empresa" }, { status: 403 });
   }
 
+  const firstBranch = await prisma.userBranch.findFirst({
+    where: { userId, branch: { companyId, isActive: true } },
+    include: { branch: { select: { id: true } } },
+    orderBy: { branch: { createdAt: "asc" } },
+  });
+  let activeBranchId = firstBranch?.branch.id ?? null;
+  if (!activeBranchId) {
+    const defaultBranch = await prisma.branch.findFirst({
+      where: { companyId, isActive: true },
+      orderBy: { createdAt: "asc" },
+    });
+    activeBranchId = defaultBranch?.id ?? null;
+  }
+
   const token = await signToken({
     userId,
     role: assignment.role,
     name: assignment.user.name,
     companyId: assignment.companyId,
+    branchId: activeBranchId,
   });
 
   const response = NextResponse.json({

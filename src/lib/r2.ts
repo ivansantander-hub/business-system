@@ -177,3 +177,17 @@ export function purchasePdfKey(companyId: string, purchaseNumber: string): strin
 export function avatarKey(userId: string, ext: string): string {
   return `users/${userId}/avatar.${ext}`;
 }
+
+/** Compute the R2 key for a company logo */
+export function companyLogoKey(companyId: string, ext: string): string {
+  return `companies/${companyId}/logo.${ext}`;
+}
+
+/** Compute the R2 key for a message attachment */
+export function messageAttachmentKey(
+  companyId: string,
+  conversationId: string,
+  fileName: string
+): string {
+  return `companies/${companyId}/messages/${conversationId}/${Date.now()}-${fileName}`;
+}

@@ -1,26 +1,91 @@
 /**
- * DIAN Electronic Invoicing Module - Preparation Layer
+ * Third-Party E-Invoicing Integration Module
  *
  * This module provides the foundational structure for integrating with
- * Colombia's DIAN electronic invoicing system. The actual DIAN API
- * integration will be implemented in a future module.
+ * third-party electronic invoicing providers (Factus, Carvajal, WorldOffice,
+ * Siigo Facturación, etc.) that handle DIAN compliance on behalf of the company.
  *
  * Current capabilities:
+ * - Third-party provider abstraction (sendInvoice, checkStatus, cancelInvoice)
+ * - Provider factory with stub implementations
  * - UBL 2.1 XML generation (see invoice-export.ts)
- * - CUFE placeholder generation
+ * - CUFE placeholder generation (preparation layer)
  * - Invoice numbering with DIAN authorized ranges
  * - Company tax information management
  *
- * Future implementation will require:
- * - DIAN test environment (Habilitación)
- * - Digital certificate (X.509) for signing
- * - CUFE generation with SHA-384
- * - QR code generation
- * - Real-time validation with DIAN API
- * - Nota crédito / Nota débito electronic documents
+ * Supported providers: factus, carvajal, worldoffice, siigo_facturacion
  */
 
 import { createHash } from "crypto";
+
+/** Supported third-party e-invoice provider identifiers */
+export const SUPPORTED_PROVIDERS = ["factus", "carvajal", "worldoffice", "siigo_facturacion"] as const;
+
+export type SupportedProviderName = (typeof SUPPORTED_PROVIDERS)[number];
+
+/** Result of sending an invoice to a provider */
+export interface SendInvoiceResult {
+  success: boolean;
+  providerReference?: string;
+  message?: string;
+}
+
+/** Result of checking invoice status */
+export interface CheckStatusResult {
+  status: "PENDING" | "ACCEPTED" | "REJECTED";
+  message?: string;
+}
+
+/** Result of canceling an invoice */
+export interface CancelInvoiceResult {
+  success: boolean;
+  message?: string;
+}
+
+/** Configuration for a third-party e-invoice provider */
+export interface EInvoiceProviderConfig {
+  apiUrl?: string | null;
+  apiKey?: string | null;
+  user?: string | null;
+  password?: string | null;
+}
+
+/**
+ * Interface for third-party electronic invoicing providers.
+ * Implementations handle DIAN submission, status checks, and cancellations.
+ */
+export interface ThirdPartyEInvoiceProvider {
+  sendInvoice(invoiceData: unknown, config: EInvoiceProviderConfig): Promise<SendInvoiceResult>;
+  checkStatus(invoiceId: string, config: EInvoiceProviderConfig): Promise<CheckStatusResult>;
+  cancelInvoice(invoiceId: string, config: EInvoiceProviderConfig): Promise<CancelInvoiceResult>;
+}
+
+/** Creates a stub provider implementation for development/testing */
+function createStubProvider(name: string): ThirdPartyEInvoiceProvider {
+  return {
+    async sendInvoice() {
+      return { success: true, providerReference: `stub-${name}-${Date.now()}`, message: "Stub: invoice would be sent" };
+    },
+    async checkStatus() {
+      return { status: "PENDING", message: "Stub: status check not implemented" };
+    },
+    async cancelInvoice() {
+      return { success: true, message: "Stub: cancellation would be processed" };
+    },
+  };
+}
+
+/**
+ * Returns a third-party e-invoice provider by name.
+ * Currently returns stub implementations; real integrations will be added per provider.
+ */
+export function getEInvoiceProvider(providerName: string): ThirdPartyEInvoiceProvider {
+  const normalized = providerName?.toLowerCase().trim() || "";
+  if (SUPPORTED_PROVIDERS.includes(normalized as SupportedProviderName)) {
+    return createStubProvider(normalized);
+  }
+  return createStubProvider("unknown");
+}
 
 /**
  * Document types per DIAN specification

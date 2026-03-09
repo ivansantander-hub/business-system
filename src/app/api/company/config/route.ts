@@ -16,6 +16,11 @@ const CONFIG_FIELDS = [
   "dianSoftwareId",
   "dianSoftwarePin",
   "dianTestSetId",
+  "eInvoiceProvider",
+  "eInvoiceProviderApiUrl",
+  "eInvoiceProviderApiKey",
+  "eInvoiceProviderUser",
+  "eInvoiceProviderPass",
 ] as const;
 
 export type CompanyConfig = {
@@ -32,6 +37,11 @@ export type CompanyConfig = {
   dianSoftwareId: string | null;
   dianSoftwarePin: string | null;
   dianTestSetId: string | null;
+  eInvoiceProvider: string | null;
+  eInvoiceProviderApiUrl: string | null;
+  eInvoiceProviderApiKey: string | null;
+  eInvoiceProviderUser: string | null;
+  eInvoiceProviderPass: string | null;
 };
 
 export async function GET(request: Request) {
@@ -56,6 +66,11 @@ export async function GET(request: Request) {
       dianSoftwareId: true,
       dianSoftwarePin: true,
       dianTestSetId: true,
+      eInvoiceProvider: true,
+      eInvoiceProviderApiUrl: true,
+      eInvoiceProviderApiKey: true,
+      eInvoiceProviderUser: true,
+      eInvoiceProviderPass: true,
     },
   });
 
@@ -77,6 +92,11 @@ export async function GET(request: Request) {
     dianSoftwareId: company.dianSoftwareId,
     dianSoftwarePin: company.dianSoftwarePin,
     dianTestSetId: company.dianTestSetId,
+    eInvoiceProvider: company.eInvoiceProvider,
+    eInvoiceProviderApiUrl: company.eInvoiceProviderApiUrl,
+    eInvoiceProviderApiKey: company.eInvoiceProviderApiKey,
+    eInvoiceProviderUser: company.eInvoiceProviderUser,
+    eInvoiceProviderPass: company.eInvoiceProviderPass,
   };
 
   return NextResponse.json(config);

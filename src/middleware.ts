@@ -43,6 +43,7 @@ export async function middleware(request: NextRequest) {
   if (payload.companyId) {
     response.headers.set("x-company-id", String(payload.companyId));
   }
+  response.headers.set("x-branch-id", payload.branchId || "");
   return response;
 }
 

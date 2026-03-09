@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useAtomValue } from "jotai";
 import { PageHeader } from "@/components/molecules";
 import {
   FlaskConical, ChevronRight, CheckCircle, XCircle,
-  Image as ImageIcon, Clock, X, Maximize2, ArrowLeft
+  Image as ImageIcon, Clock, X, Maximize2, ArrowLeft, Play, Loader2
 } from "lucide-react";
+import { userRoleAtom } from "@/store";
 
 interface TestRun {
   id: string;
@@ -39,12 +41,52 @@ function formatRunDate(id: string) {
   return `${date} ${time}`;
 }
 
+function getExecutionPanelTitle(status: ExecutionStatus | null) {
+  if (!status) return "Ejecución de tests";
+  if (status.running) {
+    return (
+      <>
+        <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+        Ejecutando tests...
+      </>
+    );
+  }
+  if (status.completed) {
+    const success = (status.exitCode ?? 0) === 0;
+    return success ? (
+      <>
+        <CheckCircle className="w-5 h-5 text-emerald-500" />
+        Tests completados correctamente
+      </>
+    ) : (
+      <>
+        <XCircle className="w-5 h-5 text-red-500" />
+        Tests fallaron
+      </>
+    );
+  }
+  return "Ejecución de tests";
+}
+
+interface ExecutionStatus {
+  running: boolean;
+  output: string;
+  startedAt?: string;
+  completed?: boolean;
+  exitCode?: number;
+}
+
 export default function TestRunsPage() {
+  const userRole = useAtomValue(userRoleAtom);
   const [runs, setRuns] = useState<TestRun[]>([]);
   const [selectedRun, setSelectedRun] = useState<RunDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [lightboxImg, setLightboxImg] = useState<string | null>(null);
+  const [executionPanelOpen, setExecutionPanelOpen] = useState(false);
+  const [executionStatus, setExecutionStatus] = useState<ExecutionStatus | null>(null);
+  const [executionStarting, setExecutionStarting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadRuns = useCallback(async () => {
     setLoading(true);
@@ -60,6 +102,60 @@ export default function TestRunsPage() {
   }, []);
 
   useEffect(() => { loadRuns(); }, [loadRuns]);
+
+  const pollExecutionStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/test-runs/execute");
+      if (res.ok) {
+        const data = await res.json();
+        setExecutionStatus(data);
+        if (data.completed) {
+          if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+          }
+          loadRuns();
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [loadRuns]);
+
+  useEffect(() => {
+    if (!executionPanelOpen || !executionStatus?.running) return;
+    pollExecutionStatus();
+    pollRef.current = setInterval(pollExecutionStatus, 2000);
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [executionPanelOpen, executionStatus?.running, pollExecutionStatus]);
+
+  async function startExecution() {
+    setExecutionStarting(true);
+    try {
+      const res = await fetch("/api/test-runs/execute", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        setExecutionPanelOpen(true);
+        setExecutionStatus({ running: true, output: "", startedAt: new Date().toISOString() });
+      } else if (res.status === 409) {
+        setExecutionPanelOpen(true);
+        pollExecutionStatus();
+      } else {
+        setExecutionStatus({ running: false, output: data.error || "Error al iniciar", completed: true, exitCode: 1 });
+        setExecutionPanelOpen(true);
+      }
+    } catch {
+      setExecutionStatus({ running: false, output: "Error de conexión", completed: true, exitCode: 1 });
+      setExecutionPanelOpen(true);
+    } finally {
+      setExecutionStarting(false);
+    }
+  }
 
   async function openRun(runId: string) {
     setLoadingDetail(true);
@@ -79,15 +175,36 @@ export default function TestRunsPage() {
 
     return (
       <div className="space-y-4 sm:space-y-6">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSelectedRun(null)} className="btn-secondary p-2">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <PageHeader
-            title={`Test Run: ${formatRunDate(selectedRun.runId)}`}
-            subtitle={r ? `${r.passed} passed, ${r.failed} failed de ${total} tests` : "Sin resultados"}
-            icon={<FlaskConical className="w-6 h-6" />}
-          />
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSelectedRun(null)} className="btn-secondary p-2">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <PageHeader
+              title={`Test Run: ${formatRunDate(selectedRun.runId)}`}
+              subtitle={r ? `${r.passed} passed, ${r.failed} failed de ${total} tests` : "Sin resultados"}
+              icon={<FlaskConical className="w-6 h-6" />}
+            />
+          </div>
+          {userRole === "SUPER_ADMIN" && (
+            <button
+              onClick={startExecution}
+              disabled={executionStarting}
+              className="btn-primary flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap shrink-0"
+            >
+              {executionStarting || executionStatus?.running ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {executionStatus?.running ? "Ejecutando..." : "Iniciando..."}
+                </>
+              ) : (
+                <>
+                  <Play className="w-4 h-4" />
+                  Ejecutar Tests
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {r && (
@@ -200,17 +317,73 @@ export default function TestRunsPage() {
             <img src={lightboxImg} alt="Screenshot" className="max-w-full max-h-full object-contain rounded-lg" />
           </div>
         )}
+
+        {executionPanelOpen && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="execution-panel-title-detail"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70"
+          >
+            <div className="card w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+              <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+                <h2 id="execution-panel-title-detail" className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  {getExecutionPanelTitle(executionStatus)}
+                </h2>
+                <button
+                  onClick={() => setExecutionPanelOpen(false)}
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                  aria-label="Cerrar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 rounded-b-xl min-h-[200px] max-h-[60vh] whitespace-pre-wrap break-words">
+                {executionStatus?.output || "Esperando salida..."}
+              </pre>
+              <div className="p-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
+                <button
+                  onClick={() => setExecutionPanelOpen(false)}
+                  className="btn-secondary w-full sm:w-auto"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <PageHeader
-        title="Resultados de Tests"
-        subtitle="Historial de ejecuciones de test E2E y sus screenshots"
-        icon={<FlaskConical className="w-6 h-6" />}
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <PageHeader
+          title="Resultados de Tests"
+          subtitle="Historial de ejecuciones de test E2E y sus screenshots"
+          icon={<FlaskConical className="w-6 h-6" />}
+        />
+        {userRole === "SUPER_ADMIN" && (
+          <button
+            onClick={startExecution}
+            disabled={executionStarting}
+            className="btn-primary flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap shrink-0"
+          >
+            {executionStarting || executionStatus?.running ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {executionStatus?.running ? "Ejecutando..." : "Iniciando..."}
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4" />
+                Ejecutar Tests
+              </>
+            )}
+          </button>
+        )}
+      </div>
 
       {loading && (
         <div className="card p-12 text-center text-slate-500">Cargando ejecuciones...</div>
@@ -249,6 +422,41 @@ export default function TestRunsPage() {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {executionPanelOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="execution-panel-title"
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 dark:bg-black/70"
+        >
+          <div className="card w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+            <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 shrink-0">
+                <h2 id="execution-panel-title" className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                  {getExecutionPanelTitle(executionStatus)}
+                </h2>
+              <button
+                onClick={() => setExecutionPanelOpen(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                aria-label="Cerrar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <pre className="flex-1 overflow-auto p-4 text-xs font-mono text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 rounded-b-xl min-h-[200px] max-h-[60vh] whitespace-pre-wrap break-words">
+              {executionStatus?.output || "Esperando salida..."}
+            </pre>
+            <div className="p-4 border-t border-slate-200 dark:border-slate-700 shrink-0">
+              <button
+                onClick={() => setExecutionPanelOpen(false)}
+                className="btn-secondary w-full sm:w-auto"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

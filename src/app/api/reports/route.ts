@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
 
 export async function GET(request: Request) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, branchId, role } = getUserFromHeaders(request);
   if (!companyId) {
     return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
   }
@@ -12,6 +12,11 @@ export async function GET(request: Request) {
   const type = searchParams.get("type") || "dashboard";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
+  const qsBranch = searchParams.get("branchId");
+
+  const effectiveBranch = (role === "ADMIN" || role === "SUPER_ADMIN")
+    ? (qsBranch || null)
+    : branchId;
 
   const dateFilter: Record<string, unknown> = {};
   if (from) dateFilter.gte = new Date(from);
@@ -29,17 +34,18 @@ export async function GET(request: Request) {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      const invoiceWhere = { companyId, ...(effectiveBranch ? { branchId: effectiveBranch } : {}) };
       const [todaySales, todayInvoices, recentInvoices] = await Promise.all([
         prisma.invoice.aggregate({
-          where: { companyId, date: { gte: today, lt: tomorrow }, status: "PAID" },
+          where: { ...invoiceWhere, date: { gte: today, lt: tomorrow }, status: "PAID" },
           _sum: { total: true },
           _count: true,
         }),
         prisma.invoice.count({
-          where: { companyId, date: { gte: today, lt: tomorrow }, status: "PAID" },
+          where: { ...invoiceWhere, date: { gte: today, lt: tomorrow }, status: "PAID" },
         }),
         prisma.invoice.findMany({
-          where: { companyId, status: "PAID" },
+          where: { ...invoiceWhere, status: "PAID" },
           include: { customer: { select: { name: true } } },
           orderBy: { createdAt: "desc" },
           take: 10,
@@ -49,6 +55,7 @@ export async function GET(request: Request) {
       const lowStockProducts = await prisma.product.findMany({
         where: {
           companyId,
+          ...(effectiveBranch ? { branchId: effectiveBranch } : {}),
           isActive: true,
           stock: { lte: prisma.product.fields?.minStock as unknown as number ?? 0 },
         },
@@ -70,7 +77,7 @@ export async function GET(request: Request) {
         next.setDate(next.getDate() + 1);
 
         const dayTotal = await prisma.invoice.aggregate({
-          where: { companyId, date: { gte: d, lt: next }, status: "PAID" },
+          where: { ...invoiceWhere, date: { gte: d, lt: next }, status: "PAID" },
           _sum: { total: true },
         });
 
@@ -162,6 +169,7 @@ export async function GET(request: Request) {
       const invoices = await prisma.invoice.findMany({
         where: {
           companyId,
+          ...(effectiveBranch ? { branchId: effectiveBranch } : {}),
           status: "PAID",
           ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
         },
@@ -183,7 +191,7 @@ export async function GET(request: Request) {
 
     if (type === "inventory") {
       const products = await prisma.product.findMany({
-        where: { companyId, isActive: true },
+        where: { companyId, ...(effectiveBranch ? { branchId: effectiveBranch } : {}), isActive: true },
         include: { category: { select: { name: true } } },
         orderBy: { name: "asc" },
       });

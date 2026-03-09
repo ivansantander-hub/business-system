@@ -4,13 +4,14 @@
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { signToken } from "@/lib/auth";
-import { getOrCreateTestCompany, getOrCreateTestUser } from "./helpers";
+import { getOrCreateTestCompany, getOrCreateTestUser, getOrCreateTestBranch } from "./helpers";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3000";
 let serverAvailable = false;
 let token: string;
 let companyId: string;
 let userId: string;
+let branchId: string;
 
 async function apiRequest(path: string, options: RequestInit = {}) {
   const headers: Record<string, string> = {
@@ -32,12 +33,15 @@ beforeAll(async () => {
   companyId = company.id;
   const user = await getOrCreateTestUser(companyId);
   userId = user.id;
+  const branch = await getOrCreateTestBranch(companyId);
+  branchId = branch.id;
 
   token = await signToken({
     userId: user.id,
     role: "ADMIN",
     name: user.name,
     companyId: company.id,
+    branchId: branch.id,
   });
 
   try {

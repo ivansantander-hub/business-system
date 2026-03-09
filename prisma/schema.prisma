@@ -197,6 +197,7 @@ model Company {
   department String?
   phone      String?
   email      String?
+  logoUrl    String?     @map("logo_url")
   taxRegime  String?     @map("tax_regime")
   isActive   Boolean     @default(true) @map("is_active")
   createdAt  DateTime    @default(now()) @map("created_at")
@@ -226,6 +227,9 @@ model Company {
   rolePermissions         RolePermission[]
   creditNotes             CreditNote[]
   debitNotes              DebitNote[]
+  branches                Branch[]
+  notifications           Notification[]
+  conversations           Conversation[]
 
   retentionYears  Int       @default(5) @map("retention_years")
   dianResolution  String?   @map("dian_resolution")
@@ -240,6 +244,12 @@ model Company {
   dianSoftwareId      String?   @map("dian_software_id")
   dianSoftwarePin     String?   @map("dian_software_pin")
   dianTestSetId       String?   @map("dian_test_set_id")
+
+  eInvoiceProvider       String?   @map("e_invoice_provider")
+  eInvoiceProviderApiUrl String?   @map("e_invoice_provider_api_url")
+  eInvoiceProviderApiKey String?   @map("e_invoice_provider_api_key")
+  eInvoiceProviderUser   String?   @map("e_invoice_provider_user")
+  eInvoiceProviderPass   String?   @map("e_invoice_provider_pass")
 
   @@schema("public")
   @@map("companies")
@@ -267,6 +277,10 @@ model User {
   bodyMeasurements       BodyMeasurement[]   @relation("MeasuredBy")
   passwordResetTokens    PasswordResetToken[]
   notificationPreferences UserNotificationPreference[]
+  userBranches           UserBranch[]
+  userNotifications      UserNotification[]
+  conversationParts      ConversationParticipant[]
+  sentMessages           Message[]
 
   @@schema("public")
   @@map("users")
@@ -321,6 +335,8 @@ model Product {
   id          String    @id @default(uuid())
   companyId   String    @map("company_id")
   company     Company   @relation(fields: [companyId], references: [id])
+  branchId    String?   @map("branch_id")
+  branch      Branch?   @relation(fields: [branchId], references: [id])
   categoryId  String?   @map("category_id")
   category    Category? @relation(fields: [categoryId], references: [id])
   name        String
@@ -348,6 +364,8 @@ model InventoryMovement {
   id            String       @id @default(uuid())
   companyId     String       @map("company_id")
   company       Company      @relation(fields: [companyId], references: [id])
+  branchId      String?      @map("branch_id")
+  branch        Branch?      @relation(fields: [branchId], references: [id])
   productId     String       @map("product_id")
   product       Product      @relation(fields: [productId], references: [id])
   userId        String       @map("user_id")
@@ -387,6 +405,8 @@ model Purchase {
   id           String         @id @default(uuid())
   companyId    String         @map("company_id")
   company      Company        @relation(fields: [companyId], references: [id])
+  branchId     String?        @map("branch_id")
+  branch       Branch?        @relation(fields: [branchId], references: [id])
   supplierId   String         @map("supplier_id")
   supplier     Supplier       @relation(fields: [supplierId], references: [id])
   userId       String         @map("user_id")
@@ -445,6 +465,8 @@ model RestaurantTable {
   id        String      @id @default(uuid())
   companyId String      @map("company_id")
   company   Company     @relation(fields: [companyId], references: [id])
+  branchId  String?     @map("branch_id")
+  branch    Branch?     @relation(fields: [branchId], references: [id])
   number    String
   capacity  Int         @default(4)
   section   String?
@@ -460,6 +482,8 @@ model Order {
   id         String           @id @default(uuid())
   companyId  String           @map("company_id")
   company    Company          @relation(fields: [companyId], references: [id])
+  branchId   String?          @map("branch_id")
+  branch     Branch?          @relation(fields: [branchId], references: [id])
   tableId    String?          @map("table_id")
   table      RestaurantTable? @relation(fields: [tableId], references: [id])
   customerId String?          @map("customer_id")
@@ -504,6 +528,8 @@ model Invoice {
   id             String        @id @default(uuid())
   companyId      String        @map("company_id")
   company        Company       @relation(fields: [companyId], references: [id])
+  branchId       String?       @map("branch_id")
+  branch         Branch?       @relation(fields: [branchId], references: [id])
   orderId        String?       @map("order_id")
   order          Order?        @relation(fields: [orderId], references: [id])
   customerId     String?       @map("customer_id")
@@ -559,6 +585,8 @@ model CashSession {
   id             String            @id @default(uuid())
   companyId      String            @map("company_id")
   company        Company           @relation(fields: [companyId], references: [id])
+  branchId       String?           @map("branch_id")
+  branch         Branch?           @relation(fields: [branchId], references: [id])
   userId         String            @map("user_id")
   user           User              @relation(fields: [userId], references: [id])
   openingAmount  Decimal           @default(0) @map("opening_amount")
@@ -598,6 +626,8 @@ model JournalEntry {
   id          String        @id @default(uuid())
   companyId   String        @map("company_id")
   company     Company       @relation(fields: [companyId], references: [id])
+  branchId    String?       @map("branch_id")
+  branch      Branch?       @relation(fields: [branchId], references: [id])
   date        DateTime      @default(now())
   description String
   reference   String?
@@ -626,6 +656,8 @@ model Expense {
   id            String        @id @default(uuid())
   companyId     String        @map("company_id")
   company       Company       @relation(fields: [companyId], references: [id])
+  branchId      String?       @map("branch_id")
+  branch        Branch?       @relation(fields: [branchId], references: [id])
   category      String
   description   String
   amount        Decimal
@@ -973,4 +1005,150 @@ model LockerAssignment {
 
   @@schema("tenant")
   @@map("locker_assignments")
+}
+
+// =============================================
+// BRANCHES (SUCURSALES)
+// =============================================
+
+model Branch {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  address   String?
+  city      String?
+  phone     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users            UserBranch[]
+  products         Product[]
+  invoices         Invoice[]
+  orders           Order[]
+  cashSessions     CashSession[]
+  purchases        Purchase[]
+  inventoryMoves   InventoryMovement[]
+  expenses         Expense[]
+  restaurantTables RestaurantTable[]
+  journalEntries   JournalEntry[]
+
+  @@schema("tenant")
+  @@map("branches")
+}
+
+model UserBranch {
+  id       String @id @default(uuid())
+  userId   String @map("user_id")
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branchId String @map("branch_id")
+  branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+  @@schema("tenant")
+  @@map("user_branches")
+}
+
+// =============================================
+// NOTIFICATIONS (stored emails / system alerts)
+// =============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  type      String   @default("email")
+  subject   String
+  bodyHtml  String?  @map("body_html")
+  bodyText  String?  @map("body_text")
+  eventType String?  @map("event_type")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  recipients UserNotification[]
+
+  @@index([companyId, createdAt])
+  @@schema("tenant")
+  @@map("notifications")
+}
+
+model UserNotification {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationId String       @map("notification_id")
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  readAt         DateTime?    @map("read_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([userId, notificationId])
+  @@index([userId, readAt])
+  @@schema("tenant")
+  @@map("user_notifications")
+}
+
+// =============================================
+// INTERNAL MESSAGING
+// =============================================
+
+model Conversation {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String?
+  isGroup   Boolean  @default(false) @map("is_group")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([companyId, updatedAt])
+  @@schema("tenant")
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String       @map("user_id")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime     @default(now()) @map("joined_at")
+  lastReadAt     DateTime?    @map("last_read_at")
+  isAdmin        Boolean      @default(false) @map("is_admin")
+
+  @@unique([conversationId, userId])
+  @@schema("tenant")
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String       @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String       @map("sender_id")
+  sender         User         @relation(fields: [senderId], references: [id])
+  content        String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  editedAt       DateTime?    @map("edited_at")
+
+  attachments MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@schema("tenant")
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id        String  @id @default(uuid())
+  messageId String  @map("message_id")
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName  String  @map("file_name")
+  fileSize  Int     @map("file_size")
+  mimeType  String  @map("mime_type")
+  r2Key     String  @map("r2_key")
+
+  @@schema("tenant")
+  @@map("message_attachments")
 }

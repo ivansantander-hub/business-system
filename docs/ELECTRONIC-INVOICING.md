@@ -1,17 +1,43 @@
-# Electronic Invoicing (Facturación Electrónica DIAN)
+# Electronic Invoicing (Facturación Electrónica)
 
-This document describes the electronic invoicing module for Colombia's DIAN (Dirección de Impuestos y Aduanas Nacionales) compliance.
+This document describes the electronic invoicing module for Colombia's DIAN (Dirección de Impuestos y Aduanas Nacionales) compliance via **third-party providers**.
 
 ## Overview
 
-The system includes a **Facturación Electrónica** module that prepares invoices for DIAN electronic invoicing. When enabled per company, invoices are generated with:
+The system has been refactored from direct DIAN integration to a **third-party provider integration model**: instead of integrating directly with the DIAN API, companies configure an external e-invoicing provider (Factus, Carvajal, WorldOffice, Siigo Facturación) that handles DIAN submission and compliance on their behalf.
 
-- **CUFE** (Código Único de Factura Electrónica) — Unique electronic invoice code
+When electronic invoicing is enabled per company, invoices are generated with:
+
+- **CUFE** (Código Único de Factura Electrónica) — Unique electronic invoice code (preparation layer)
 - **QR code** — For customer verification
 - **DIAN range validation** — Ensures invoice numbers stay within authorized ranges
 - **UBL 2.1 XML** — Export format compatible with DIAN specifications
+- **Third-party provider submission** — Invoices are sent to the configured provider for DIAN validation
 
-The module operates as a **preparation layer**: it generates the required codes and structures locally. Integration with the actual DIAN API for real-time validation and acceptance is planned for a future release.
+## Supported Providers
+
+| Provider | Identifier | Description |
+|----------|-------------|-------------|
+| Factus | `factus` | Factus electronic invoicing platform |
+| Carvajal | `carvajal` | Carvajal Tecnología y Servicios |
+| WorldOffice | `worldoffice` | WorldOffice e-invoicing |
+| Siigo Facturación | `siigo_facturacion` | Siigo electronic invoicing module |
+
+Each provider requires configuration: API URL, API Key, User, and Password. These are stored per company and used when sending invoices.
+
+## Configuration Flow
+
+1. Go to **Facturación Electrónica** in the dashboard sidebar
+2. Toggle **Facturación Electrónica** on
+3. In **Proveedor de Facturación**:
+   - Select a provider (Factus, Carvajal, WorldOffice, Siigo Facturación)
+   - Enter the provider's API URL
+   - Enter API Key, User, and Password (masked inputs)
+   - Click **Probar Conexión** to verify credentials (stub for now)
+4. Configure **Configuración DIAN** (resolution, prefix, range, technical key, etc.)
+5. Save configuration
+
+The provider credentials and DIAN settings are stored in the `Company` model and exposed via `GET /api/company/config`.
 
 ## Enable/Disable Per Company
 
@@ -19,7 +45,7 @@ Electronic invoicing is **optional and configurable per company**:
 
 1. Go to **Configuración** (Settings) or **Facturación Electrónica** in the sidebar
 2. Toggle **Facturación Electrónica** on or off
-3. When **enabled**: Invoices use DIAN prefix, CUFE, and range validation
+3. When **enabled**: Invoices use DIAN prefix, CUFE, range validation, and are sent to the third-party provider
 4. When **disabled**: Invoices use simple POS numbering without DIAN fields
 
 The `electronicInvoicingEnabled` flag is stored in the `Company` model and exposed via `GET /api/company/config`.
@@ -49,6 +75,18 @@ Validation is performed in `src/lib/dian.ts` via `validateDianRange()`. If a sal
 ## Settings Management
 
 The Facturación Electrónica page (`/dashboard/facturacion-electronica`) and Company Config API allow management of:
+
+### Third-Party Provider
+
+| Setting | Description |
+|---------|-------------|
+| **eInvoiceProvider** | Provider name: `factus`, `carvajal`, `worldoffice`, `siigo_facturacion` |
+| **eInvoiceProviderApiUrl** | Provider API base URL |
+| **eInvoiceProviderApiKey** | API key for authentication |
+| **eInvoiceProviderUser** | Username for provider |
+| **eInvoiceProviderPass** | Password for provider |
+
+### DIAN Configuration
 
 | Setting | Description |
 |---------|-------------|

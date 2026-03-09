@@ -11,11 +11,16 @@ import {
   ToggleLeft,
   ToggleRight,
   Save,
+  Plug,
+  Wifi,
+  WifiOff,
+  Loader2,
 } from "lucide-react";
 import Toast from "@/components/ui/Toast";
 import { Button } from "@/components/atoms";
 import { PageHeader } from "@/components/molecules";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { SUPPORTED_PROVIDERS } from "@/lib/dian";
 
 interface CompanyConfig {
   electronicInvoicingEnabled: boolean;
@@ -28,7 +33,14 @@ interface CompanyConfig {
   dianSoftwareId: string | null;
   dianSoftwarePin: string | null;
   dianTestSetId: string | null;
+  eInvoiceProvider: string | null;
+  eInvoiceProviderApiUrl: string | null;
+  eInvoiceProviderApiKey: string | null;
+  eInvoiceProviderUser: string | null;
+  eInvoiceProviderPass: string | null;
 }
+
+type ConnectionStatus = "not_connected" | "testing" | "connected";
 
 interface Invoice {
   id: string;
@@ -77,7 +89,13 @@ export default function FacturacionElectronicaPage() {
     dianSoftwareId: null,
     dianSoftwarePin: null,
     dianTestSetId: null,
+    eInvoiceProvider: null,
+    eInvoiceProviderApiUrl: null,
+    eInvoiceProviderApiKey: null,
+    eInvoiceProviderUser: null,
+    eInvoiceProviderPass: null,
   });
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("not_connected");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -103,6 +121,11 @@ export default function FacturacionElectronicaPage() {
           dianSoftwareId: data.dianSoftwareId ?? null,
           dianSoftwarePin: data.dianSoftwarePin ?? null,
           dianTestSetId: data.dianTestSetId ?? null,
+          eInvoiceProvider: data.eInvoiceProvider ?? null,
+          eInvoiceProviderApiUrl: data.eInvoiceProviderApiUrl ?? null,
+          eInvoiceProviderApiKey: data.eInvoiceProviderApiKey ?? null,
+          eInvoiceProviderUser: data.eInvoiceProviderUser ?? null,
+          eInvoiceProviderPass: data.eInvoiceProviderPass ?? null,
         });
       }
       if (invoicesRes.ok) {
@@ -134,6 +157,25 @@ export default function FacturacionElectronicaPage() {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function testConnection() {
+    setConnectionStatus("testing");
+    try {
+      const res = await fetch("/api/company/config");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.electronicInvoicingEnabled && data.eInvoiceProvider) {
+        setToast({ message: `Conexión verificada con proveedor: ${data.eInvoiceProvider}`, type: "success" });
+        setConnectionStatus("connected");
+      } else {
+        setToast({ message: "Facturación electrónica no está habilitada", type: "error" });
+        setConnectionStatus("not_connected");
+      }
+    } catch {
+      setToast({ message: "Error al verificar conexión con el servidor", type: "error" });
+      setConnectionStatus("not_connected");
     }
   }
 
@@ -248,6 +290,137 @@ export default function FacturacionElectronicaPage() {
           </div>
         )}
       </div>
+
+      {/* Proveedor de Facturación */}
+      {config.electronicInvoicingEnabled && (
+        <div className="card">
+          <h2 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            <Plug className="w-5 h-5" />
+            Proveedor de Facturación
+          </h2>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-3">
+                {connectionStatus === "connected" && (
+                  <Wifi className="w-6 h-6 text-emerald-500" />
+                )}
+                {connectionStatus === "not_connected" && (
+                  <WifiOff className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                )}
+                {connectionStatus === "testing" && (
+                  <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
+                )}
+                <div>
+                  <p className="font-medium text-slate-900 dark:text-white">
+                    Estado de Conexión
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {connectionStatus === "not_connected" && "No conectado"}
+                    {connectionStatus === "testing" && "Probando conexión…"}
+                    {connectionStatus === "connected" && "Conectado"}
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={testConnection}
+                disabled={connectionStatus === "testing"}
+                loading={connectionStatus === "testing"}
+                icon={<Plug className="w-4 h-4" />}
+              >
+                Probar Conexión
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label htmlFor="e-invoice-provider" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Proveedor
+                </label>
+                <select
+                  id="e-invoice-provider"
+                  className="input-field w-full"
+                  value={config.eInvoiceProvider ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, eInvoiceProvider: e.target.value || null })
+                  }
+                >
+                  <option value="">Seleccionar proveedor</option>
+                  {SUPPORTED_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p.charAt(0).toUpperCase() + p.slice(1).replace(/_/g, " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="e-invoice-api-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  URL API
+                </label>
+                <input
+                  id="e-invoice-api-url"
+                  type="url"
+                  className="input-field w-full"
+                  value={config.eInvoiceProviderApiUrl ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, eInvoiceProviderApiUrl: e.target.value || null })
+                  }
+                  placeholder="https://api.proveedor.com/v1"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="e-invoice-api-key" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  API Key
+                </label>
+                <input
+                  id="e-invoice-api-key"
+                  type="password"
+                  className="input-field w-full"
+                  value={config.eInvoiceProviderApiKey ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, eInvoiceProviderApiKey: e.target.value || null })
+                  }
+                  placeholder="••••••••••••••••"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="e-invoice-user" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Usuario
+                </label>
+                <input
+                  id="e-invoice-user"
+                  type="text"
+                  className="input-field w-full"
+                  value={config.eInvoiceProviderUser ?? ""}
+                  onChange={(e) =>
+                    setConfig({ ...config, eInvoiceProviderUser: e.target.value || null })
+                  }
+                  placeholder="Usuario del proveedor"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="e-invoice-pass" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Contraseña
+              </label>
+              <input
+                id="e-invoice-pass"
+                type="password"
+                className="input-field w-full max-w-md"
+                value={config.eInvoiceProviderPass ?? ""}
+                onChange={(e) =>
+                  setConfig({ ...config, eInvoiceProviderPass: e.target.value || null })
+                }
+                placeholder="••••••••••••••••"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DIAN Settings Form */}
       {config.electronicInvoicingEnabled && (

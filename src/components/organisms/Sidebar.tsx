@@ -12,12 +12,14 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, Warehouse, ShoppingCart, UtensilsCrossed,
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
-  BarChart3, Settings, LogOut, X, Menu, Building2, ChevronsLeft, ChevronsRight,
+  BarChart3, Settings,   LogOut, X, Menu, Building2, ChevronsLeft, ChevronsRight,
   UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket, ChevronDown, Bell, Shield, ScrollText, FlaskConical,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import { useAtomValue } from "jotai";
-import { permissionsAtom, userRoleAtom, userNameAtom } from "@/store";
+import { permissionsAtom, userRoleAtom, userNameAtom, companyLogoAtom } from "@/store";
 import type { Permission } from "@/lib/rbac";
 
 interface MenuItem {
@@ -55,8 +57,10 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/contabilidad", label: "Contabilidad", icon: Calculator, permission: "accounting", group: "finanzas" },
   { href: "/dashboard/facturacion-electronica", label: "Facturación Electrónica", icon: FileText, permission: "invoices", group: "finanzas" },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports", group: "sistema" },
+  { href: "/dashboard/mensajes", label: "Mensajes", icon: MessageSquare, permission: "messaging", group: "sistema" },
   { href: "/dashboard/usuarios", label: "Usuarios", icon: Users, permission: "users", group: "sistema" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: Settings, permission: "settings", group: "sistema" },
+  { href: "/dashboard/sucursales", label: "Sucursales", icon: Building2, permission: "branches", group: "sistema" },
   { href: "/dashboard/notificaciones", label: "Notificaciones", icon: Bell, permission: "notifications", group: "sistema" },
   { href: "/dashboard/rbac", label: "Control de Acceso", icon: Shield, permission: "rbac", group: "sistema" },
   { href: "/dashboard/logs", label: "Registro de Actividad", icon: ScrollText, permission: "logs", group: "sistema" },
@@ -110,6 +114,7 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const permissions = useAtomValue(permissionsAtom);
   const userRole = useAtomValue(userRoleAtom);
   const userName = useAtomValue(userNameAtom);
+  const companyLogoUrl = useAtomValue(companyLogoAtom);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const menuItems = allMenuItems.filter((item) => permissions.includes(item.permission));
@@ -155,13 +160,35 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Brand */}
         <div className={`flex-shrink-0 ${isCompact ? "p-3 flex justify-center" : "px-5 pt-6 pb-4"}`}>
           {isCompact ? (
-            <div className="w-10 h-10 bg-gradient-accent rounded-xl flex items-center justify-center shadow-glow-sm">
-              <span className="text-xs font-bold text-white">S</span>
+            <div className="w-10 h-10 bg-gradient-accent rounded-xl flex items-center justify-center shadow-glow-sm overflow-hidden">
+              {companyLogoUrl ? (
+                <Image
+                  src={companyLogoUrl}
+                  alt="Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-contain"
+                  unoptimized
+                />
+              ) : (
+                <span className="text-xs font-bold text-white">S</span>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-accent rounded-xl flex items-center justify-center shadow-glow-sm flex-shrink-0">
-                <span className="text-xs font-bold text-white">SGC</span>
+              <div className="w-10 h-10 bg-gradient-accent rounded-xl flex items-center justify-center shadow-glow-sm flex-shrink-0 overflow-hidden">
+                {companyLogoUrl ? (
+                  <Image
+                    src={companyLogoUrl}
+                    alt="Logo"
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-xs font-bold text-white">SGC</span>
+                )}
               </div>
               <div className="min-w-0">
                 <h1 className="text-sm font-bold text-white truncate">SGC</h1>

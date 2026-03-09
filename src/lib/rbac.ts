@@ -27,13 +27,15 @@ export type Permission =
   | "rbac"
   | "logs"
   | "audit"
-  | "test_runs";
+  | "test_runs"
+  | "branches"
+  | "messaging";
 
 export const ALL_PERMISSIONS: Permission[] = [
   "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
   "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
   "users", "settings", "memberships", "checkin", "day_passes", "classes",
-  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs",
+  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
 ];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -64,6 +66,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   logs: "Registro de Actividad",
   audit: "Centro de Auditoría",
   test_runs: "Resultados de Tests",
+  branches: "Sucursales",
+  messaging: "Mensajería",
 };
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
@@ -72,7 +76,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "dashboard", "products", "inventory", "pos", "tables", "orders",
     "invoices", "customers", "suppliers", "purchases", "accounting",
     "reports", "users", "settings", "memberships", "checkin", "day_passes",
-    "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit",
+    "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "branches", "messaging",
   ],
   CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],
@@ -91,13 +95,13 @@ export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
   RESTAURANT: [
     "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
-    "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs",
+    "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
   ],
   GYM: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "memberships", "checkin", "day_passes",
-    "classes", "trainers", "body_tracking", "lockers", "logs", "audit", "test_runs",
+    "classes", "trainers", "body_tracking", "lockers", "logs", "audit", "test_runs", "branches", "messaging",
   ],
 };
 

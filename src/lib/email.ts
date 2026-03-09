@@ -104,6 +104,95 @@ export async function sendEmail(params: SendEmailParams): Promise<boolean> {
 }
 
 /**
+ * Store a notification in the DB and create UserNotification for each recipient.
+ * Call this after successfully sending an email.
+ */
+export async function storeEmailNotification(
+  companyId: string,
+  params: { subject: string; bodyHtml: string },
+  recipientUserIds: string[],
+  metadata?: Record<string, unknown> & { eventType?: string }
+): Promise<void> {
+  if (recipientUserIds.length === 0) return;
+
+  const { eventType, ...restMeta } = metadata || {};
+  const notification = await prisma.notification.create({
+    data: {
+      companyId,
+      type: "email",
+      subject: params.subject,
+      bodyHtml: params.bodyHtml,
+      eventType: eventType ?? null,
+      metadata: Object.keys(restMeta).length > 0 ? (restMeta as Record<string, string>) : undefined,
+    },
+  });
+
+  await prisma.userNotification.createMany({
+    data: recipientUserIds.map((userId) => ({
+      userId,
+      notificationId: notification.id,
+    })),
+    skipDuplicates: true,
+  });
+}
+
+/**
+ * Send an event email and store it as a notification for internal recipients.
+ * Use recipientUserIds for users who should see it in their notification center.
+ */
+export async function sendEventEmail(
+  companyId: string,
+  eventType: EmailEvent,
+  params: SendEmailParams,
+  recipientUserIds: string[] = [],
+  metadata?: Record<string, unknown>
+): Promise<boolean> {
+  const enabled = await isNotificationEnabled(companyId, eventType, recipientUserIds[0]);
+  if (!enabled) return false;
+
+  const sent = await sendEmail(params);
+  if (sent && recipientUserIds.length > 0) {
+    await storeEmailNotification(
+      companyId,
+      { subject: params.subject, bodyHtml: params.htmlContent },
+      recipientUserIds,
+      { eventType, ...metadata }
+    ).catch((err) => console.error("Failed to store email notification:", err));
+  }
+  return sent;
+}
+
+/**
+ * Create a system notification (no email sent). For in-app alerts.
+ */
+export async function createSystemNotification(
+  companyId: string,
+  subject: string,
+  bodyHtml: string,
+  userIds: string[],
+  type: string = "system"
+): Promise<void> {
+  if (userIds.length === 0) return;
+
+  const notification = await prisma.notification.create({
+    data: {
+      companyId,
+      type,
+      subject,
+      bodyHtml,
+    },
+  });
+
+  await prisma.userNotification.createMany({
+    data: userIds.map((userId) => ({
+      userId,
+      notificationId: notification.id,
+    })),
+    skipDuplicates: true,
+  });
+}
+
+/**
  * Check if a notification event is enabled for a company (and optionally a user).
  * If no record exists, defaults to enabled.
  */
@@ -130,16 +219,20 @@ export async function isNotificationEnabled(
 
 /**
  * Send a notification email if the event is enabled for the company/user.
+ * When recipientUserIds is provided, stores the notification for the notification center.
  */
 export async function sendNotification(
   companyId: string,
   eventType: EmailEvent,
   params: SendEmailParams,
-  userId?: string
+  recipientUserIds?: string | string[]
 ): Promise<boolean> {
-  const enabled = await isNotificationEnabled(companyId, eventType, userId);
-  if (!enabled) return false;
-  return sendEmail(params);
+  const ids = Array.isArray(recipientUserIds)
+    ? recipientUserIds
+    : recipientUserIds
+      ? [recipientUserIds]
+      : [];
+  return sendEventEmail(companyId, eventType, params, ids, { eventType });
 }
 
 function wrapHtml(body: string, companyName?: string): string {

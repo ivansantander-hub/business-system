@@ -13,6 +13,7 @@ interface SaleItem {
 interface CreateSaleParams {
   companyId: string;
   userId: string;
+  branchId?: string | null;
   items: SaleItem[];
   paymentMethod: string;
   paidAmount?: number;
@@ -38,6 +39,7 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
   const {
     companyId,
     userId,
+    branchId,
     items,
     paymentMethod,
     discount: rawDiscount,
@@ -46,8 +48,9 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
     notes,
   } = params;
 
+  const cashSessionWhere = { userId, companyId, status: "OPEN" as const, ...(branchId && { branchId }) };
   const cashSession = await prisma.cashSession.findFirst({
-    where: { userId, companyId, status: "OPEN" },
+    where: cashSessionWhere,
   });
 
   if (!cashSession) {
@@ -145,6 +148,7 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
         const inv = await tx.invoice.create({
           data: {
             companyId,
+            branchId: branchId || null,
             orderId: orderId || null,
             customerId: customerId || null,
             userId,
@@ -201,6 +205,7 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
             await tx.inventoryMovement.create({
               data: {
                 companyId,
+                branchId: branchId || null,
                 productId: item.productId,
                 userId,
                 type: "OUT",
@@ -265,6 +270,8 @@ export async function createSale(params: CreateSaleParams): Promise<SaleResult> 
           (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).cufe = cufe;
           (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).qrCode = qrCode;
           (inv as { cufe?: string; qrCode?: string; dianStatus?: string }).dianStatus = "GENERATED";
+          // In production: send invoice to third-party e-invoice provider (Factus, Carvajal, etc.)
+          // via getEInvoiceProvider(company.eInvoiceProvider).sendInvoice(...)
         }
 
         return { invoice: inv as unknown as SaleResult["invoice"], cashSession: { id: cashSession.id } };

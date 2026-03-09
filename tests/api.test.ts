@@ -4,6 +4,7 @@ import { signToken } from "@/lib/auth";
 import {
   getOrCreateTestCompany,
   getOrCreateTestUser,
+  getOrCreateTestBranch,
 } from "./helpers";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3000";
@@ -12,6 +13,7 @@ let serverAvailable = false;
 let token: string;
 let companyId: string;
 let userId: string;
+let branchId: string;
 
 async function apiRequest(path: string, options: RequestInit = {}) {
   const headers: Record<string, string> = {
@@ -31,12 +33,15 @@ beforeAll(async () => {
   companyId = company.id;
   const user = await getOrCreateTestUser(companyId);
   userId = user.id;
+  const branch = await getOrCreateTestBranch(companyId);
+  branchId = branch.id;
 
   token = await signToken({
     userId: user.id,
     role: "ADMIN",
     name: user.name,
     companyId: company.id,
+    branchId: branch.id,
   });
 
   try {
@@ -591,6 +596,74 @@ describe("Company Config API", () => {
     const data = await res.json();
     expect(data).toHaveProperty("electronicInvoicingEnabled");
     expect(typeof data.electronicInvoicingEnabled).toBe("boolean");
+  });
+
+  it("GET /api/company/config should include e-invoice provider fields", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("eInvoiceProvider");
+    expect(data).toHaveProperty("eInvoiceProviderApiUrl");
+    expect(data).toHaveProperty("dianTechnicalKey");
+    expect(data).toHaveProperty("dianEnvironment");
+    expect(data).toHaveProperty("dianSoftwareId");
+  });
+
+  it("PUT /api/company/config should update e-invoice provider config", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config", {
+      method: "PUT",
+      body: JSON.stringify({
+        electronicInvoicingEnabled: true,
+        eInvoiceProvider: "dian",
+        eInvoiceProviderApiUrl: "https://api.example.com",
+        dianEnvironment: "test",
+      }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.ok).toBe(true);
+
+    const getRes = await apiRequest("/api/company/config");
+    const config = await getRes.json();
+    expect(config.electronicInvoicingEnabled).toBe(true);
+    expect(config.eInvoiceProvider).toBe("dian");
+    expect(config.eInvoiceProviderApiUrl).toBe("https://api.example.com");
+    expect(config.dianEnvironment).toBe("test");
+  });
+});
+
+describe("Company Logo API", () => {
+  it("POST /api/company/logo without file should return 400", async (ctx) => {
+    requireServer(ctx);
+    const formData = new FormData();
+    const res = await fetch(`${BASE_URL}/api/company/logo`, {
+      method: "POST",
+      headers: { Cookie: `token=${token}` },
+      body: formData,
+    });
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toBeTruthy();
+  });
+
+  it("POST /api/company/logo with invalid file type should return 400", async (ctx) => {
+    requireServer(ctx);
+    const formData = new FormData();
+    formData.append("logo", new Blob(["not an image"], { type: "text/plain" }), "file.txt");
+    const res = await fetch(`${BASE_URL}/api/company/logo`, {
+      method: "POST",
+      headers: { Cookie: `token=${token}` },
+      body: formData,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("GET /api/company/logo without logo may return 404", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/logo");
+    expect([200, 404]).toContain(res.status);
   });
 });
 

@@ -1,0 +1,130 @@
+
+ RUN  v4.0.18 c:/ivan/personal/2026/business-system
+
+ ✓ tests/r2-integration.test.ts > R2 Direct Client Integration > should upload, verify, and delete a test object from R2 3140ms
+ ✓ tests/r2-integration.test.ts > R2 Direct Client Integration > should upload and retrieve a PDF-like binary from R2 24216ms
+stdout | tests/r2-integration.test.ts > R2 via API — Invoice PDF Flow > should create a sale, auto-generate PDF, and retrieve it via API
+✓ Invoice FE-00000001 PDF generated and stored in R2 (1965 bytes)
+
+ ✓ tests/r2-integration.test.ts > R2 via API — Invoice PDF Flow > should create a sale, auto-generate PDF, and retrieve it via API 7743ms
+stdout | tests/r2-integration.test.ts > R2 via API — Invoice PDF Flow > should verify the PDF is cached in R2
+✓ PDF served from R2 cache on second request
+
+ ✓ tests/r2-integration.test.ts > R2 via API — Invoice PDF Flow > should verify the PDF is cached in R2 439ms
+ ↓ tests/r2-integration.test.ts > R2 via API — Purchase PDF Flow > should create a purchase and retrieve its PDF via API 259ms
+stdout | tests/r2-integration.test.ts > R2 via API — Avatar Upload Flow > should upload an avatar and retrieve it via API
+✓ Avatar uploaded and retrieved from R2 (69 bytes)
+
+stdout | tests/r2-integration.test.ts > R2 via API — Avatar Upload Flow > should upload an avatar and retrieve it via API
+✓ Avatar deleted from R2 successfully
+
+ ✓ tests/r2-integration.test.ts > R2 via API — Avatar Upload Flow > should upload an avatar and retrieve it via API 1737ms
+ ✓ tests/r2-integration.test.ts > R2 via API — Profile Integration > GET /api/auth/me should return avatarUrl field 88ms
+ ✓ tests/r2-integration.test.ts > R2 via API — Profile Integration > GET /api/profile should return user info with avatarUrl 92ms
+ ✓ tests/api.test.ts > Auth API > POST /api/auth/login should return token on valid credentials 1206ms
+ ✓ tests/api.test.ts > Auth API > POST /api/auth/login should reject invalid credentials 932ms
+ ✓ tests/api.test.ts > Auth API > GET /api/auth/me should return user data with valid token 339ms
+ ✓ tests/api.test.ts > Products API > POST /api/products should create a product 674ms
+ ✓ tests/api.test.ts > Products API > GET /api/products should list products 117ms
+ ✓ tests/api.test.ts > Products API > PUT /api/products/:id should update a product 270ms
+ ✓ tests/api.test.ts > Customers API > POST /api/customers should create a customer 874ms
+ ✓ tests/api.test.ts > Customers API > GET /api/customers should list customers 391ms
+ ✓ tests/api.test.ts > Cash Session API > POST /api/cash (open) should open a cash session 434ms
+ ✓ tests/api.test.ts > Cash Session API > GET /api/cash?action=current should return the open session 151ms
+ ✓ tests/api.test.ts > Cash Session API > POST /api/cash (close) should close the session 683ms
+ ✓ tests/api.test.ts > Cash Session API > POST /api/cash (close) should fail when no session is open 201ms
+ ✓ tests/api.test.ts > Invoices API > GET /api/invoices should return a list 181ms
+ ✓ tests/api.test.ts > Purchases API > POST /api/purchases should create a purchase 232ms
+ ✓ tests/api.test.ts > Purchases API > PUT /api/purchases/:id (RECEIVED) should update stock 796ms
+ ✓ tests/api.test.ts > Purchases API > PUT /api/purchases/:id (RECEIVED) again should fail with 409 1535ms
+ ✓ tests/api.test.ts > Reports API > GET /api/reports should return data 578ms
+ ✓ tests/api.test.ts > Forgot Password API > POST /api/auth/forgot-password should always return 200 295ms
+ ✓ tests/api.test.ts > Forgot Password API > POST /api/auth/reset-password should reject invalid token 293ms
+ ✓ tests/api.test.ts > Notifications API > GET /api/notifications should return event templates with recipient info 214ms
+ ✓ tests/api.test.ts > Notifications API > PUT /api/notifications should toggle a notification 571ms
+ ✓ tests/api.test.ts > Notifications API > GET /api/notifications/users should return user preferences 386ms
+ ✓ tests/api.test.ts > Notifications API > GET /api/notifications/roles should return role groups 432ms
+ ✓ tests/api.test.ts > RBAC API > GET /api/rbac should return role permission configs 99ms
+ ✓ tests/api.test.ts > RBAC API > PUT /api/rbac should toggle a single permission 231ms
+ ✓ tests/api.test.ts > RBAC API > POST /api/rbac should bulk-update permissions for a role 156ms
+ ✓ tests/api.test.ts > RBAC API > PUT /api/rbac should reject invalid role 60ms
+ ✓ tests/api.test.ts > Profile API > GET /api/profile should return user info 82ms
+ ✓ tests/api.test.ts > Profile API > PUT /api/profile should update user name 285ms
+ ✓ tests/api.test.ts > Profile API > PUT /api/profile should reject wrong current password 807ms
+ ✓ tests/api.test.ts > Invoice PDF API > GET /api/invoices/nonexistent/pdf should return 404 670ms
+ ✓ tests/api.test.ts > Purchase PDF API > GET /api/purchases/nonexistent/pdf should return 404 1517ms
+ ✓ tests/api.test.ts > Audit API > GET /api/audit/stats should return audit statistics 469ms
+ ✓ tests/api.test.ts > Audit API > GET /api/audit/timeline should return timeline for entity 102ms
+ ✓ tests/api.test.ts > Audit API > GET /api/audit/entity-search should search entities 211ms
+ ✓ tests/api.test.ts > Audit API > GET /api/audit/entity-detail should return entity detail 186ms
+ ✓ tests/api.test.ts > Invoice Export API > GET /api/invoices/:id/export?format=xml should return XML 589ms
+ ✓ tests/api.test.ts > Company Config API > GET /api/company/config should return company config 82ms
+ ✓ tests/api.test.ts > Company Config API > GET /api/company/config should include e-invoicing fields 70ms
+ ✓ tests/api.test.ts > Company Config API > GET /api/company/config should include e-invoice provider fields 69ms
+ ✓ tests/api.test.ts > Company Config API > PUT /api/company/config should update e-invoice provider config 220ms
+ ✓ tests/api.test.ts > Company Logo API > POST /api/company/logo without file should return 400 57ms
+ ✓ tests/api.test.ts > Company Logo API > POST /api/company/logo with invalid file type should return 400 77ms
+ ✓ tests/api.test.ts > Company Logo API > GET /api/company/logo without logo may return 404 60ms
+ ✓ tests/api.test.ts > Accounting API > GET /api/accounting/balance-sheet should return balance sheet data 83ms
+ ✓ tests/api.test.ts > Accounting API > GET /api/accounting/income-statement should return income statement data 111ms
+ ✓ tests/api.test.ts > Accounting API > GET /api/accounting/trial-balance should return trial balance data 239ms
+ ✓ tests/concurrency.test.ts > Concurrency: Parallel Sales > should generate unique invoice numbers when 10 sales run in parallel 1044ms
+ ✓ tests/concurrency.test.ts > Concurrency: Parallel Sales > should correctly decrement stock when parallel sales compete for the same product 610ms
+ ✓ tests/concurrency.test.ts > Concurrency: Parallel Purchases > should correctly increment stock when parallel purchases are received 127ms
+ ✓ tests/concurrency.test.ts > Concurrency: Cash Session > should prevent opening two cash sessions simultaneously 31ms
+ ✓ tests/concurrency.test.ts > Concurrency: Cash Session > should correctly accumulate salesTotal across parallel sales 528ms
+ ✓ tests/concurrency.test.ts > Concurrency: Accounting Balance Integrity > should maintain balanced journal entries after parallel operations 19ms
+ ✓ tests/branches.test.ts > Branches API > GET /api/branches should list branches 81ms
+ ✓ tests/branches.test.ts > Branches API > POST /api/branches should create a branch 62ms
+ ✓ tests/branches.test.ts > Branches API > GET /api/branches/[id]/users should return users assigned to branch 127ms
+ ✓ tests/branches.test.ts > Branches API > POST /api/branches/[id]/users should assign users to branch 162ms
+ ✓ tests/branches.test.ts > Branches API > DELETE /api/branches/[id]/users should remove user from branch 651ms
+ ✓ tests/branches.test.ts > Branches API > GET /api/branches should include userCount 223ms
+ ✓ tests/branches.test.ts > Branches API > GET /api/branches/[id]/users for non-existent branch should return 404 70ms
+ ✓ tests/messaging.test.ts > Conversations API > GET /api/conversations should return conversations list 134ms
+ ✓ tests/messaging.test.ts > Conversations API > POST /api/conversations should create a conversation 190ms
+ ✓ tests/messaging.test.ts > Conversations API > POST /api/conversations with same participant should return existing conversation 92ms
+ ✓ tests/messaging.test.ts > Conversations API > GET /api/conversations/[id] should return conversation details 232ms
+ ✓ tests/messaging.test.ts > Conversations API > GET /api/conversations/[id]/messages should return messages 464ms
+ ✓ tests/messaging.test.ts > Messages API > POST /api/conversations/[id]/messages should send a message 125ms
+ ✓ tests/messaging.test.ts > Messages API > POST /api/conversations/[id]/messages should reject empty content 68ms
+ ✓ tests/messaging.test.ts > Messages API > GET /api/conversations/[id]/messages should include sent message 94ms
+ ✓ tests/messaging.test.ts > Messages API > GET /api/conversations/[id] for non-existent should return 404 72ms
+ ✓ tests/notifications.test.ts > Notifications Inbox API > GET /api/notifications/inbox should return notifications with pagination 80ms
+ ✓ tests/notifications.test.ts > Notifications Inbox API > GET /api/notifications/inbox/unread-count should return unread count 55ms
+ ✓ tests/notifications.test.ts > Notifications Inbox API > PUT /api/notifications/inbox/[id]/read should mark notification as read 172ms
+ ✓ tests/notifications.test.ts > Notifications Inbox API > PUT /api/notifications/inbox/read-all should mark all as read 64ms
+ ✓ tests/notifications.test.ts > Notifications Inbox API > GET /api/notifications/inbox with unreadOnly=true filters unread 57ms
+ ✓ tests/r2-pdf.test.ts > R2 Key Generation > should generate correct invoice PDF key 3ms
+ ✓ tests/r2-pdf.test.ts > R2 Key Generation > should sanitize special characters in invoice number 2ms
+ ✓ tests/r2-pdf.test.ts > R2 Key Generation > should generate correct purchase PDF key 1ms
+ ✓ tests/r2-pdf.test.ts > R2 Key Generation > should generate correct avatar key 1ms
+ ✓ tests/r2-pdf.test.ts > R2 Key Generation > should handle different avatar extensions 0ms
+ ✓ tests/r2-pdf.test.ts > R2 Configuration Check > isR2Configured should return a boolean 0ms
+ ✓ tests/r2-pdf.test.ts > PDF Generation > should generate a valid PDF buffer for a sale invoice 159ms
+ ✓ tests/r2-pdf.test.ts > PDF Generation > should generate a valid PDF buffer for a purchase order 22ms
+ ✓ tests/r2-pdf.test.ts > PDF Generation > should handle empty items array 18ms
+ ✓ tests/email.test.ts > Email Event Constants > should define all expected event types 5ms
+ ✓ tests/email.test.ts > Email Event Constants > should have labels for all events 1ms
+ ✓ tests/email.test.ts > Email Event Constants > should have meta (recipientType) for all events 2ms
+ ✓ tests/email.test.ts > Email Event Constants > should classify sale_completed and membership_created as external 1ms
+ ✓ tests/email.test.ts > Email Event Constants > should classify purchase_created and cash_session_closed as internal 0ms
+ ✓ tests/email.test.ts > Email Event Constants > should classify password_reset as system 0ms
+ ✓ tests/email.test.ts > formatCurrency > should format Colombian Pesos correctly 42ms
+ ✓ tests/email.test.ts > formatCurrency > should handle zero 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailUserCreated should generate correct email params 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailPasswordReset should generate correct email params 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailSaleCompleted should include items and total 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailPurchaseCreated should include supplier and total 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailPurchaseReceived should include purchase number 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailMembershipCreated should include plan details 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailDayPassCreated should include entries count 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailCashSessionClosed should include session details 1ms
+ ✓ tests/email.test.ts > Email Template Functions > emailCashSessionClosed should use green for surplus 1ms
+
+ Test Files  8 passed (8)
+      Tests  107 passed | 1 skipped (108)
+   Start at  18:46:31
+   Duration  85.21s (transform 2.13s, setup 3.08s, import 8.17s, tests 65.11s, environment 4ms)
+
+

@@ -87,6 +87,21 @@ SUPER_ADMIN users can view test run history, screenshots, and results from the a
 - Failed test details
 - Full-size screenshot viewer with lightbox
 
+### Manual Test Runner
+
+SUPER_ADMIN users can **run tests directly from the UI** at `/dashboard/test-runs`:
+
+1. Click **Ejecutar tests** to start a test run
+2. The UI polls `GET /api/test-runs/execute` for live output
+3. When complete, results (pass/fail, exit code) are shown
+4. The run uses `scripts/run-all-tests.js` (Vitest + E2E + R2 upload)
+
+**API endpoints:**
+- `POST /api/test-runs/execute` — Start test execution (SUPER_ADMIN only; returns 409 if already running)
+- `GET /api/test-runs/execute` — Get current execution status (`running`, `output`, `exitCode`, `completed`)
+
+Only one execution can run at a time. The output stream is captured and returned on each poll.
+
 ## Test Structure
 
 ```

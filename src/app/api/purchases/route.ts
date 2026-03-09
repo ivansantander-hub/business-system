@@ -6,11 +6,14 @@ import { auditApiRequest } from "@/lib/api-audit";
 import { generateAndUploadPurchasePdf } from "@/lib/pdf-worker";
 
 export async function GET(request: Request) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, branchId } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
 
+  const where: Record<string, unknown> = { companyId };
+  if (branchId) where.branchId = branchId;
+
   const purchases = await prisma.purchase.findMany({
-    where: { companyId },
+    where,
     include: {
       supplier: { select: { name: true } },
       user: { select: { name: true } },
@@ -22,8 +25,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId, companyId } = getUserFromHeaders(request);
+  const { userId, companyId, branchId } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (!branchId) return NextResponse.json({ error: "Debe seleccionar una sucursal" }, { status: 400 });
 
   const body = await request.json();
 
@@ -49,6 +53,7 @@ export async function POST(request: Request) {
   const purchase = await prisma.purchase.create({
     data: {
       companyId,
+      branchId,
       supplierId: body.supplierId,
       userId,
       number,
