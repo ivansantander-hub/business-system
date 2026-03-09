@@ -34,11 +34,13 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
 
 const PERM_GROUPS: { label: string; permissions: string[] }[] = [
   { label: "General", permissions: ["dashboard", "companies"] },
-  { label: "Ventas", permissions: ["pos", "tables", "orders", "invoices", "customers"] },
+  { label: "Ventas", permissions: ["pos", "tables", "orders", "kitchen", "invoices", "customers"] },
   { label: "Gimnasio", permissions: ["memberships", "checkin", "day_passes", "classes", "trainers", "body_tracking", "lockers"] },
   { label: "Inventario", permissions: ["products", "inventory", "suppliers", "purchases"] },
   { label: "Finanzas", permissions: ["accounting", "reports"] },
-  { label: "Sistema", permissions: ["users", "settings", "notifications", "rbac"] },
+  { label: "Nómina", permissions: ["employees", "payroll", "payroll_config", "electronic_payroll"] },
+  { label: "Comunicación", permissions: ["messaging", "notifications"] },
+  { label: "Sistema", permissions: ["users", "settings", "branches", "rbac", "logs", "audit", "test_runs"] },
 ];
 
 export default function RBACPage() {

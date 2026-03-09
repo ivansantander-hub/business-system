@@ -86,8 +86,9 @@ export async function POST(request: Request) {
 | `PUT /api/purchases/:id` | `purchase.receive`, `purchase.cancel` |
 | `POST /api/cash` | `cash.open`, `cash.close` |
 | `POST /api/expenses` | `expense.create` |
-| `POST /api/users` | `user.create` |
+| `POST /api/users` | `user.create`, `user.link_company` |
 | `PUT /api/rbac` | `rbac.update` |
+| `POST /api/rbac` | `rbac.update` (bulk) |
 | `PUT /api/profile` | `profile.update` |
 | `POST /api/profile/avatar` | `avatar.upload` |
 | `DELETE /api/profile/avatar` | `avatar.delete` |

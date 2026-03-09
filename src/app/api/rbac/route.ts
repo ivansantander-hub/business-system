@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireCompanyId } from "@/lib/auth";
+import { requireCompanyId, getUserFromHeaders } from "@/lib/auth";
 import { auditApiRequest } from "@/lib/api-audit";
 import {
   ALL_PERMISSIONS,
   PERMISSION_LABELS,
   ROLE_PERMISSIONS,
-  COMPANY_TYPE_PERMISSIONS,
   type Permission,
-  type CompanyType,
 } from "@/lib/rbac";
 import { Role } from "@prisma/client";
 
@@ -22,14 +20,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Company context required" }, { status: 403 });
   }
 
-  const company = await prisma.company.findUnique({
-    where: { id: companyId },
-    select: { type: true },
-  });
-
-  const companyType = (company?.type || "RESTAURANT") as CompanyType;
-  const typePerms = COMPANY_TYPE_PERMISSIONS[companyType] || ALL_PERMISSIONS;
-
   const dbOverrides = await prisma.rolePermission.findMany({
     where: { companyId },
   });
@@ -41,7 +31,7 @@ export async function GET(request: Request) {
 
   const result = CONFIGURABLE_ROLES.map((role) => {
     const defaults = ROLE_PERMISSIONS[role] || [];
-    const permissions = typePerms.map((perm) => {
+    const permissions = ALL_PERMISSIONS.map((perm) => {
       const key = `${role}:${perm}`;
       const isDefault = defaults.includes(perm);
       const enabled = overrideMap.has(key) ? overrideMap.get(key)! : isDefault;
@@ -59,6 +49,11 @@ export async function GET(request: Request) {
 }
 
 export async function PUT(request: Request) {
+  const { role: userRole } = getUserFromHeaders(request);
+  if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Solo administradores pueden modificar permisos" }, { status: 403 });
+  }
+
   let companyId: string;
   try {
     companyId = requireCompanyId(request);
@@ -101,6 +96,11 @@ export async function PUT(request: Request) {
 
 /** Bulk update: set all permissions for a role at once */
 export async function POST(request: Request) {
+  const { role: userRole } = getUserFromHeaders(request);
+  if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Solo administradores pueden modificar permisos" }, { status: 403 });
+  }
+
   let companyId: string;
   try {
     companyId = requireCompanyId(request);

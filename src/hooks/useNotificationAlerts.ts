@@ -9,17 +9,28 @@ const SOUND_URLS: Record<AlertType, string> = {
   message: "/sounds/message.wav",
 };
 
-let permissionState: NotificationPermission | "unsupported" = "unsupported";
+let swRegistration: ServiceWorkerRegistration | null = null;
+let permissionRequested = false;
+
+async function initServiceWorker() {
+  if (globalThis.window === undefined || !("serviceWorker" in navigator)) return;
+
+  try {
+    swRegistration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+    await navigator.serviceWorker.ready;
+  } catch {
+    swRegistration = null;
+  }
+}
 
 function requestPermissionOnce() {
-  if (typeof globalThis.window === "undefined" || !("Notification" in globalThis)) return;
-  if (Notification.permission === "granted" || Notification.permission === "denied") {
-    permissionState = Notification.permission;
-    return;
+  if (globalThis.window === undefined || !("Notification" in globalThis)) return;
+  if (permissionRequested) return;
+  permissionRequested = true;
+
+  if (Notification.permission === "default") {
+    Notification.requestPermission().catch(() => {});
   }
-  Notification.requestPermission().then((perm) => {
-    permissionState = perm;
-  });
 }
 
 export function useNotificationAlerts() {
@@ -29,6 +40,7 @@ export function useNotificationAlerts() {
 
   useEffect(() => {
     requestPermissionOnce();
+    initServiceWorker();
   }, []);
 
   const playSound = useCallback((type: AlertType) => {
@@ -46,18 +58,24 @@ export function useNotificationAlerts() {
     }
   }, []);
 
-  const showBrowserNotification = useCallback((title: string, body: string, type: AlertType) => {
-    if (permissionState !== "granted") return;
+  const showNotification = useCallback((title: string, body: string, tag: AlertType) => {
+    if (Notification.permission !== "granted") return;
+
+    if (swRegistration?.active) {
+      swRegistration.active.postMessage({ type: "SHOW_NOTIFICATION", title, body, tag });
+      return;
+    }
+
     try {
       const n = new Notification(title, {
         body,
         icon: "/icon-192x192.png",
-        tag: type,
+        tag,
         silent: true,
       });
       setTimeout(() => n.close(), 6000);
     } catch {
-      // Notification not available
+      // Fallback failed
     }
   }, []);
 
@@ -66,7 +84,7 @@ export function useNotificationAlerts() {
       if (prevNotifCount.current !== null && newCount > prevNotifCount.current) {
         const diff = newCount - prevNotifCount.current;
         playSound("notification");
-        showBrowserNotification(
+        showNotification(
           "Nueva notificación",
           diff === 1
             ? "Tienes una nueva notificación"
@@ -76,7 +94,7 @@ export function useNotificationAlerts() {
       }
       prevNotifCount.current = newCount;
     },
-    [playSound, showBrowserNotification]
+    [playSound, showNotification]
   );
 
   const checkMessages = useCallback(
@@ -84,7 +102,7 @@ export function useNotificationAlerts() {
       if (prevMsgCount.current !== null && newCount > prevMsgCount.current) {
         const diff = newCount - prevMsgCount.current;
         playSound("message");
-        showBrowserNotification(
+        showNotification(
           "Nuevo mensaje",
           diff === 1
             ? "Tienes un nuevo mensaje"
@@ -94,7 +112,7 @@ export function useNotificationAlerts() {
       }
       prevMsgCount.current = newCount;
     },
-    [playSound, showBrowserNotification]
+    [playSound, showNotification]
   );
 
   return { checkNotifications, checkMessages };

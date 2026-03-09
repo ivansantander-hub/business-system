@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#0a0e1a" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
       </head>
-      <body className="antialiased font-sans" style={{ touchAction: "manipulation" }}>
+      <body className="antialiased font-sans" style={{ touchAction: "manipulation" }} suppressHydrationWarning>
         <StoreProvider>{children}</StoreProvider>
       </body>
     </html>
