@@ -620,6 +620,173 @@ async function main() {
     }
   }
 
+  // ===== STORE company (Mi Tienda Express) =====
+  let storeCompany = await prisma.company.findFirst({ where: { nit: "900555666-7" } });
+  if (!storeCompany) {
+    storeCompany = await prisma.company.create({
+      data: {
+        name: "Mi Tienda Express",
+        legalName: "Mi Tienda Express S.A.S.",
+        nit: "900555666-7",
+        address: "Calle 45 # 23-10",
+        city: "Cali",
+        department: "Valle del Cauca",
+        phone: "602-555-9012",
+        email: "info@mitienda.com",
+        taxRegime: "Responsable de IVA",
+        type: "STORE",
+        economicActivity: "4711 - Comercio al por menor",
+      },
+    });
+  }
+  const storeCompanyId = storeCompany.id;
+
+  // Store default branch
+  const storeBranch = await prisma.branch.upsert({
+    where: { id: "00000000-0000-4000-8000-000000000020" },
+    update: {},
+    create: {
+      id: "00000000-0000-4000-8000-000000000020",
+      companyId: storeCompanyId,
+      name: "Sede Principal",
+      address: "Calle 45 # 23-10",
+      city: "Cali",
+      phone: "602-555-9012",
+    },
+  });
+
+  // Store admin user (password: Admin123!, same hash pattern as other admins)
+  const storeAdmin = await prisma.user.upsert({
+    where: { email: "admin@mitienda.com" },
+    update: {},
+    create: {
+      name: "Admin Tienda",
+      email: "admin@mitienda.com",
+      password: await bcrypt.hash("Admin123!", 10),
+      role: "ADMIN",
+    },
+  });
+
+  // UserCompany linking
+  const storeUserCompanyExisting = await prisma.userCompany.findUnique({
+    where: { userId_companyId: { userId: storeAdmin.id, companyId: storeCompanyId } },
+  });
+  if (!storeUserCompanyExisting) {
+    await prisma.userCompany.create({
+      data: { userId: storeAdmin.id, companyId: storeCompanyId, role: "ADMIN" },
+    });
+  }
+
+  // UserBranch linking
+  await prisma.userBranch.upsert({
+    where: { userId_branchId: { userId: storeAdmin.id, branchId: storeBranch.id } },
+    update: {},
+    create: { userId: storeAdmin.id, branchId: storeBranch.id },
+  });
+
+  // Store categories
+  const storeCategories = ["Papelería", "Aseo", "Alimentos", "Bebidas", "Tecnología"];
+  for (const name of storeCategories) {
+    const existing = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name } });
+    if (!existing) {
+      await prisma.category.create({ data: { companyId: storeCompanyId, name } });
+    }
+  }
+
+  // Store products
+  const storeCatPapeleria = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name: "Papelería" } });
+  const storeCatAseo = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name: "Aseo" } });
+  const storeCatAlimentos = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name: "Alimentos" } });
+  const storeCatBebidas = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name: "Bebidas" } });
+  const storeCatTecno = await prisma.category.findFirst({ where: { companyId: storeCompanyId, name: "Tecnología" } });
+
+  const storeProducts = [
+    { name: "Cuaderno Argollado", costPrice: 5000, salePrice: 8500, stock: 80, unit: "unidad", taxRate: 0.19, catId: storeCatPapeleria?.id },
+    { name: "Lapicero BIC", costPrice: 700, salePrice: 1200, stock: 150, unit: "unidad", taxRate: 0.19, catId: storeCatPapeleria?.id },
+    { name: "Detergente 500g", costPrice: 4000, salePrice: 6800, stock: 60, unit: "unidad", taxRate: 0.19, catId: storeCatAseo?.id },
+    { name: "Jabón de Manos", costPrice: 2500, salePrice: 4500, stock: 70, unit: "unidad", taxRate: 0.19, catId: storeCatAseo?.id },
+    { name: "Galletas Festival", costPrice: 1200, salePrice: 2000, stock: 100, unit: "unidad", taxRate: 0.19, catId: storeCatAlimentos?.id },
+    { name: "Gaseosa 350ml", costPrice: 1500, salePrice: 2500, stock: 120, unit: "unidad", taxRate: 0.19, catId: storeCatBebidas?.id },
+    { name: "Cargador USB", costPrice: 9000, salePrice: 15000, stock: 25, unit: "unidad", taxRate: 0.19, catId: storeCatTecno?.id },
+    { name: "Pilas AA x2", costPrice: 3000, salePrice: 5000, stock: 90, unit: "unidad", taxRate: 0.19, catId: storeCatTecno?.id },
+  ];
+
+  for (const p of storeProducts) {
+    const existing = await prisma.product.findFirst({ where: { companyId: storeCompanyId, name: p.name } });
+    if (!existing) {
+      await prisma.product.create({
+        data: {
+          companyId: storeCompanyId,
+          branchId: storeBranch.id,
+          name: p.name,
+          categoryId: p.catId ?? null,
+          costPrice: p.costPrice,
+          salePrice: p.salePrice,
+          stock: p.stock,
+          unit: p.unit,
+          taxRate: p.taxRate,
+        },
+      });
+    }
+  }
+
+  // Store PUC accounts (1105, 1305, 2205, 2365, 2404, 4135, 5105, 5195, 5305, 2505, 2510 + parents)
+  const storeAccounts = [
+    { code: "1", name: "ACTIVO", type: "ASSET" as const },
+    { code: "11", name: "Disponible", type: "ASSET" as const },
+    { code: "1105", name: "Caja", type: "ASSET" as const },
+    { code: "13", name: "Deudores", type: "ASSET" as const },
+    { code: "1305", name: "Clientes", type: "ASSET" as const },
+    { code: "2", name: "PASIVO", type: "LIABILITY" as const },
+    { code: "22", name: "Proveedores", type: "LIABILITY" as const },
+    { code: "2205", name: "Proveedores Nacionales", type: "LIABILITY" as const },
+    { code: "23", name: "Cuentas por Pagar", type: "LIABILITY" as const },
+    { code: "2365", name: "Retención en la Fuente", type: "LIABILITY" as const },
+    { code: "24", name: "Impuestos, Gravámenes y Tasas", type: "LIABILITY" as const },
+    { code: "2404", name: "IVA por Pagar", type: "LIABILITY" as const },
+    { code: "25", name: "Obligaciones Laborales", type: "LIABILITY" as const },
+    { code: "2505", name: "Salarios por Pagar", type: "LIABILITY" as const },
+    { code: "2510", name: "Cesantías Consolidadas", type: "LIABILITY" as const },
+    { code: "4", name: "INGRESOS", type: "INCOME" as const },
+    { code: "41", name: "Operacionales", type: "INCOME" as const },
+    { code: "4135", name: "Comercio al por Mayor y al por Menor", type: "INCOME" as const },
+    { code: "5", name: "GASTOS", type: "EXPENSE" as const },
+    { code: "51", name: "Operacionales de Administración", type: "EXPENSE" as const },
+    { code: "5105", name: "Gastos de Personal", type: "EXPENSE" as const },
+    { code: "5195", name: "Diversos", type: "EXPENSE" as const },
+    { code: "53", name: "No Operacionales", type: "EXPENSE" as const },
+    { code: "5305", name: "Financieros", type: "EXPENSE" as const },
+  ];
+
+  for (const acc of storeAccounts) {
+    const existing = await prisma.account.findFirst({ where: { companyId: storeCompanyId, code: acc.code } });
+    if (!existing) {
+      await prisma.account.create({ data: { companyId: storeCompanyId, ...acc } });
+    }
+  }
+
+  // Store settings
+  const storeSettings = [
+    { key: "business_name", value: storeCompany.name },
+    { key: "business_nit", value: storeCompany.nit },
+    { key: "business_address", value: storeCompany.address || "" },
+    { key: "business_city", value: storeCompany.city || "" },
+    { key: "business_department", value: storeCompany.department || "" },
+    { key: "business_phone", value: storeCompany.phone || "" },
+    { key: "tax_rate", value: "0.19" },
+    { key: "currency", value: "COP" },
+    { key: "locale", value: "es-CO" },
+    { key: "invoice_prefix", value: "MT-" },
+    { key: "invoice_next_number", value: "1" },
+  ];
+
+  for (const s of storeSettings) {
+    const existing = await prisma.setting.findFirst({ where: { companyId: storeCompanyId, key: s.key } });
+    if (!existing) {
+      await prisma.setting.create({ data: { companyId: storeCompanyId, ...s } });
+    }
+  }
+
   console.log("Base de datos inicializada correctamente");
   console.log("");
   console.log("Credenciales de acceso:");
@@ -632,6 +799,8 @@ async function main() {
   console.log("  Admin Gym:      admin@fitzonegym.com / admin123");
   console.log("  Cajero Gym:     cajero@fitzonegym.com / cajero123");
   console.log("  Instructor:     instructor@fitzonegym.com / instructor123");
+  console.log("  --- Mi Tienda Express ---");
+  console.log("  Admin Tienda:   admin@mitienda.com / Admin123!");
 }
 
 main()

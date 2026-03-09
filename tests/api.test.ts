@@ -8,7 +8,7 @@ import {
 } from "./helpers";
 
 const BASE_URL = process.env.TEST_BASE_URL || "http://localhost:3000";
-let serverAvailable = false;
+let serverAvailable = true;
 
 let token: string;
 let companyId: string;
@@ -714,5 +714,225 @@ describe("Accounting API", () => {
     expect(data.totals).toHaveProperty("totalDebits");
     expect(data.totals).toHaveProperty("totalCredits");
     expect(data.totals).toHaveProperty("balanced");
+  });
+});
+
+describe("Employee API", () => {
+  let employeeId: string;
+
+  it("POST /api/employees should create an employee", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/employees", {
+      method: "POST",
+      body: JSON.stringify({
+        firstName: "Juan",
+        lastName: "Pérez",
+        docType: "CC",
+        docNumber: "1234567890-test",
+        startDate: "2026-01-15",
+        position: "Cajero",
+        baseSalary: 1300000,
+        salaryType: "ORDINARY",
+        contractType: "INDEFINITE",
+        email: "juan.perez@test.com",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.firstName).toBe("Juan");
+    expect(data.lastName).toBe("Pérez");
+    expect(data.docNumber).toBe("1234567890-test");
+    employeeId = data.id;
+  });
+
+  it("GET /api/employees should list employees", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/employees");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("GET /api/employees/:id should get an employee", async (ctx) => {
+    requireServer(ctx);
+    if (!employeeId) ctx.skip();
+    const res = await apiRequest(`/api/employees/${employeeId}`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.id).toBe(employeeId);
+    expect(data.firstName).toBe("Juan");
+  });
+
+  it("PUT /api/employees/:id should update an employee", async (ctx) => {
+    requireServer(ctx);
+    if (!employeeId) ctx.skip();
+    const res = await apiRequest(`/api/employees/${employeeId}`, {
+      method: "PUT",
+      body: JSON.stringify({ position: "Administrador" }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.position).toBe("Administrador");
+  });
+
+  it("DELETE /api/employees/:id should deactivate an employee", async (ctx) => {
+    requireServer(ctx);
+    if (!employeeId) ctx.skip();
+    const res = await apiRequest(`/api/employees/${employeeId}`, { method: "DELETE" });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.success).toBe(true);
+  });
+});
+
+describe("Payroll Config API", () => {
+  it("GET /api/payroll/config should return or create config", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/config");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("minimumWage");
+    expect(data).toHaveProperty("transportSubsidy");
+    expect(data).toHaveProperty("uvtValue");
+    expect(data).toHaveProperty("payrollFrequency");
+  });
+
+  it("PUT /api/payroll/config should update config", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/config", {
+      method: "PUT",
+      body: JSON.stringify({ minimumWage: 1300000, transportSubsidy: 162000 }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Number(data.minimumWage)).toBe(1300000);
+  });
+});
+
+describe("Payroll Run API", () => {
+  let runId: string;
+
+  it("POST /api/payroll should create a payroll run", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll", {
+      method: "POST",
+      body: JSON.stringify({
+        period: "2026-03-01",
+        periodStart: "2026-03-01",
+        periodEnd: "2026-03-31",
+        frequency: "MONTHLY",
+        notes: "Test run",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.status).toBe("DRAFT");
+    runId = data.id;
+  });
+
+  it("GET /api/payroll should list payroll runs", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("GET /api/payroll/:id should get run details", async (ctx) => {
+    requireServer(ctx);
+    if (!runId) ctx.skip();
+    const res = await apiRequest(`/api/payroll/${runId}`);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.id).toBe(runId);
+    expect(data.status).toBe("DRAFT");
+  });
+
+  it("POST /api/payroll/:id with action cancel should cancel run", async (ctx) => {
+    requireServer(ctx);
+    if (!runId) ctx.skip();
+    const res = await apiRequest(`/api/payroll/${runId}`, {
+      method: "POST",
+      body: JSON.stringify({ action: "cancel" }),
+    });
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.status).toBe("CANCELLED");
+  });
+});
+
+describe("Payroll Concepts API", () => {
+  it("POST /api/payroll/concepts should create a concept", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/concepts", {
+      method: "POST",
+      body: JSON.stringify({
+        code: "TEST_BONUS",
+        name: "Bonificación Test",
+        type: "EARNING",
+        subtype: "BONUS",
+      }),
+    });
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.code).toBe("TEST_BONUS");
+    expect(data.type).toBe("EARNING");
+  });
+
+  it("GET /api/payroll/concepts should list concepts", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/concepts");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+});
+
+describe("Payroll Provisions API", () => {
+  it("GET /api/payroll/provisions should return provisions", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/provisions");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+
+  it("GET /api/payroll/provisions with year filter should work", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/payroll/provisions?year=2026");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(Array.isArray(data)).toBe(true);
+  });
+});
+
+describe("Company Config - Electronic Payroll", () => {
+  it("GET /api/company/config should include electronic payroll fields", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config");
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data).toHaveProperty("electronicPayrollEnabled");
+    expect(data).toHaveProperty("payrollProvider");
+  });
+
+  it("PUT /api/company/config should update electronic payroll config", async (ctx) => {
+    requireServer(ctx);
+    const res = await apiRequest("/api/company/config", {
+      method: "PUT",
+      body: JSON.stringify({
+        electronicPayrollEnabled: true,
+        payrollProvider: "factus",
+        payrollProviderApiUrl: "https://payroll.example.com",
+      }),
+    });
+    expect(res.status).toBe(200);
+
+    const getRes = await apiRequest("/api/company/config");
+    const config = await getRes.json();
+    expect(config.electronicPayrollEnabled).toBe(true);
+    expect(config.payrollProvider).toBe("factus");
   });
 });

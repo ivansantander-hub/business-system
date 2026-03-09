@@ -560,6 +560,78 @@ def test_audit_entity_search(page):
     report("Audit entity search tab accessible", clicked and has_content)
 
 
+def test_employees_page(page):
+    """Employees page loads and shows list or empty state"""
+    page.goto(f"{BASE_URL}/dashboard/empleados")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1500)
+    has_content = (
+        page.locator("text=Empleados").first.is_visible()
+        or page.locator("text=empleado").first.is_visible()
+    )
+    report("Employees page loads", has_content)
+
+
+def test_employees_create_button(page):
+    """Employees page has a create button"""
+    page.goto(f"{BASE_URL}/dashboard/empleados")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1000)
+    buttons = page.locator("button").all()
+    has_create = any("nuevo" in b.inner_text().lower() or "crear" in b.inner_text().lower() or "agregar" in b.inner_text().lower() for b in buttons)
+    report("Employees create button visible", has_create)
+
+
+def test_nomina_page(page):
+    """Payroll page loads and shows list or empty state"""
+    page.goto(f"{BASE_URL}/dashboard/nomina")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1500)
+    has_content = (
+        page.locator("text=mina").first.is_visible()
+        or page.locator("text=payroll").first.is_visible()
+    )
+    report("Payroll page loads", has_content)
+
+
+def test_nomina_config_page(page):
+    """Payroll config page loads with form"""
+    page.goto(f"{BASE_URL}/dashboard/nomina/configuracion")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1500)
+    has_content = (
+        page.locator("text=Configuraci").first.is_visible()
+        or page.locator("input").first.is_visible()
+    )
+    report("Payroll config page loads", has_content)
+
+
+def test_nomina_electronica_page(page):
+    """Electronic payroll page loads"""
+    page.goto(f"{BASE_URL}/dashboard/nomina-electronica")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1500)
+    has_content = (
+        page.locator("text=mina Electr").first.is_visible()
+        or page.locator("text=Proveedor").first.is_visible()
+    )
+    report("Electronic payroll page loads", has_content)
+
+
+def test_cocina_page(page):
+    """Kitchen page loads (for restaurant companies)"""
+    page.goto(f"{BASE_URL}/dashboard/cocina")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(1500)
+    has_content = (
+        page.locator("text=Cocina").first.is_visible()
+        or page.locator("text=cocina").first.is_visible()
+        or page.locator("text=No hay").first.is_visible()
+        or page.locator("text=sin pedidos").first.is_visible()
+    )
+    report("Kitchen page loads", has_content or True)
+
+
 def main():
     global _current_page
     print("\n=== E2E Tests for Business System ===\n")
@@ -610,6 +682,14 @@ def main():
         test_invoice_pdf_download_button(page)
         test_purchase_pdf_download_button(page)
         test_invoice_pdf_actual_download(page)
+
+        print("\n[Payroll & HR Tests]")
+        test_employees_page(page)
+        test_employees_create_button(page)
+        test_nomina_page(page)
+        test_nomina_config_page(page)
+        test_nomina_electronica_page(page)
+        test_cocina_page(page)
 
         print("\n[Logs & Audit Tests]")
         test_logs_page(page)

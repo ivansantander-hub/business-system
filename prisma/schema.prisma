@@ -15,6 +15,7 @@ datasource db {
 enum CompanyType {
   RESTAURANT
   GYM
+  STORE
 
   @@schema("public")
 }
@@ -48,6 +49,7 @@ enum OrderType {
 
 enum OrderStatus {
   OPEN
+  IN_PROGRESS
   READY
   PAID
   CANCELLED
@@ -149,6 +151,66 @@ enum CheckInType {
   @@schema("tenant")
 }
 
+enum ContractType {
+  INDEFINITE
+  FIXED
+  OBRA_LABOR
+  APPRENTICE
+  TEMPORARY
+
+  @@schema("tenant")
+}
+
+enum SalaryType {
+  ORDINARY
+  INTEGRAL
+
+  @@schema("tenant")
+}
+
+enum PayrollFrequency {
+  MONTHLY
+  BIWEEKLY
+  WEEKLY
+
+  @@schema("tenant")
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  CALCULATED
+  APPROVED
+  PAID
+  CANCELLED
+
+  @@schema("tenant")
+}
+
+enum PayrollConceptType {
+  EARNING
+  DEDUCTION
+
+  @@schema("tenant")
+}
+
+enum PayrollItemDetailType {
+  EARNING
+  DEDUCTION
+  EMPLOYER_COST
+
+  @@schema("tenant")
+}
+
+enum ElectronicPayrollStatus {
+  PENDING
+  GENERATED
+  SENT
+  ACCEPTED
+  REJECTED
+
+  @@schema("tenant")
+}
+
 enum CheckInMethod {
   MEMBERSHIP
   DAY_PASS
@@ -202,57 +264,69 @@ model Company {
   isActive   Boolean     @default(true) @map("is_active")
   createdAt  DateTime    @default(now()) @map("created_at")
 
-  userCompanies    UserCompany[]
-  categories       Category[]
-  products         Product[]
-  inventoryMoves   InventoryMovement[]
-  suppliers        Supplier[]
-  purchases        Purchase[]
-  customers        Customer[]
-  restaurantTables RestaurantTable[]
-  orders           Order[]
-  invoices         Invoice[]
-  cashSessions     CashSession[]
-  accounts         Account[]
-  journalEntries   JournalEntry[]
-  expenses         Expense[]
-  settings         Setting[]
-  membershipPlans         MembershipPlan[]
-  gymMembers              GymMember[]
-  dayPasses               DayPass[]
-  gymClasses              GymClass[]
-  lockers                 Locker[]
-  notificationTemplates   NotificationTemplate[]
-  userNotifPreferences    UserNotificationPreference[]
-  rolePermissions         RolePermission[]
-  creditNotes             CreditNote[]
-  debitNotes              DebitNote[]
-  branches                Branch[]
-  notifications           Notification[]
-  conversations           Conversation[]
+  userCompanies         UserCompany[]
+  categories            Category[]
+  products              Product[]
+  inventoryMoves        InventoryMovement[]
+  suppliers             Supplier[]
+  purchases             Purchase[]
+  customers             Customer[]
+  restaurantTables      RestaurantTable[]
+  orders                Order[]
+  invoices              Invoice[]
+  cashSessions          CashSession[]
+  accounts              Account[]
+  journalEntries        JournalEntry[]
+  expenses              Expense[]
+  settings              Setting[]
+  membershipPlans       MembershipPlan[]
+  gymMembers            GymMember[]
+  dayPasses             DayPass[]
+  gymClasses            GymClass[]
+  lockers               Locker[]
+  notificationTemplates NotificationTemplate[]
+  userNotifPreferences  UserNotificationPreference[]
+  rolePermissions       RolePermission[]
+  creditNotes           CreditNote[]
+  debitNotes            DebitNote[]
+  branches              Branch[]
+  notifications         Notification[]
+  conversations         Conversation[]
+  employees             Employee[]
+  payrollConfigs        PayrollConfig[]
+  payrollConcepts       PayrollConcept[]
+  payrollRuns           PayrollRun[]
+  payrollProvisions     PayrollProvision[]
 
-  retentionYears  Int       @default(5) @map("retention_years")
-  dianResolution  String?   @map("dian_resolution")
-  dianPrefix      String?   @map("dian_prefix")
-  dianRangeFrom   Int?      @map("dian_range_from")
-  dianRangeTo     Int?      @map("dian_range_to")
-  economicActivity String?  @map("economic_activity")
-  taxResponsibilities String? @map("tax_responsibilities")
+  retentionYears             Int     @default(5) @map("retention_years")
+  dianResolution             String? @map("dian_resolution")
+  dianPrefix                 String? @map("dian_prefix")
+  dianRangeFrom              Int?    @map("dian_range_from")
+  dianRangeTo                Int?    @map("dian_range_to")
+  economicActivity           String? @map("economic_activity")
+  taxResponsibilities        String? @map("tax_responsibilities")
   electronicInvoicingEnabled Boolean @default(false) @map("electronic_invoicing_enabled")
-  dianTechnicalKey    String?   @map("dian_technical_key")
-  dianEnvironment     String?   @map("dian_environment")
-  dianSoftwareId      String?   @map("dian_software_id")
-  dianSoftwarePin     String?   @map("dian_software_pin")
-  dianTestSetId       String?   @map("dian_test_set_id")
+  dianTechnicalKey           String? @map("dian_technical_key")
+  dianEnvironment            String? @map("dian_environment")
+  dianSoftwareId             String? @map("dian_software_id")
+  dianSoftwarePin            String? @map("dian_software_pin")
+  dianTestSetId              String? @map("dian_test_set_id")
 
-  eInvoiceProvider       String?   @map("e_invoice_provider")
-  eInvoiceProviderApiUrl String?   @map("e_invoice_provider_api_url")
-  eInvoiceProviderApiKey String?   @map("e_invoice_provider_api_key")
-  eInvoiceProviderUser   String?   @map("e_invoice_provider_user")
-  eInvoiceProviderPass   String?   @map("e_invoice_provider_pass")
+  eInvoiceProvider       String? @map("e_invoice_provider")
+  eInvoiceProviderApiUrl String? @map("e_invoice_provider_api_url")
+  eInvoiceProviderApiKey String? @map("e_invoice_provider_api_key")
+  eInvoiceProviderUser   String? @map("e_invoice_provider_user")
+  eInvoiceProviderPass   String? @map("e_invoice_provider_pass")
 
-  @@schema("public")
+  electronicPayrollEnabled Boolean @default(false) @map("electronic_payroll_enabled")
+  payrollProvider          String? @map("payroll_provider")
+  payrollProviderApiUrl    String? @map("payroll_provider_api_url")
+  payrollProviderApiKey    String? @map("payroll_provider_api_key")
+  payrollProviderUser      String? @map("payroll_provider_user")
+  payrollProviderPass      String? @map("payroll_provider_pass")
+
   @@map("companies")
+  @@schema("public")
 }
 
 model User {
@@ -265,38 +339,39 @@ model User {
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
-  companies              UserCompany[]
-  orders                 Order[]             @relation("OrderUser")
-  waiterOrders           Order[]             @relation("OrderWaiter")
-  invoices               Invoice[]
-  cashSessions           CashSession[]
-  purchases              Purchase[]
-  expenses               Expense[]
-  inventoryMoves         InventoryMovement[]
-  trainerClasses         GymClass[]
-  bodyMeasurements       BodyMeasurement[]   @relation("MeasuredBy")
-  passwordResetTokens    PasswordResetToken[]
+  companies               UserCompany[]
+  orders                  Order[]                      @relation("OrderUser")
+  waiterOrders            Order[]                      @relation("OrderWaiter")
+  invoices                Invoice[]
+  cashSessions            CashSession[]
+  purchases               Purchase[]
+  expenses                Expense[]
+  inventoryMoves          InventoryMovement[]
+  trainerClasses          GymClass[]
+  bodyMeasurements        BodyMeasurement[]            @relation("MeasuredBy")
+  passwordResetTokens     PasswordResetToken[]
   notificationPreferences UserNotificationPreference[]
-  userBranches           UserBranch[]
-  userNotifications      UserNotification[]
-  conversationParts      ConversationParticipant[]
-  sentMessages           Message[]
+  userBranches            UserBranch[]
+  userNotifications       UserNotification[]
+  conversationParts       ConversationParticipant[]
+  sentMessages            Message[]
+  employees               Employee[]
 
-  @@schema("public")
   @@map("users")
+  @@schema("public")
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  @@schema("public")
   @@map("password_reset_tokens")
+  @@schema("public")
 }
 
 model UserCompany {
@@ -308,8 +383,8 @@ model UserCompany {
   role      Role    @default(CASHIER)
 
   @@unique([userId, companyId])
-  @@schema("public")
   @@map("user_companies")
+  @@schema("public")
 }
 
 // =============================================
@@ -327,8 +402,8 @@ model Category {
   children    Category[] @relation("CategoryTree")
   products    Product[]
 
-  @@schema("tenant")
   @@map("categories")
+  @@schema("tenant")
 }
 
 model Product {
@@ -356,8 +431,8 @@ model Product {
   purchaseItems  PurchaseItem[]
   inventoryMoves InventoryMovement[]
 
-  @@schema("tenant")
   @@map("products")
+  @@schema("tenant")
 }
 
 model InventoryMovement {
@@ -379,8 +454,8 @@ model InventoryMovement {
   referenceType String?      @map("reference_type")
   createdAt     DateTime     @default(now()) @map("created_at")
 
-  @@schema("tenant")
   @@map("inventory_movements")
+  @@schema("tenant")
 }
 
 model Supplier {
@@ -397,8 +472,8 @@ model Supplier {
   createdAt   DateTime   @default(now()) @map("created_at")
   purchases   Purchase[]
 
-  @@schema("tenant")
   @@map("suppliers")
+  @@schema("tenant")
 }
 
 model Purchase {
@@ -422,8 +497,8 @@ model Purchase {
   createdAt    DateTime       @default(now()) @map("created_at")
   items        PurchaseItem[]
 
-  @@schema("tenant")
   @@map("purchases")
+  @@schema("tenant")
 }
 
 model PurchaseItem {
@@ -436,8 +511,8 @@ model PurchaseItem {
   unitPrice  Decimal  @map("unit_price")
   total      Decimal
 
-  @@schema("tenant")
   @@map("purchase_items")
+  @@schema("tenant")
 }
 
 model Customer {
@@ -457,8 +532,8 @@ model Customer {
   invoices    Invoice[]
   gymMember   GymMember?
 
-  @@schema("tenant")
   @@map("customers")
+  @@schema("tenant")
 }
 
 model RestaurantTable {
@@ -474,8 +549,8 @@ model RestaurantTable {
   orders    Order[]
 
   @@unique([companyId, number])
-  @@schema("tenant")
   @@map("restaurant_tables")
+  @@schema("tenant")
 }
 
 model Order {
@@ -504,8 +579,8 @@ model Order {
   items      OrderItem[]
   invoices   Invoice[]
 
-  @@schema("tenant")
   @@map("orders")
+  @@schema("tenant")
 }
 
 model OrderItem {
@@ -520,50 +595,50 @@ model OrderItem {
   status    OrderItemStatus @default(PENDING)
   notes     String?
 
-  @@schema("tenant")
   @@map("order_items")
+  @@schema("tenant")
 }
 
 model Invoice {
-  id             String        @id @default(uuid())
-  companyId      String        @map("company_id")
-  company        Company       @relation(fields: [companyId], references: [id])
-  branchId       String?       @map("branch_id")
-  branch         Branch?       @relation(fields: [branchId], references: [id])
-  orderId        String?       @map("order_id")
-  order          Order?        @relation(fields: [orderId], references: [id])
-  customerId     String?       @map("customer_id")
-  customer       Customer?     @relation(fields: [customerId], references: [id])
-  userId         String        @map("user_id")
-  user           User          @relation(fields: [userId], references: [id])
-  cashSessionId  String?       @map("cash_session_id")
-  cashSession    CashSession?  @relation(fields: [cashSessionId], references: [id])
-  number         String
-  date           DateTime      @default(now())
-  subtotal       Decimal       @default(0)
-  taxRate        Decimal       @default(0.19) @map("tax_rate")
-  tax            Decimal       @default(0)
-  discount       Decimal       @default(0)
-  total          Decimal       @default(0)
-  paidAmount     Decimal       @default(0) @map("paid_amount")
-  changeAmount   Decimal       @default(0) @map("change_amount")
-  paymentMethod  PaymentMethod @default(CASH) @map("payment_method")
-  status         InvoiceStatus @default(PAID)
-  notes          String?
-  createdAt      DateTime      @default(now()) @map("created_at")
+  id                  String        @id @default(uuid())
+  companyId           String        @map("company_id")
+  company             Company       @relation(fields: [companyId], references: [id])
+  branchId            String?       @map("branch_id")
+  branch              Branch?       @relation(fields: [branchId], references: [id])
+  orderId             String?       @map("order_id")
+  order               Order?        @relation(fields: [orderId], references: [id])
+  customerId          String?       @map("customer_id")
+  customer            Customer?     @relation(fields: [customerId], references: [id])
+  userId              String        @map("user_id")
+  user                User          @relation(fields: [userId], references: [id])
+  cashSessionId       String?       @map("cash_session_id")
+  cashSession         CashSession?  @relation(fields: [cashSessionId], references: [id])
+  number              String
+  date                DateTime      @default(now())
+  subtotal            Decimal       @default(0)
+  taxRate             Decimal       @default(0.19) @map("tax_rate")
+  tax                 Decimal       @default(0)
+  discount            Decimal       @default(0)
+  total               Decimal       @default(0)
+  paidAmount          Decimal       @default(0) @map("paid_amount")
+  changeAmount        Decimal       @default(0) @map("change_amount")
+  paymentMethod       PaymentMethod @default(CASH) @map("payment_method")
+  status              InvoiceStatus @default(PAID)
+  notes               String?
+  createdAt           DateTime      @default(now()) @map("created_at")
   cufe                String?
-  qrCode              String?   @map("qr_code")
-  dianStatus          String?   @map("dian_status")
-  dianResponseDate    DateTime? @map("dian_response_date")
-  dianResponseMessage String?   @map("dian_response_message")
-  xmlPath             String?   @map("xml_path")
-  items          InvoiceItem[]
-  creditNotes    CreditNote[]
-  debitNotes     DebitNote[]
+  qrCode              String?       @map("qr_code")
+  dianStatus          String?       @map("dian_status")
+  dianResponseDate    DateTime?     @map("dian_response_date")
+  dianResponseMessage String?       @map("dian_response_message")
+  xmlPath             String?       @map("xml_path")
+  items               InvoiceItem[]
+  creditNotes         CreditNote[]
+  debitNotes          DebitNote[]
 
   @@unique([companyId, number])
-  @@schema("tenant")
   @@map("invoices")
+  @@schema("tenant")
 }
 
 model InvoiceItem {
@@ -577,8 +652,8 @@ model InvoiceItem {
   unitPrice   Decimal  @map("unit_price")
   total       Decimal
 
-  @@schema("tenant")
   @@map("invoice_items")
+  @@schema("tenant")
 }
 
 model CashSession {
@@ -599,8 +674,8 @@ model CashSession {
   status         CashSessionStatus @default(OPEN)
   invoices       Invoice[]
 
-  @@schema("tenant")
   @@map("cash_sessions")
+  @@schema("tenant")
 }
 
 model Account {
@@ -618,8 +693,8 @@ model Account {
   journalLines JournalLine[]
 
   @@unique([companyId, code])
-  @@schema("tenant")
   @@map("accounts")
+  @@schema("tenant")
 }
 
 model JournalEntry {
@@ -634,8 +709,8 @@ model JournalEntry {
   createdAt   DateTime      @default(now()) @map("created_at")
   lines       JournalLine[]
 
-  @@schema("tenant")
   @@map("journal_entries")
+  @@schema("tenant")
 }
 
 model JournalLine {
@@ -648,8 +723,8 @@ model JournalLine {
   credit      Decimal      @default(0)
   description String?
 
-  @@schema("tenant")
   @@map("journal_lines")
+  @@schema("tenant")
 }
 
 model Expense {
@@ -669,8 +744,8 @@ model Expense {
   notes         String?
   createdAt     DateTime      @default(now()) @map("created_at")
 
-  @@schema("tenant")
   @@map("expenses")
+  @@schema("tenant")
 }
 
 model Setting {
@@ -681,8 +756,8 @@ model Setting {
   value     String
 
   @@unique([companyId, key])
-  @@schema("tenant")
   @@map("settings")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -698,8 +773,8 @@ model RolePermission {
   enabled    Boolean @default(true)
 
   @@unique([companyId, role, permission])
-  @@schema("tenant")
   @@map("role_permissions")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -707,17 +782,17 @@ model RolePermission {
 // =============================================
 
 model NotificationTemplate {
-  id          String  @id @default(uuid())
-  companyId   String  @map("company_id")
-  company     Company @relation(fields: [companyId], references: [id])
-  eventType   String  @map("event_type")
-  enabled     Boolean @default(true)
-  subject     String?
-  bodyHtml    String? @map("body_html")
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+  eventType String  @map("event_type")
+  enabled   Boolean @default(true)
+  subject   String?
+  bodyHtml  String? @map("body_html")
 
   @@unique([companyId, eventType])
-  @@schema("tenant")
   @@map("notification_templates")
+  @@schema("tenant")
 }
 
 model UserNotificationPreference {
@@ -730,8 +805,8 @@ model UserNotificationPreference {
   enabled   Boolean @default(true)
 
   @@unique([userId, companyId, eventType])
-  @@schema("tenant")
   @@map("user_notification_preferences")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -752,8 +827,8 @@ model MembershipPlan {
 
   memberships Membership[]
 
-  @@schema("tenant")
   @@map("membership_plans")
+  @@schema("tenant")
 }
 
 model GymMember {
@@ -780,8 +855,8 @@ model GymMember {
   lockerAssignments LockerAssignment[]
 
   @@unique([companyId, customerId])
-  @@schema("tenant")
   @@map("gym_members")
+  @@schema("tenant")
 }
 
 model Membership {
@@ -799,8 +874,8 @@ model Membership {
   notes         String?
   createdAt     DateTime                @default(now()) @map("created_at")
 
-  @@schema("tenant")
   @@map("memberships")
+  @@schema("tenant")
 }
 
 model CheckIn {
@@ -814,8 +889,8 @@ model CheckIn {
   dayPassId String?       @map("day_pass_id")
   notes     String?
 
-  @@schema("tenant")
   @@map("check_ins")
+  @@schema("tenant")
 }
 
 model DayPass {
@@ -833,8 +908,8 @@ model DayPass {
   invoiceId    String?       @map("invoice_id")
   createdAt    DateTime      @default(now()) @map("created_at")
 
-  @@schema("tenant")
   @@map("day_passes")
+  @@schema("tenant")
 }
 
 model GymClass {
@@ -855,8 +930,8 @@ model GymClass {
 
   enrollments ClassEnrollment[]
 
-  @@schema("tenant")
   @@map("gym_classes")
+  @@schema("tenant")
 }
 
 model ClassEnrollment {
@@ -869,8 +944,8 @@ model ClassEnrollment {
   date      DateTime
   status    ClassEnrollmentStatus @default(ENROLLED)
 
-  @@schema("tenant")
   @@map("class_enrollments")
+  @@schema("tenant")
 }
 
 model BodyMeasurement {
@@ -893,8 +968,8 @@ model BodyMeasurement {
   measuredById String?   @map("measured_by_id")
   measuredBy   User?     @relation("MeasuredBy", fields: [measuredById], references: [id])
 
-  @@schema("tenant")
   @@map("body_measurements")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -902,43 +977,43 @@ model BodyMeasurement {
 // =============================================
 
 model CreditNote {
-  id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
-  company     Company  @relation(fields: [companyId], references: [id])
-  invoiceId   String   @map("invoice_id")
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
-  userId      String   @map("user_id")
-  number      String
-  date        DateTime @default(now())
-  reason      String
-  subtotal    Decimal
-  tax         Decimal
-  total       Decimal
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  invoiceId String   @map("invoice_id")
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  userId    String   @map("user_id")
+  number    String
+  date      DateTime @default(now())
+  reason    String
+  subtotal  Decimal
+  tax       Decimal
+  total     Decimal
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([companyId, number])
-  @@schema("tenant")
   @@map("credit_notes")
+  @@schema("tenant")
 }
 
 model DebitNote {
-  id          String   @id @default(uuid())
-  companyId   String   @map("company_id")
-  company     Company  @relation(fields: [companyId], references: [id])
-  invoiceId   String   @map("invoice_id")
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
-  userId      String   @map("user_id")
-  number      String
-  date        DateTime @default(now())
-  reason      String
-  subtotal    Decimal
-  tax         Decimal
-  total       Decimal
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  company   Company  @relation(fields: [companyId], references: [id])
+  invoiceId String   @map("invoice_id")
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id])
+  userId    String   @map("user_id")
+  number    String
+  date      DateTime @default(now())
+  reason    String
+  subtotal  Decimal
+  tax       Decimal
+  total     Decimal
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([companyId, number])
-  @@schema("tenant")
   @@map("debit_notes")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -946,35 +1021,35 @@ model DebitNote {
 // =============================================
 
 model AuditLog {
-  id            String   @id @default(uuid())
-  companyId     String?  @map("company_id")
-  userId        String?  @map("user_id")
-  userName      String?  @map("user_name")
-  action        String
-  entity        String?
-  entityId      String?  @map("entity_id")
-  details       Json?
-  beforeState   Json?    @map("before_state")
-  afterState    Json?    @map("after_state")
-  changeReason  String?  @map("change_reason")
-  checksum      String?
-  ipAddress     String?  @map("ip_address")
-  userAgent     String?  @map("user_agent")
-  source        String   @default("backend")
-  level         String   @default("info")
-  duration      Int?
-  statusCode    Int?     @map("status_code")
-  path          String?
-  method        String?
-  createdAt     DateTime @default(now()) @map("created_at")
+  id           String   @id @default(uuid())
+  companyId    String?  @map("company_id")
+  userId       String?  @map("user_id")
+  userName     String?  @map("user_name")
+  action       String
+  entity       String?
+  entityId     String?  @map("entity_id")
+  details      Json?
+  beforeState  Json?    @map("before_state")
+  afterState   Json?    @map("after_state")
+  changeReason String?  @map("change_reason")
+  checksum     String?
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent")
+  source       String   @default("backend")
+  level        String   @default("info")
+  duration     Int?
+  statusCode   Int?     @map("status_code")
+  path         String?
+  method       String?
+  createdAt    DateTime @default(now()) @map("created_at")
 
   @@index([companyId, createdAt])
   @@index([userId, createdAt])
   @@index([action, createdAt])
   @@index([entity, entityId])
   @@index([createdAt])
-  @@schema("public")
   @@map("audit_logs")
+  @@schema("public")
 }
 
 model Locker {
@@ -988,8 +1063,8 @@ model Locker {
   assignments LockerAssignment[]
 
   @@unique([companyId, number])
-  @@schema("tenant")
   @@map("lockers")
+  @@schema("tenant")
 }
 
 model LockerAssignment {
@@ -1003,8 +1078,8 @@ model LockerAssignment {
   endDate    DateTime? @map("end_date")
   monthlyFee Decimal   @default(0) @map("monthly_fee")
 
-  @@schema("tenant")
   @@map("locker_assignments")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -1032,9 +1107,11 @@ model Branch {
   expenses         Expense[]
   restaurantTables RestaurantTable[]
   journalEntries   JournalEntry[]
+  employees        Employee[]
+  payrollRuns      PayrollRun[]
 
-  @@schema("tenant")
   @@map("branches")
+  @@schema("tenant")
 }
 
 model UserBranch {
@@ -1045,8 +1122,8 @@ model UserBranch {
   branch   Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
 
   @@unique([userId, branchId])
-  @@schema("tenant")
   @@map("user_branches")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -1068,8 +1145,8 @@ model Notification {
   recipients UserNotification[]
 
   @@index([companyId, createdAt])
-  @@schema("tenant")
   @@map("notifications")
+  @@schema("tenant")
 }
 
 model UserNotification {
@@ -1083,8 +1160,8 @@ model UserNotification {
 
   @@unique([userId, notificationId])
   @@index([userId, readAt])
-  @@schema("tenant")
   @@map("user_notifications")
+  @@schema("tenant")
 }
 
 // =============================================
@@ -1104,8 +1181,8 @@ model Conversation {
   messages     Message[]
 
   @@index([companyId, updatedAt])
-  @@schema("tenant")
   @@map("conversations")
+  @@schema("tenant")
 }
 
 model ConversationParticipant {
@@ -1119,8 +1196,8 @@ model ConversationParticipant {
   isAdmin        Boolean      @default(false) @map("is_admin")
 
   @@unique([conversationId, userId])
-  @@schema("tenant")
   @@map("conversation_participants")
+  @@schema("tenant")
 }
 
 model Message {
@@ -1136,8 +1213,8 @@ model Message {
   attachments MessageAttachment[]
 
   @@index([conversationId, createdAt])
-  @@schema("tenant")
   @@map("messages")
+  @@schema("tenant")
 }
 
 model MessageAttachment {
@@ -1149,6 +1226,235 @@ model MessageAttachment {
   mimeType  String  @map("mime_type")
   r2Key     String  @map("r2_key")
 
-  @@schema("tenant")
   @@map("message_attachments")
+  @@schema("tenant")
+}
+
+// =============================================
+// PAYROLL / HR MODELS
+// =============================================
+
+model Employee {
+  id        String  @id @default(uuid())
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+  branchId  String? @map("branch_id")
+  branch    Branch? @relation(fields: [branchId], references: [id])
+  userId    String? @map("user_id")
+  user      User?   @relation(fields: [userId], references: [id])
+
+  firstName String    @map("first_name")
+  lastName  String    @map("last_name")
+  docType   String    @default("CC") @map("doc_type")
+  docNumber String    @map("doc_number")
+  birthDate DateTime? @map("birth_date")
+  address   String?
+  email     String?
+  phone     String?
+  gender    String?
+
+  contractType ContractType @default(INDEFINITE) @map("contract_type")
+  startDate    DateTime     @map("start_date")
+  endDate      DateTime?    @map("end_date")
+  position     String?
+  costCenter   String?      @map("cost_center")
+  baseSalary   Decimal      @default(0) @map("base_salary") @db.Decimal(18, 2)
+  salaryType   SalaryType   @default(ORDINARY) @map("salary_type")
+  workSchedule String?      @default("Lunes a Viernes") @map("work_schedule")
+  supervisorId String?      @map("supervisor_id")
+
+  bank          String?
+  accountType   String? @map("account_type")
+  accountNumber String? @map("account_number")
+  paymentMethod String? @default("TRANSFER") @map("payment_method")
+
+  dependents          Int     @default(0)
+  voluntaryDeductions Decimal @default(0) @map("voluntary_deductions") @db.Decimal(18, 2)
+  withholdingRate     Decimal @default(0) @map("withholding_rate") @db.Decimal(8, 4)
+
+  eps              String?
+  pensionFund      String? @map("pension_fund")
+  arl              String?
+  arlRiskLevel     Int     @default(1) @map("arl_risk_level")
+  compensationFund String? @map("compensation_fund")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  payrollItems PayrollItem[]
+  provisions   PayrollProvision[]
+
+  @@unique([companyId, docNumber])
+  @@index([companyId])
+  @@map("employees")
+  @@schema("tenant")
+}
+
+model PayrollConfig {
+  id        String  @id @default(uuid())
+  companyId String  @unique @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id])
+
+  minimumWage      Decimal @default(1300000) @map("minimum_wage") @db.Decimal(18, 2)
+  transportSubsidy Decimal @default(162000) @map("transport_subsidy") @db.Decimal(18, 2)
+  uvtValue         Decimal @default(47065) @map("uvt_value") @db.Decimal(18, 2)
+
+  healthEmployeeRate  Decimal @default(0.04) @map("health_employee_rate") @db.Decimal(8, 4)
+  healthEmployerRate  Decimal @default(0.085) @map("health_employer_rate") @db.Decimal(8, 4)
+  pensionEmployeeRate Decimal @default(0.04) @map("pension_employee_rate") @db.Decimal(8, 4)
+  pensionEmployerRate Decimal @default(0.12) @map("pension_employer_rate") @db.Decimal(8, 4)
+  arlRateLevel1       Decimal @default(0.00522) @map("arl_rate_level1") @db.Decimal(8, 5)
+  arlRateLevel2       Decimal @default(0.01044) @map("arl_rate_level2") @db.Decimal(8, 5)
+  arlRateLevel3       Decimal @default(0.02436) @map("arl_rate_level3") @db.Decimal(8, 5)
+  arlRateLevel4       Decimal @default(0.04350) @map("arl_rate_level4") @db.Decimal(8, 5)
+  arlRateLevel5       Decimal @default(0.06960) @map("arl_rate_level5") @db.Decimal(8, 5)
+  compensationRate    Decimal @default(0.04) @map("compensation_rate") @db.Decimal(8, 4)
+  senaRate            Decimal @default(0.02) @map("sena_rate") @db.Decimal(8, 4)
+  icbfRate            Decimal @default(0.03) @map("icbf_rate") @db.Decimal(8, 4)
+
+  primaRate             Decimal @default(0.0833) @map("prima_rate") @db.Decimal(8, 4)
+  cesantiasRate         Decimal @default(0.0833) @map("cesantias_rate") @db.Decimal(8, 4)
+  cesantiasInterestRate Decimal @default(0.12) @map("cesantias_interest_rate") @db.Decimal(8, 4)
+  vacationsRate         Decimal @default(0.0417) @map("vacations_rate") @db.Decimal(8, 4)
+
+  solidarityFundThreshold Int     @default(4) @map("solidarity_fund_threshold")
+  solidarityFundRate      Decimal @default(0.01) @map("solidarity_fund_rate") @db.Decimal(8, 4)
+
+  payrollFrequency PayrollFrequency @default(MONTHLY) @map("payroll_frequency")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([companyId])
+  @@map("payroll_configs")
+  @@schema("tenant")
+}
+
+model PayrollConcept {
+  id          String             @id @default(uuid())
+  companyId   String             @map("company_id")
+  company     Company            @relation(fields: [companyId], references: [id])
+  code        String
+  name        String
+  type        PayrollConceptType
+  subtype     String?
+  isAutomatic Boolean            @default(false) @map("is_automatic")
+  formula     String?
+  rate        Decimal?           @db.Decimal(8, 4)
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  details PayrollItemDetail[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("payroll_concepts")
+  @@schema("tenant")
+}
+
+model PayrollRun {
+  id                 String           @id @default(uuid())
+  companyId          String           @map("company_id")
+  company            Company          @relation(fields: [companyId], references: [id])
+  branchId           String?          @map("branch_id")
+  branch             Branch?          @relation(fields: [branchId], references: [id])
+  period             DateTime
+  periodStart        DateTime         @map("period_start")
+  periodEnd          DateTime         @map("period_end")
+  frequency          PayrollFrequency @default(MONTHLY)
+  status             PayrollRunStatus @default(DRAFT)
+  totalEarnings      Decimal          @default(0) @map("total_earnings") @db.Decimal(18, 2)
+  totalDeductions    Decimal          @default(0) @map("total_deductions") @db.Decimal(18, 2)
+  totalEmployerCosts Decimal          @default(0) @map("total_employer_costs") @db.Decimal(18, 2)
+  netPay             Decimal          @default(0) @map("net_pay") @db.Decimal(18, 2)
+  notes              String?
+  approvedById       String?          @map("approved_by_id")
+  approvedAt         DateTime?        @map("approved_at")
+  paidAt             DateTime?        @map("paid_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  items PayrollItem[]
+
+  @@index([companyId])
+  @@map("payroll_runs")
+  @@schema("tenant")
+}
+
+model PayrollItem {
+  id              String     @id @default(uuid())
+  payrollRunId    String     @map("payroll_run_id")
+  payrollRun      PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId      String     @map("employee_id")
+  employee        Employee   @relation(fields: [employeeId], references: [id])
+  baseSalary      Decimal    @default(0) @map("base_salary") @db.Decimal(18, 2)
+  daysWorked      Int        @default(30) @map("days_worked")
+  totalEarnings   Decimal    @default(0) @map("total_earnings") @db.Decimal(18, 2)
+  totalDeductions Decimal    @default(0) @map("total_deductions") @db.Decimal(18, 2)
+  employerCosts   Decimal    @default(0) @map("employer_costs") @db.Decimal(18, 2)
+  netPay          Decimal    @default(0) @map("net_pay") @db.Decimal(18, 2)
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  details       PayrollItemDetail[]
+  electronicDoc ElectronicPayrollDocument?
+
+  @@index([payrollRunId])
+  @@index([employeeId])
+  @@map("payroll_items")
+  @@schema("tenant")
+}
+
+model PayrollItemDetail {
+  id            String                @id @default(uuid())
+  payrollItemId String                @map("payroll_item_id")
+  payrollItem   PayrollItem           @relation(fields: [payrollItemId], references: [id], onDelete: Cascade)
+  conceptId     String?               @map("concept_id")
+  concept       PayrollConcept?       @relation(fields: [conceptId], references: [id])
+  conceptCode   String                @map("concept_code")
+  conceptName   String                @map("concept_name")
+  type          PayrollItemDetailType
+  quantity      Decimal               @default(1) @db.Decimal(10, 2)
+  rate          Decimal               @default(0) @db.Decimal(8, 4)
+  base          Decimal               @default(0) @db.Decimal(18, 2)
+  amount        Decimal               @default(0) @db.Decimal(18, 2)
+
+  @@index([payrollItemId])
+  @@map("payroll_item_details")
+  @@schema("tenant")
+}
+
+model PayrollProvision {
+  id                      String   @id @default(uuid())
+  companyId               String   @map("company_id")
+  company                 Company  @relation(fields: [companyId], references: [id])
+  employeeId              String   @map("employee_id")
+  employee                Employee @relation(fields: [employeeId], references: [id])
+  period                  DateTime
+  primaAmount             Decimal  @default(0) @map("prima_amount") @db.Decimal(18, 2)
+  cesantiasAmount         Decimal  @default(0) @map("cesantias_amount") @db.Decimal(18, 2)
+  cesantiasInterestAmount Decimal  @default(0) @map("cesantias_interest_amount") @db.Decimal(18, 2)
+  vacationsAmount         Decimal  @default(0) @map("vacations_amount") @db.Decimal(18, 2)
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  @@unique([companyId, employeeId, period])
+  @@index([companyId])
+  @@map("payroll_provisions")
+  @@schema("tenant")
+}
+
+model ElectronicPayrollDocument {
+  id               String                  @id @default(uuid())
+  payrollItemId    String                  @unique @map("payroll_item_id")
+  payrollItem      PayrollItem             @relation(fields: [payrollItemId], references: [id], onDelete: Cascade)
+  cune             String?
+  xmlContent       String?                 @map("xml_content")
+  dianStatus       ElectronicPayrollStatus @default(PENDING) @map("dian_status")
+  dianResponse     Json?                   @map("dian_response")
+  providerResponse Json?                   @map("provider_response")
+  sentAt           DateTime?               @map("sent_at")
+  createdAt        DateTime                @default(now()) @map("created_at")
+
+  @@map("electronic_payroll_documents")
+  @@schema("tenant")
 }

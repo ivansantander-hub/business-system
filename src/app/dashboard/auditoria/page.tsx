@@ -1189,14 +1189,20 @@ function EntityDetailPanel({ data, onClose }: Readonly<{ data: EntityDetailRespo
                       </div>
                     )}
 
-                    {log.details && Object.keys(log.details as object).length > 0 && !log.beforeState && !log.afterState && (
-                      <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                        {Object.entries(log.details as Record<string, unknown>)
-                          .filter(([k]) => !["companyId", "id"].includes(k))
-                          .map(([k, v]) => (
-                            <span key={k} className="mr-3">{k}: <span className="text-slate-700 dark:text-slate-300">{String(v)}</span></span>
-                          ))}
+                    {!log.beforeState && !log.afterState && log.details && Object.keys(log.details as object).length > 0 && (
+                      <div className="mt-2 border-t border-slate-200 dark:border-slate-600 pt-2">
+                        <p className="text-[10px] text-amber-600 dark:text-amber-400 mb-1 italic">Detalle de la acción (diff no disponible para este registro)</p>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono space-y-0.5">
+                          {Object.entries(log.details as Record<string, unknown>)
+                            .filter(([k]) => !["companyId", "id"].includes(k))
+                            .map(([k, v]) => (
+                              <div key={k}><span className="text-slate-600 dark:text-slate-400 font-semibold">{k}:</span> <span className="text-slate-700 dark:text-slate-300">{String(v)}</span></div>
+                            ))}
+                        </div>
                       </div>
+                    )}
+                    {!log.beforeState && !log.afterState && (!log.details || Object.keys(log.details as object).length === 0) && (
+                      <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 italic">Sin datos de cambio registrados</p>
                     )}
 
                     {log.checksum && (

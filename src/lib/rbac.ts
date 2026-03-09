@@ -29,13 +29,19 @@ export type Permission =
   | "audit"
   | "test_runs"
   | "branches"
-  | "messaging";
+  | "messaging"
+  | "employees"
+  | "payroll"
+  | "payroll_config"
+  | "electronic_payroll"
+  | "kitchen";
 
 export const ALL_PERMISSIONS: Permission[] = [
   "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
   "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
   "users", "settings", "memberships", "checkin", "day_passes", "classes",
-  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
+  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs",   "branches", "messaging",
+  "employees", "payroll", "payroll_config", "electronic_payroll", "kitchen",
 ];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -68,15 +74,21 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   test_runs: "Resultados de Tests",
   branches: "Sucursales",
   messaging: "Mensajería",
+  employees: "Empleados",
+  payroll: "Nómina",
+  payroll_config: "Config. Nómina",
+  electronic_payroll: "Nómina Electrónica",
+  kitchen: "Cocina",
 };
 
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   SUPER_ADMIN: ["dashboard", "companies", "users", "reports", "test_runs"],
   ADMIN: [
-    "dashboard", "products", "inventory", "pos", "tables", "orders",
+    "dashboard", "products", "inventory", "pos", "tables", "orders", "kitchen",
     "invoices", "customers", "suppliers", "purchases", "accounting",
     "reports", "users", "settings", "memberships", "checkin", "day_passes",
     "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "branches", "messaging",
+    "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
   CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],
@@ -89,19 +101,27 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   ],
 };
 
-export type CompanyType = "RESTAURANT" | "GYM";
+export type CompanyType = "RESTAURANT" | "GYM" | "STORE";
 
 export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
   RESTAURANT: [
-    "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
+    "dashboard", "companies", "products", "inventory", "pos", "tables", "orders", "kitchen",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
+    "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
   GYM: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "memberships", "checkin", "day_passes",
     "classes", "trainers", "body_tracking", "lockers", "logs", "audit", "test_runs", "branches", "messaging",
+    "employees", "payroll", "payroll_config", "electronic_payroll",
+  ],
+  STORE: [
+    "dashboard", "companies", "products", "inventory", "pos",
+    "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
+    "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
+    "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
 };
 

@@ -188,22 +188,25 @@ When a cash session is closed (`POST /api/cash` with `action: "close"`):
 
 ## Company Types and Conditional Features
 
-| Feature | RESTAURANT | GYM |
-|---------|------------|-----|
-| POS | ✓ | ✓ |
-| Tables | ✓ | — |
-| Orders (waiter flow) | ✓ | — |
-| Invoices | ✓ | ✓ |
-| Products, Inventory | ✓ | ✓ |
-| Purchases, Suppliers | ✓ | ✓ |
-| Accounting | ✓ | ✓ |
-| Memberships | — | ✓ |
-| Check-in | — | ✓ |
-| Day passes (tiqueteras) | — | ✓ |
-| Classes | — | ✓ |
-| Trainers | — | ✓ |
-| Body measurements | — | ✓ |
-| Lockers | — | ✓ |
+| Feature | RESTAURANT | GYM | STORE |
+|---------|------------|-----|-------|
+| POS | ✓ | ✓ | ✓ |
+| Tables | ✓ | — | — |
+| Orders (waiter flow) | ✓ | — | — |
+| Kitchen Display (KDS) | ✓ | — | — |
+| Invoices | ✓ | ✓ | ✓ |
+| Products, Inventory | ✓ | ✓ | ✓ |
+| Purchases, Suppliers | ✓ | ✓ | ✓ |
+| Accounting | ✓ | ✓ | ✓ |
+| Employees / Payroll | ✓ | ✓ | ✓ |
+| Electronic Payroll (DIAN) | ✓ | ✓ | ✓ |
+| Memberships | — | ✓ | — |
+| Check-in | — | ✓ | — |
+| Day passes (tiqueteras) | — | ✓ | — |
+| Classes | — | ✓ | — |
+| Trainers | — | ✓ | — |
+| Body measurements | — | ✓ | — |
+| Lockers | — | ✓ | — |
 
 Permissions are filtered by `COMPANY_TYPE_PERMISSIONS` in RBAC so menu items and API access match the company type.
 

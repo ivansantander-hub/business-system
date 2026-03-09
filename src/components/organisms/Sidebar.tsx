@@ -14,7 +14,7 @@ import {
   ClipboardList, FileText, Users, Truck, ShoppingBag, Calculator,
   BarChart3, Settings,   LogOut, X, Menu, Building2, ChevronsLeft, ChevronsRight,
   UserCheck, CalendarDays, Dumbbell, Ruler, Lock, Ticket, ChevronDown, Bell, Shield, ScrollText, FlaskConical,
-  MessageSquare,
+  MessageSquare, ChefHat,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
@@ -56,6 +56,11 @@ const allMenuItems: MenuItem[] = [
   { href: "/dashboard/compras", label: "Compras", icon: ShoppingBag, permission: "purchases", group: "finanzas" },
   { href: "/dashboard/contabilidad", label: "Contabilidad", icon: Calculator, permission: "accounting", group: "finanzas" },
   { href: "/dashboard/facturacion-electronica", label: "Facturación Electrónica", icon: FileText, permission: "invoices", group: "finanzas" },
+  { href: "/dashboard/empleados", label: "Empleados", icon: UserCheck, permission: "employees" as Permission, group: "nomina" },
+  { href: "/dashboard/nomina", label: "Nómina", icon: Calculator, permission: "payroll" as Permission, group: "nomina" },
+  { href: "/dashboard/nomina/configuracion", label: "Config. Nómina", icon: Settings, permission: "payroll_config" as Permission, group: "nomina" },
+  { href: "/dashboard/nomina-electronica", label: "Nómina Electrónica", icon: FileText, permission: "electronic_payroll" as Permission, group: "nomina" },
+  { href: "/dashboard/cocina", label: "Cocina", icon: ChefHat, permission: "kitchen" as Permission, group: "ventas" },
   { href: "/dashboard/reportes", label: "Reportes", icon: BarChart3, permission: "reports", group: "sistema" },
   { href: "/dashboard/mensajes", label: "Mensajes", icon: MessageSquare, permission: "messaging", group: "sistema" },
   { href: "/dashboard/usuarios", label: "Usuarios", icon: Users, permission: "users", group: "sistema" },
@@ -74,6 +79,7 @@ const groupConfig: Record<string, { label: string; icon: React.ComponentType<{ c
   gimnasio: { label: "Gimnasio", icon: Dumbbell },
   inventario: { label: "Inventario", icon: Package },
   finanzas: { label: "Finanzas", icon: Calculator },
+  nomina: { label: "Nómina", icon: Calculator },
   sistema: { label: "Sistema", icon: Settings },
 };
 

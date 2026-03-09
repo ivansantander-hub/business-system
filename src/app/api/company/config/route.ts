@@ -21,6 +21,12 @@ const CONFIG_FIELDS = [
   "eInvoiceProviderApiKey",
   "eInvoiceProviderUser",
   "eInvoiceProviderPass",
+  "electronicPayrollEnabled",
+  "payrollProvider",
+  "payrollProviderApiUrl",
+  "payrollProviderApiKey",
+  "payrollProviderUser",
+  "payrollProviderPass",
 ] as const;
 
 export type CompanyConfig = {
@@ -42,6 +48,12 @@ export type CompanyConfig = {
   eInvoiceProviderApiKey: string | null;
   eInvoiceProviderUser: string | null;
   eInvoiceProviderPass: string | null;
+  electronicPayrollEnabled: boolean;
+  payrollProvider: string | null;
+  payrollProviderApiUrl: string | null;
+  payrollProviderApiKey: string | null;
+  payrollProviderUser: string | null;
+  payrollProviderPass: string | null;
 };
 
 export async function GET(request: Request) {
@@ -71,6 +83,12 @@ export async function GET(request: Request) {
       eInvoiceProviderApiKey: true,
       eInvoiceProviderUser: true,
       eInvoiceProviderPass: true,
+      electronicPayrollEnabled: true,
+      payrollProvider: true,
+      payrollProviderApiUrl: true,
+      payrollProviderApiKey: true,
+      payrollProviderUser: true,
+      payrollProviderPass: true,
     },
   });
 
@@ -97,6 +115,12 @@ export async function GET(request: Request) {
     eInvoiceProviderApiKey: company.eInvoiceProviderApiKey,
     eInvoiceProviderUser: company.eInvoiceProviderUser,
     eInvoiceProviderPass: company.eInvoiceProviderPass,
+    electronicPayrollEnabled: company.electronicPayrollEnabled,
+    payrollProvider: company.payrollProvider,
+    payrollProviderApiUrl: company.payrollProviderApiUrl,
+    payrollProviderApiKey: company.payrollProviderApiKey,
+    payrollProviderUser: company.payrollProviderUser,
+    payrollProviderPass: company.payrollProviderPass,
   };
 
   return NextResponse.json(config);
@@ -119,7 +143,7 @@ export async function PUT(request: Request) {
         if (!Number.isNaN(num) && num >= 1 && num <= 30) {
           data[key] = num;
         }
-      } else if (key === "electronicInvoicingEnabled") {
+      } else if (key === "electronicInvoicingEnabled" || key === "electronicPayrollEnabled") {
         data[key] = typeof value === "boolean" ? value : value === "true" || value === true;
       } else if (key === "dianRangeFrom" || key === "dianRangeTo") {
         if (value === "" || value === null || value === undefined) {

@@ -634,9 +634,11 @@ export default function MensajesPage() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-500 dark:text-slate-400">
-              <div className="text-center">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            <div className="flex-1 flex items-center justify-center text-slate-500 dark:text-slate-400 p-8">
+              <div className="text-center max-w-xs mx-auto">
+                <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-4">
+                  <MessageSquare className="w-10 h-10 opacity-40" />
+                </div>
                 <p className="text-lg font-medium">Selecciona una conversación</p>
                 <p className="text-sm mt-1 opacity-70">o crea una nueva para empezar</p>
               </div>
