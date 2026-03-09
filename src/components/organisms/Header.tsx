@@ -13,6 +13,7 @@ import { Building2, ChevronDown, Check, Sun, Moon, MapPin, Bell, Mail, Zap, Mess
 import { useAtomValue, useSetAtom } from "jotai";
 import { authUserAtom, themeAtom, toggleThemeAtom, hydrateThemeAtom, themeHydratedAtom, fetchAuthAtom, selectedBranchAtom, unreadNotificationCountAtom, unreadMessagesCountAtom, chatWidgetOpenAtom, permissionsAtom } from "@/store";
 import Avatar from "../atoms/Avatar";
+import { useNotificationAlerts } from "@/hooks/useNotificationAlerts";
 
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: "Super Administrador",
@@ -46,6 +47,7 @@ export default function Header() {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState<{ id: string; type: string; subject: string; createdAt: string }[]>([]);
   const notifDropdownRef = useRef<HTMLDivElement>(null);
+  const { checkNotifications, checkMessages } = useNotificationAlerts();
 
   useEffect(() => {
     hydrateTheme();
@@ -73,13 +75,16 @@ export default function Header() {
     const poll = () => {
       fetch("/api/notifications/inbox/unread-count")
         .then((r) => (r.ok ? r.json() : { count: 0 }))
-        .then((data: { count: number }) => setUnreadCount(data.count))
+        .then((data: { count: number }) => {
+          checkNotifications(data.count);
+          setUnreadCount(data.count);
+        })
         .catch(() => {});
     };
     poll();
     const id = setInterval(poll, 30000);
     return () => clearInterval(id);
-  }, [user?.companyId, setUnreadCount]);
+  }, [user?.companyId, setUnreadCount, checkNotifications]);
 
   useEffect(() => {
     if (!user?.companyId || !permissions.includes("messaging")) return;
@@ -88,6 +93,7 @@ export default function Header() {
         .then((r) => (r.ok ? r.json() : []))
         .then((convs: { unreadCount: number }[]) => {
           const total = convs.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+          checkMessages(total);
           setUnreadMessagesCount(total);
         })
         .catch(() => {});
@@ -95,7 +101,7 @@ export default function Header() {
     poll();
     const id = setInterval(poll, 15000);
     return () => clearInterval(id);
-  }, [user?.companyId, permissions, setUnreadMessagesCount]);
+  }, [user?.companyId, permissions, setUnreadMessagesCount, checkMessages]);
 
   async function openNotifDropdown() {
     setShowNotifDropdown((prev) => !prev);

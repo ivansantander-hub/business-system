@@ -100,13 +100,46 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const hashedPassword = await bcrypt.hash(body.password, 10);
 
   try {
     if (role === "ADMIN") {
       if (companyId === null) {
         return NextResponse.json({ error: "Company context required" }, { status: 403 });
       }
+
+      const existing = await prisma.user.findUnique({
+        where: { email: body.email },
+        select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+      });
+
+      if (existing) {
+        const alreadyLinked = await prisma.userCompany.findUnique({
+          where: { userId_companyId: { userId: existing.id, companyId } },
+        });
+        if (alreadyLinked) {
+          return NextResponse.json({ error: "El usuario ya pertenece a esta empresa" }, { status: 400 });
+        }
+
+        await prisma.userCompany.create({
+          data: { userId: existing.id, companyId, role: body.role || "CASHIER" },
+        });
+
+        const company = await prisma.company.findUnique({ where: { id: companyId }, select: { name: true } });
+        sendNotification(companyId, EMAIL_EVENTS.USER_CREATED,
+          emailUserCreated(existing.name, existing.email, "(contraseña existente)", company?.name || "SGC"),
+          existing.id
+        ).catch(() => {});
+
+        auditApiRequest(request, "user.link_company", {
+          entity: "User",
+          entityId: existing.id,
+          statusCode: 200,
+          details: { name: existing.name, email: existing.email, companyId, role: body.role || "CASHIER" },
+        });
+        return NextResponse.json({ ...existing, role: body.role || existing.role });
+      }
+
+      const hashedPassword = await bcrypt.hash(body.password, 10);
       const user = await prisma.user.create({
         data: {
           name: body.name,
@@ -136,7 +169,7 @@ export async function POST(request: Request) {
       return NextResponse.json(user, { status: 201 });
     }
 
-    // SUPER_ADMIN: companyIds is an array of { companyId, role }
+    // SUPER_ADMIN flow
     const companyAssignments: { companyId: string; role: string }[] = body.companyAssignments || [];
 
     if (companyAssignments.length === 0 && body.companyId) {
@@ -146,6 +179,58 @@ export async function POST(request: Request) {
       });
     }
 
+    const existing = await prisma.user.findUnique({
+      where: { email: body.email },
+      select: {
+        id: true, name: true, email: true, role: true, isActive: true, createdAt: true,
+        companies: { include: { company: { select: { id: true, name: true } } } },
+      },
+    });
+
+    if (existing) {
+      const existingCompanyIds = new Set(existing.companies.map((uc) => uc.companyId));
+      const newAssignments = companyAssignments.filter((ca) => !existingCompanyIds.has(ca.companyId));
+
+      if (newAssignments.length === 0 && companyAssignments.length > 0) {
+        return NextResponse.json({ error: "El usuario ya pertenece a todas las empresas seleccionadas" }, { status: 400 });
+      }
+
+      if (newAssignments.length > 0) {
+        await prisma.userCompany.createMany({
+          data: newAssignments.map((ca) => ({
+            userId: existing.id,
+            companyId: ca.companyId,
+            role: (ca.role as "ADMIN" | "CASHIER" | "WAITER" | "ACCOUNTANT" | "TRAINER") || "CASHIER",
+          })),
+        });
+      }
+
+      const updated = await prisma.user.findUnique({
+        where: { id: existing.id },
+        select: {
+          id: true, name: true, email: true, role: true, isActive: true, createdAt: true,
+          companies: { include: { company: { select: { id: true, name: true } } } },
+        },
+      });
+
+      auditApiRequest(request, "user.link_company", {
+        entity: "User",
+        entityId: existing.id,
+        statusCode: 200,
+        details: { name: existing.name, email: existing.email, linkedCompanies: newAssignments.length },
+      });
+
+      return NextResponse.json({
+        ...updated,
+        companies: updated!.companies.map((uc) => ({
+          id: uc.company.id,
+          name: uc.company.name,
+          role: uc.role,
+        })),
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(body.password, 10);
     const user = await prisma.user.create({
       data: {
         name: body.name,
@@ -200,6 +285,6 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch {
-    return NextResponse.json({ error: "El email ya está registrado" }, { status: 400 });
+    return NextResponse.json({ error: "Error al crear usuario" }, { status: 500 });
   }
 }
