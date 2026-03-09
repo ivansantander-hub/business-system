@@ -47,6 +47,8 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Logo de empresa** — Subida de icono vía R2; mostrado en sidebar y página de configuración
 - **Ejecutor manual de tests** — SUPER_ADMIN puede ejecutar tests E2E desde la UI y ver resultados en vivo
 - **Facturación electrónica por terceros** — Modelo de proveedores (Factus, Carvajal, WorldOffice, Siigo) en lugar de integración directa con DIAN
+- **Agente IA (Aria)** — Asistente de negocio con consultas en lenguaje natural; soporte OpenAI y Anthropic; capacidades configurables por empresa; conversaciones independientes por usuario
+- **Datos de demostración (6 meses)** — Seed con 3 empresas, cada una con facturas, compras, nómina, inventario, gastos, contabilidad y más
 
 ## Requisitos previos
 
@@ -90,7 +92,8 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```bash
 pnpm db:generate   # Genera el cliente Prisma
 pnpm db:push       # Crea tablas y esquemas (public + tenant)
-pnpm db:seed       # Inserta datos iniciales (usuarios, empresa demo, categorías)
+pnpm db:seed       # Inserta datos iniciales (usuarios, empresas, categorías, productos)
+pnpm db:seed-data  # Genera 6 meses de datos transaccionales (facturas, compras, nómina, etc.)
 ```
 
 ### 4. Servidor de desarrollo
@@ -103,15 +106,19 @@ Abre [http://localhost:3000](http://localhost:3000) y accede con las credenciale
 
 ## Credenciales por defecto
 
-| Usuario | Email | Contraseña | Rol |
-|---------|-------|------------|-----|
-| Super Administrador | master@sistema.com | master123 | SUPER_ADMIN |
-| Administrador | admin@miempresa.com | admin123 | ADMIN |
-| Cajero Principal | cajero@miempresa.com | cajero123 | CASHIER |
-| Mesero 1 | mesero@miempresa.com | mesero123 | WAITER |
-| Contador | contador@miempresa.com | contador123 | ACCOUNTANT |
+| Usuario | Email | Contraseña | Rol | Empresa |
+|---------|-------|------------|-----|---------|
+| Super Administrador | master@sistema.com | master123 | SUPER_ADMIN | Global |
+| Administrador | admin@miempresa.com | admin123 | ADMIN | Mi Empresa |
+| Cajero Principal | cajero@miempresa.com | cajero123 | CASHIER | Mi Empresa |
+| Mesero 1 | mesero@miempresa.com | mesero123 | WAITER | Mi Empresa |
+| Contador | contador@miempresa.com | contador123 | ACCOUNTANT | Mi Empresa |
+| Admin Gym | admin@fitzonegym.com | admin123 | ADMIN | FitZone Gym |
+| Cajero Gym | cajero@fitzonegym.com | cajero123 | CASHIER | FitZone Gym |
+| Instructor | instructor@fitzonegym.com | instructor123 | TRAINER | FitZone Gym |
+| Admin Tienda | admin@mitienda.com | Admin123! | ADMIN | Mi Tienda Express |
 
-> **Importante:** Cambia las contraseñas en producción.
+> **Importante:** Cambia las contraseñas en produccion.
 
 ## Estructura del proyecto
 
@@ -119,7 +126,8 @@ Abre [http://localhost:3000](http://localhost:3000) y accede con las credenciale
 business-system/
 ├── prisma/
 │   ├── schema.prisma    # Modelos y esquemas (public + tenant)
-│   └── seed.ts         # Datos iniciales
+│   ├── seed.ts         # Datos base (empresas, usuarios, categorías, productos)
+│   └── seed-data.ts    # Datos transaccionales 6 meses (facturas, compras, nómina...)
 ├── src/
 │   ├── app/            # App Router (Next.js)
 │   │   ├── api/        # Rutas API REST
@@ -148,7 +156,8 @@ business-system/
 | `pnpm start` | Servidor de producción |
 | `pnpm db:generate` | Genera el cliente Prisma |
 | `pnpm db:push` | Sincroniza el esquema con la base de datos |
-| `pnpm db:seed` | Ejecuta el seed (datos iniciales) |
+| `pnpm db:seed` | Ejecuta el seed (datos base) |
+| `pnpm db:seed-data` | Genera 6 meses de datos transaccionales por empresa |
 | `pnpm db:studio` | Abre Prisma Studio |
 | `pnpm setup` | `db:generate` + `db:push` + `db:seed` |
 | `pnpm test` | Ejecuta todos los tests (Vitest) — 82 tests |
@@ -175,6 +184,7 @@ business-system/
 - [Facturación Electrónica](docs/ELECTRONIC-INVOICING.md) — Proveedores terceros, CUFE, rangos
 - [Sucursales](docs/BRANCHES.md) — API, configuración, asignación de usuarios
 - [Mensajería](docs/MESSAGING.md) — DMs, grupos, adjuntos, RBAC
+- [Agente IA (Aria)](docs/AGENT.md) — Consultas en lenguaje natural, configuración, capacidades
 - [Referencia API](docs/API-REFERENCE.md) — Endpoints REST
 
 ## Licencia

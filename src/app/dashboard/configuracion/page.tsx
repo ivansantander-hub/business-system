@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { Settings, Save, DollarSign, Banknote, Shield, FileText, ImageIcon } from "lucide-react";
+import { Settings, Save, DollarSign, Banknote, Shield, FileText, ImageIcon, Bot, Eye, EyeOff } from "lucide-react";
 import Toast from "@/components/ui/Toast";
 import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/atoms";
@@ -35,14 +35,40 @@ export default function ConfiguracionPage() {
   const [closingAmount, setClosingAmount] = useState("");
   const [cashSession, setCashSession] = useState<{ id: string; openingAmount: string; salesTotal: string; openedAt: string } | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [agentConfig, setAgentConfig] = useState<{
+    enabled: boolean;
+    modelProvider: string;
+    modelName: string;
+    openaiApiKey: string;
+    anthropicApiKey: string;
+    capabilities: Record<string, boolean>;
+    customPrompt: string;
+    maxTokens: number;
+  }>({
+    enabled: false,
+    modelProvider: "openai",
+    modelName: "gpt-4o-mini",
+    openaiApiKey: "",
+    anthropicApiKey: "",
+    capabilities: {},
+    customPrompt: "",
+    maxTokens: 4096,
+  });
+  const [agentModels, setAgentModels] = useState<{ provider: string; id: string; label: string }[]>([]);
+  const [agentSaving, setAgentSaving] = useState(false);
+  const [agentTesting, setAgentTesting] = useState(false);
+  const [showOpenaiKey, setShowOpenaiKey] = useState(false);
+  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+  const [agentCapabilities, setAgentCapabilities] = useState<{ id: string; label: string; description: string }[]>([]);
   const companyLogoUrl = useAtomValue(companyLogoAtom);
   const fetchAuth = useSetAtom(fetchAuthAtom);
 
   const load = useCallback(async () => {
-    const [sRes, csRes, ccRes] = await Promise.all([
+    const [sRes, csRes, ccRes, agRes] = await Promise.all([
       fetch("/api/settings"),
       fetch("/api/cash?action=current"),
       fetch("/api/company/config"),
+      fetch("/api/agent/config"),
     ]);
     if (sRes.ok) setSettings(await sRes.json());
     if (csRes.ok) {
@@ -50,9 +76,31 @@ export default function ConfiguracionPage() {
       if (cs) setCashSession(cs);
     }
     if (ccRes.ok) setCompanyConfig(await ccRes.json());
+    if (agRes.ok) {
+      const ag = await agRes.json();
+      setAgentConfig({
+        enabled: ag.enabled ?? false,
+        modelProvider: ag.modelProvider ?? "openai",
+        modelName: ag.modelName ?? "gpt-4o-mini",
+        openaiApiKey: ag.openaiApiKey ?? "",
+        anthropicApiKey: ag.anthropicApiKey ?? "",
+        capabilities: ag.capabilities ?? {},
+        customPrompt: ag.customPrompt ?? "",
+        maxTokens: ag.maxTokens ?? 4096,
+      });
+      if (ag.availableCapabilities?.length) {
+        setAgentCapabilities(ag.availableCapabilities);
+      }
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    fetch("/api/agent/models").then((r) => (r.ok ? r.json() : { models: [] })).then((modelsData) => {
+      setAgentModels(modelsData.models || []);
+    });
+  }, []);
 
   async function saveSettings(e: React.FormEvent) {
     e.preventDefault();
@@ -85,6 +133,97 @@ export default function ConfiguracionPage() {
       }),
     });
     if (res.ok) setToast({ message: "Configuración DIAN guardada", type: "success" });
+  }
+
+  async function saveAgentConfig(e: React.FormEvent) {
+    e.preventDefault();
+    setAgentSaving(true);
+    try {
+      const body: Record<string, unknown> = {
+        enabled: agentConfig.enabled,
+        modelProvider: agentConfig.modelProvider,
+        modelName: agentConfig.modelName,
+        capabilities: agentConfig.capabilities,
+        customPrompt: agentConfig.customPrompt || null,
+        maxTokens: agentConfig.maxTokens,
+      };
+      if (agentConfig.openaiApiKey && !agentConfig.openaiApiKey.includes("*")) {
+        body.openaiApiKey = agentConfig.openaiApiKey;
+      }
+      if (agentConfig.anthropicApiKey && !agentConfig.anthropicApiKey.includes("*")) {
+        body.anthropicApiKey = agentConfig.anthropicApiKey;
+      }
+      const res = await fetch("/api/agent/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        setToast({ message: "Configuración del agente guardada", type: "success" });
+        const ag = await res.json();
+        setAgentConfig((prev) => ({
+          ...prev,
+          openaiApiKey: ag.openaiApiKey ?? "",
+          anthropicApiKey: ag.anthropicApiKey ?? "",
+        }));
+      } else {
+        const err = await res.json();
+        setToast({ message: err.error || "Error al guardar", type: "error" });
+      }
+    } finally {
+      setAgentSaving(false);
+    }
+  }
+
+  async function testAgent() {
+    setAgentTesting(true);
+    try {
+      const convRes = await fetch("/api/conversations");
+      if (!convRes.ok) {
+        setToast({ message: "Error al obtener conversaciones", type: "error" });
+        return;
+      }
+      const convData = await convRes.json();
+      const conversations = convData.conversations ?? convData;
+      const agentConv = (Array.isArray(conversations) ? conversations : []).find(
+        (c: { isAgent?: boolean }) => c.isAgent
+      );
+      if (!agentConv) {
+        setToast({ message: "Primero habilita el agente y recarga la página de mensajes para crear la conversación", type: "error" });
+        return;
+      }
+
+      const msgRes = await fetch(`/api/conversations/${agentConv.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: "Hola, ¿estás funcionando correctamente?" }),
+      });
+      if (!msgRes.ok) {
+        setToast({ message: "Error al enviar mensaje de prueba", type: "error" });
+        return;
+      }
+
+      const res = await fetch("/api/agent/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: agentConv.id,
+          modelProvider: agentConfig.modelProvider,
+          modelName: agentConfig.modelName,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setToast({ message: `Agente respondió: "${(data.response || "").slice(0, 80)}..."`, type: "success" });
+      } else {
+        const err = await res.json();
+        setToast({ message: err.error || "Error al probar el agente", type: "error" });
+      }
+    } catch {
+      setToast({ message: "Error de conexión al probar el agente", type: "error" });
+    } finally {
+      setAgentTesting(false);
+    }
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -346,6 +485,199 @@ export default function ConfiguracionPage() {
             </Button>
           </form>
         </div>
+      </div>
+
+      {/* Agent Configuration */}
+      <div className="card">
+        <h2 className="font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+          <Bot className="w-5 h-5 text-violet-500" /> Agente de IA (Aria)
+        </h2>
+        <form onSubmit={saveAgentConfig} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium text-slate-900 dark:text-white">Habilitar Agente</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Permite a los usuarios consultar datos del negocio por chat
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agentConfig.enabled}
+                onChange={(e) => setAgentConfig({ ...agentConfig, enabled: e.target.checked })}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-violet-300 dark:peer-focus:ring-violet-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-slate-600 peer-checked:bg-violet-600" />
+            </label>
+          </div>
+
+          {agentConfig.enabled && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Modelo predeterminado
+                  </label>
+                  <select
+                    className="input-field"
+                    value={`${agentConfig.modelProvider}:${agentConfig.modelName}`}
+                    onChange={(e) => {
+                      const [provider, ...rest] = e.target.value.split(":");
+                      setAgentConfig({ ...agentConfig, modelProvider: provider, modelName: rest.join(":") });
+                    }}
+                  >
+                    {agentModels.map((m) => (
+                      <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Máximo de tokens
+                  </label>
+                  <input
+                    type="number"
+                    min={256}
+                    max={32768}
+                    className="input-field"
+                    value={agentConfig.maxTokens}
+                    onChange={(e) => setAgentConfig({ ...agentConfig, maxTokens: Number(e.target.value) || 4096 })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    API Key de OpenAI (opcional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showOpenaiKey ? "text" : "password"}
+                      className="input-field pr-10"
+                      value={agentConfig.openaiApiKey}
+                      onChange={(e) => setAgentConfig({ ...agentConfig, openaiApiKey: e.target.value })}
+                      placeholder="sk-... (dejar vacío para usar la global)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOpenaiKey(!showOpenaiKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center"
+                    >
+                      {showOpenaiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    API Key de Anthropic (opcional)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showAnthropicKey ? "text" : "password"}
+                      className="input-field pr-10"
+                      value={agentConfig.anthropicApiKey}
+                      onChange={(e) => setAgentConfig({ ...agentConfig, anthropicApiKey: e.target.value })}
+                      placeholder="sk-ant-... (dejar vacío para usar la global)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAnthropicKey(!showAnthropicKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 min-w-[2.75rem] min-h-[2.75rem] flex items-center justify-center"
+                    >
+                      {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Instrucciones personalizadas (opcional)
+                </label>
+                <textarea
+                  className="input-field min-h-[5rem]"
+                  value={agentConfig.customPrompt}
+                  onChange={(e) => setAgentConfig({ ...agentConfig, customPrompt: e.target.value })}
+                  placeholder="Instrucciones adicionales para el agente, por ejemplo: &quot;Siempre responde en formato de tabla&quot;"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+                  Capacidades habilitadas
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {agentCapabilities.map((cap) => (
+                    <label
+                      key={cap.id}
+                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        agentConfig.capabilities[cap.id]
+                          ? "border-violet-300 dark:border-violet-600 bg-violet-50 dark:bg-violet-500/10"
+                          : "border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={agentConfig.capabilities[cap.id] ?? false}
+                        onChange={(e) =>
+                          setAgentConfig({
+                            ...agentConfig,
+                            capabilities: { ...agentConfig.capabilities, [cap.id]: e.target.checked },
+                          })
+                        }
+                        className="mt-0.5 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{cap.label}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{cap.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const all: Record<string, boolean> = {};
+                      agentCapabilities.forEach((c) => { all[c.id] = true; });
+                      setAgentConfig({ ...agentConfig, capabilities: all });
+                    }}
+                    className="text-xs text-violet-600 dark:text-violet-400 hover:underline"
+                  >
+                    Seleccionar todas
+                  </button>
+                  <span className="text-xs text-slate-300 dark:text-slate-600">|</span>
+                  <button
+                    type="button"
+                    onClick={() => setAgentConfig({ ...agentConfig, capabilities: {} })}
+                    className="text-xs text-slate-500 dark:text-slate-400 hover:underline"
+                  >
+                    Deseleccionar todas
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button type="submit" icon={<Save className="w-4 h-4" />} loading={agentSaving}>
+                  Guardar Configuración
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={testAgent}
+                  loading={agentTesting}
+                  icon={<Bot className="w-4 h-4" />}
+                >
+                  Probar Agente
+                </Button>
+              </div>
+            </>
+          )}
+        </form>
       </div>
 
       {/* Close cash modal */}

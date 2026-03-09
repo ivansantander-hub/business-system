@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     include: {
       participants: {
         include: {
-          user: { select: { id: true, name: true, avatarUrl: true } },
+          user: { select: { id: true, name: true, avatarUrl: true, isBot: true } },
         },
       },
       messages: {
@@ -40,15 +40,30 @@ export async function GET(request: Request) {
     orderBy: { updatedAt: "desc" },
   });
 
+  await ensureAgentConversation(userId, companyId);
+
+  if (!conversations.some((c) => c.participants.some((p) => p.user.isBot))) {
+    const agentConv = await prisma.conversation.findFirst({
+      where: { companyId, participants: { some: { userId }, }, AND: { participants: { some: { user: { isBot: true } } } } },
+      include: {
+        participants: { include: { user: { select: { id: true, name: true, avatarUrl: true, isBot: true } } } },
+        messages: { orderBy: { createdAt: "desc" }, take: 1, include: { sender: { select: { id: true, name: true } } } },
+      },
+    });
+    if (agentConv) conversations.push(agentConv);
+  }
+
   const result = await Promise.all(
     conversations.map(async (conv) => {
       const myParticipant = conv.participants.find((p) => p.userId === userId);
+      const hasBot = conv.participants.some((p) => p.user.isBot);
       const otherParticipants = conv.participants
         .filter((p) => p.userId !== userId)
         .map((p) => ({
           id: p.user.id,
           name: p.user.name,
           avatarUrl: p.user.avatarUrl,
+          isBot: p.user.isBot,
         }));
 
       const unreadCount = await prisma.message.count({
@@ -62,14 +77,17 @@ export async function GET(request: Request) {
       });
 
       const lastMessage = conv.messages[0];
-      const displayName = conv.isGroup
-        ? conv.name ?? otherParticipants.map((u) => u.name).join(", ")
-        : otherParticipants[0]?.name ?? "Sin nombre";
+      const displayName = hasBot
+        ? "Aria"
+        : conv.isGroup
+          ? conv.name ?? otherParticipants.map((u) => u.name).join(", ")
+          : otherParticipants[0]?.name ?? "Sin nombre";
 
       return {
         id: conv.id,
         name: conv.name,
         isGroup: conv.isGroup,
+        isAgent: hasBot,
         displayName,
         lastMessage: lastMessage
           ? {
@@ -85,6 +103,12 @@ export async function GET(request: Request) {
       };
     })
   );
+
+  result.sort((a, b) => {
+    if (a.isAgent && !b.isAgent) return -1;
+    if (!a.isAgent && b.isAgent) return 1;
+    return 0;
+  });
 
   return NextResponse.json(result);
 }
@@ -232,4 +256,39 @@ export async function POST(request: Request) {
     },
     { status: 201 }
   );
+}
+
+async function ensureAgentConversation(userId: string, companyId: string) {
+  const agentConfig = await prisma.agentConfig.findUnique({ where: { companyId } });
+  if (!agentConfig?.enabled) return;
+
+  const botUser = await prisma.user.findFirst({
+    where: { isBot: true, companies: { some: { companyId } } },
+  });
+  if (!botUser) return;
+
+  const existing = await prisma.conversation.findFirst({
+    where: {
+      companyId,
+      isGroup: false,
+      AND: [
+        { participants: { some: { userId } } },
+        { participants: { some: { userId: botUser.id } } },
+      ],
+    },
+  });
+  if (existing) return;
+
+  await prisma.conversation.create({
+    data: {
+      companyId,
+      isGroup: false,
+      participants: {
+        create: [
+          { userId, isAdmin: false },
+          { userId: botUser.id, isAdmin: false },
+        ],
+      },
+    },
+  });
 }

@@ -297,6 +297,7 @@ model Company {
   payrollConcepts       PayrollConcept[]
   payrollRuns           PayrollRun[]
   payrollProvisions     PayrollProvision[]
+  agentConfig           AgentConfig?
 
   retentionYears             Int     @default(5) @map("retention_years")
   dianResolution             String? @map("dian_resolution")
@@ -336,6 +337,7 @@ model User {
   password  String
   role      Role     @default(CASHIER)
   avatarUrl String?  @map("avatar_url")
+  isBot     Boolean  @default(false) @map("is_bot")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -1457,4 +1459,23 @@ model ElectronicPayrollDocument {
 
   @@map("electronic_payroll_documents")
   @@schema("tenant")
+}
+
+model AgentConfig {
+  id              String   @id @default(uuid())
+  companyId       String   @unique @map("company_id")
+  enabled         Boolean  @default(false)
+  modelProvider   String   @default("openai") @map("model_provider")
+  modelName       String   @default("gpt-4o-mini") @map("model_name")
+  openaiApiKey    String?  @map("openai_api_key")
+  anthropicApiKey String?  @map("anthropic_api_key")
+  capabilities    Json     @default("{}")
+  customPrompt    String?  @map("custom_prompt")
+  maxTokens       Int      @default(4096) @map("max_tokens")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  company         Company  @relation(fields: [companyId], references: [id])
+
+  @@map("agent_configs")
+  @@schema("public")
 }

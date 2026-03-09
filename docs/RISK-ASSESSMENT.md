@@ -285,6 +285,38 @@ This document catalogs the known security, functional, and technical risks prese
 | 3.7 | JWT not revocable | Medium | Technical | Open |
 | 3.8 | No log aggregation | Medium | Technical | Open |
 | 3.9 | No env config management | Low | Technical | Open |
+| 4.1 | Agent API key exposure | High | Security | Open |
+| 4.2 | Agent prompt injection | Medium | Security | Open |
+| 4.3 | Agent rate-limit bypass | Medium | Security | Open |
+| 4.4 | Agent tool-call loop | Low | Technical | Mitigated |
+
+---
+
+## 4b. AI Agent Risks
+
+### 4.1 Agent API Key Exposure (High)
+
+LLM API keys stored in `AgentConfig` are stored as plaintext in the database. If the database is compromised, all keys are exposed.
+
+**Mitigation:** Encrypt API keys at rest using application-level encryption before storing. Use database-level encryption (TDE) as a secondary measure.
+
+### 4.2 Agent Prompt Injection (Medium)
+
+Users could craft messages that manipulate the LLM's system prompt, potentially bypassing capability restrictions or extracting internal instructions.
+
+**Mitigation:** The agent only has access to read-only query tools. Even with prompt injection, no data modification is possible. Monitor unusual query patterns.
+
+### 4.3 Agent Rate-Limit Bypass (Medium)
+
+The current in-memory rate limiter resets on server restart and does not persist across multiple server instances.
+
+**Mitigation:** Implement Redis-based or database-backed rate limiting for production deployments with multiple instances.
+
+### 4.4 Agent Tool-Call Loop (Low, Mitigated)
+
+LLMs could enter infinite tool-call loops, consuming API credits and server resources.
+
+**Mitigation:** The orchestrator limits tool-call iterations to 10 per request. This is already implemented.
 
 ---
 

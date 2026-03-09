@@ -12,6 +12,7 @@ import {
   Smile,
   Paperclip,
   Users,
+  Bot,
 } from "lucide-react";
 import { useAtomValue } from "jotai";
 import { userIdAtom, userRoleAtom } from "@/store";
@@ -29,9 +30,10 @@ interface ConversationItem {
   id: string;
   name: string | null;
   isGroup: boolean;
+  isAgent?: boolean;
   displayName: string;
   lastMessage: { id: string; content: string; createdAt: string; senderName: string } | null;
-  otherParticipants: { id: string; name: string; avatarUrl: string | null }[];
+  otherParticipants: { id: string; name: string; avatarUrl: string | null; isBot?: boolean }[];
   unreadCount: number;
   updatedAt: string;
 }
@@ -81,8 +83,12 @@ export default function MensajesPage() {
   const [newGroupName, setNewGroupName] = useState("");
   const [creating, setCreating] = useState(false);
   const [mobileView, setMobileView] = useState<"list" | "chat">("list");
+  const [agentTyping, setAgentTyping] = useState(false);
+  const [agentModels, setAgentModels] = useState<{ provider: string; id: string; label: string }[]>([]);
+  const [selectedModel, setSelectedModel] = useState<{ provider: string; id: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isUserScrolling = useRef(false);
 
   const loadConversations = useCallback(async () => {
     const res = await fetch("/api/conversations");
@@ -119,6 +125,7 @@ export default function MensajesPage() {
   useEffect(() => {
     if (selected) {
       setMessages([]);
+      isUserScrolling.current = false;
       loadMessages();
     }
   }, [selected?.id, loadMessages]);
@@ -130,8 +137,31 @@ export default function MensajesPage() {
   }, [selected?.id, loadMessages]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    if (!isUserScrolling.current && scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    }
   }, [messages]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    function handleScroll() {
+      if (!el) return;
+      const threshold = 100;
+      const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
+      isUserScrolling.current = !atBottom;
+    }
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [selected?.id]);
+
+  useEffect(() => {
+    if (selected?.isAgent && agentModels.length === 0) {
+      fetch("/api/agent/models")
+        .then((r) => (r.ok ? r.json() : { models: [] }))
+        .then((data) => setAgentModels(data.models || []));
+    }
+  }, [selected?.isAgent, agentModels.length]);
 
   useEffect(() => {
     if (showNewModal) {
@@ -156,6 +186,29 @@ export default function MensajesPage() {
         setMessages((prev) => [...prev, msg]);
         setInput("");
         loadConversations();
+
+        if (selected.isAgent) {
+          setAgentTyping(true);
+          try {
+            const agentRes = await fetch("/api/agent/chat", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                conversationId: selected.id,
+                modelProvider: selectedModel?.provider,
+                modelName: selectedModel?.id,
+              }),
+            });
+            if (agentRes.ok) {
+              await loadMessages();
+            } else {
+              const err = await agentRes.json();
+              setToast({ message: err.error || "Error del agente", type: "error" });
+            }
+          } finally {
+            setAgentTyping(false);
+          }
+        }
       } else {
         const err = await res.json();
         setToast({ message: err.error || "Error al enviar", type: "error" });
@@ -353,8 +406,14 @@ export default function MensajesPage() {
                       : ""
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                    {!c.isGroup && c.otherParticipants[0]?.avatarUrl ? (
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                    c.isAgent
+                      ? "bg-gradient-to-br from-violet-500 to-fuchsia-500"
+                      : "bg-slate-200 dark:bg-slate-700"
+                  }`}>
+                    {c.isAgent ? (
+                      <Bot className="w-6 h-6 text-white" />
+                    ) : !c.isGroup && c.otherParticipants[0]?.avatarUrl ? (
                       <img
                         src={`/api/users/${c.otherParticipants[0].id}/avatar`}
                         alt=""
@@ -406,7 +465,11 @@ export default function MensajesPage() {
         >
           {selected ? (
             <>
-              <div className="flex-shrink-0 flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0e1a]">
+              <div className={`flex-shrink-0 flex items-center gap-3 p-4 border-b bg-white dark:bg-[#0a0e1a] ${
+                selected.isAgent
+                  ? "border-violet-200/50 dark:border-violet-500/20"
+                  : "border-slate-200 dark:border-slate-800"
+              }`}>
                 <button
                   onClick={() => setMobileView("list")}
                   className="sm:hidden p-2 -ml-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
@@ -414,8 +477,14 @@ export default function MensajesPage() {
                 >
                   <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                 </button>
-                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                  {!selected.isGroup && selected.otherParticipants[0]?.avatarUrl ? (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                  selected.isAgent
+                    ? "bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-[0_0_12px_rgba(139,92,246,0.4)]"
+                    : "bg-slate-200 dark:bg-slate-700"
+                }`}>
+                  {selected.isAgent ? (
+                    <Bot className="w-5 h-5 text-white" />
+                  ) : !selected.isGroup && selected.otherParticipants[0]?.avatarUrl ? (
                     <img
                       src={`/api/users/${selected.otherParticipants[0].id}/avatar`}
                       alt=""
@@ -431,30 +500,72 @@ export default function MensajesPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold text-slate-900 dark:text-white truncate">
+                  <h2 className="font-semibold text-slate-900 dark:text-white truncate flex items-center gap-2">
                     {selected.displayName}
+                    {selected.isAgent && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-[0_0_8px_rgba(139,92,246,0.4)]">
+                        AI
+                      </span>
+                    )}
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {selected.otherParticipants.length} participante
-                    {selected.otherParticipants.length !== 1 ? "s" : ""}
+                    {selected.isAgent ? "Asistente de IA" : (
+                      <>
+                        {selected.otherParticipants.length} participante
+                        {selected.otherParticipants.length !== 1 ? "s" : ""}
+                      </>
+                    )}
                   </p>
                 </div>
+                {selected.isAgent && agentModels.length > 0 && (
+                  <select
+                    value={selectedModel ? `${selectedModel.provider}:${selectedModel.id}` : ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) { setSelectedModel(null); return; }
+                      const [provider, ...rest] = val.split(":");
+                      setSelectedModel({ provider, id: rest.join(":") });
+                    }}
+                    className="flex-shrink-0 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 min-h-[2.75rem] focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                  >
+                    <option value="">Modelo predeterminado</option>
+                    {agentModels.map((m) => (
+                      <option key={`${m.provider}:${m.id}`} value={`${m.provider}:${m.id}`}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               <div
                 ref={scrollRef}
-                className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 dark:bg-slate-900/30"
+                className={`flex-1 overflow-y-auto p-4 space-y-3 ${
+                  selected.isAgent
+                    ? "bg-gradient-to-b from-slate-50 via-violet-50/30 to-slate-50 dark:from-[#0b0f1e] dark:via-[#0f0a20] dark:to-[#0b0f1e]"
+                    : "bg-slate-50 dark:bg-slate-900/30"
+                }`}
               >
-                {messages.map((msg) => (
+                {messages.map((msg) => {
+                  const isOwn = msg.sender.id === currentUserId;
+                  const isAgentMsg = selected.isAgent && !isOwn;
+                  return (
                   <div
                     key={msg.id}
-                    className={`flex ${msg.sender.id === currentUserId ? "justify-end" : "justify-start"}`}
+                    className={`flex ${isOwn ? "justify-end" : "justify-start"}`}
                   >
+                    {isAgentMsg && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center mr-2 mt-1 shadow-[0_0_10px_rgba(139,92,246,0.4)]">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                     <div
                       className={`relative max-w-[85%] sm:max-w-[75%] group ${
-                        msg.sender.id === currentUserId
+                        isOwn
                           ? "bg-violet-600 text-white rounded-2xl rounded-br-md"
-                          : "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white rounded-2xl rounded-bl-md"
+                          : isAgentMsg
+                            ? "bg-white/80 dark:bg-slate-800/90 text-slate-900 dark:text-slate-100 rounded-2xl rounded-bl-md border border-violet-200/50 dark:border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.08)] dark:shadow-[0_0_15px_rgba(139,92,246,0.15)]"
+                            : "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white rounded-2xl rounded-bl-md"
                       } px-4 py-2`}
                     >
                       {selected.isGroup && msg.sender.id !== currentUserId && (
@@ -562,7 +673,23 @@ export default function MensajesPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
+                {agentTyping && selected?.isAgent && (
+                  <div className="flex justify-start">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center mr-2 mt-1 shadow-[0_0_10px_rgba(139,92,246,0.4)]">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-white/80 dark:bg-slate-800/90 border border-violet-200/50 dark:border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.08)] dark:shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-violet-500 animate-bounce shadow-[0_0_6px_rgba(139,92,246,0.6)]" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-bounce shadow-[0_0_6px_rgba(217,70,239,0.6)]" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-violet-500 animate-bounce shadow-[0_0_6px_rgba(139,92,246,0.6)]" style={{ animationDelay: "300ms" }} />
+                        <span className="ml-2 text-xs text-violet-500 dark:text-violet-400">Aria está pensando...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex-shrink-0 p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0a0e1a]">

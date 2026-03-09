@@ -30,6 +30,7 @@ export type Permission =
   | "test_runs"
   | "branches"
   | "messaging"
+  | "agent"
   | "employees"
   | "payroll"
   | "payroll_config"
@@ -40,8 +41,8 @@ export const ALL_PERMISSIONS: Permission[] = [
   "dashboard", "companies", "products", "inventory", "pos", "tables", "orders",
   "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
   "users", "settings", "memberships", "checkin", "day_passes", "classes",
-  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs",   "branches", "messaging",
-  "employees", "payroll", "payroll_config", "electronic_payroll", "kitchen",
+  "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
+  "agent", "employees", "payroll", "payroll_config", "electronic_payroll", "kitchen",
 ];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
@@ -74,6 +75,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   test_runs: "Resultados de Tests",
   branches: "Sucursales",
   messaging: "Mensajería",
+  agent: "Agente de IA",
   employees: "Empleados",
   payroll: "Nómina",
   payroll_config: "Config. Nómina",
@@ -88,7 +90,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     "invoices", "customers", "suppliers", "purchases", "accounting",
     "reports", "users", "settings", "memberships", "checkin", "day_passes",
     "classes", "trainers", "body_tracking", "lockers", "notifications", "rbac", "logs", "audit", "branches", "messaging",
-    "employees", "payroll", "payroll_config", "electronic_payroll",
+    "agent", "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
   CASHIER: ["dashboard", "pos", "orders", "invoices", "customers", "checkin", "day_passes", "memberships"],
   WAITER: ["dashboard", "tables", "orders"],
@@ -108,20 +110,20 @@ export const COMPANY_TYPE_PERMISSIONS: Record<CompanyType, Permission[]> = {
     "dashboard", "companies", "products", "inventory", "pos", "tables", "orders", "kitchen",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
-    "employees", "payroll", "payroll_config", "electronic_payroll",
+    "agent", "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
   GYM: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "memberships", "checkin", "day_passes",
     "classes", "trainers", "body_tracking", "lockers", "logs", "audit", "test_runs", "branches", "messaging",
-    "employees", "payroll", "payroll_config", "electronic_payroll",
+    "agent", "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
   STORE: [
     "dashboard", "companies", "products", "inventory", "pos",
     "invoices", "customers", "suppliers", "purchases", "accounting", "reports",
     "users", "settings", "notifications", "rbac", "logs", "audit", "test_runs", "branches", "messaging",
-    "employees", "payroll", "payroll_config", "electronic_payroll",
+    "agent", "employees", "payroll", "payroll_config", "electronic_payroll",
   ],
 };
 

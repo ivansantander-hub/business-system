@@ -93,6 +93,8 @@ export async function POST(request: Request) {
 | `POST /api/profile/avatar` | `avatar.upload` |
 | `DELETE /api/profile/avatar` | `avatar.delete` |
 | `POST /api/day-passes` | `daypass.create` |
+| `POST /api/agent/chat` | `agent.chat`, `agent.chat.error` |
+| `PUT /api/agent/config` | `agent.config.update`, `agent.config.update.error` |
 
 ## Frontend Logging
 
