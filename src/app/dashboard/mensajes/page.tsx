@@ -685,7 +685,7 @@ export default function MensajesPage() {
                         <div className="w-2 h-2 rounded-full bg-violet-500 animate-bounce shadow-[0_0_6px_rgba(139,92,246,0.6)]" style={{ animationDelay: "0ms" }} />
                         <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-bounce shadow-[0_0_6px_rgba(217,70,239,0.6)]" style={{ animationDelay: "150ms" }} />
                         <div className="w-2 h-2 rounded-full bg-violet-500 animate-bounce shadow-[0_0_6px_rgba(139,92,246,0.6)]" style={{ animationDelay: "300ms" }} />
-                        <span className="ml-2 text-xs text-violet-500 dark:text-violet-400">Aria está pensando...</span>
+                        <span className="ml-2 text-xs text-violet-500 dark:text-violet-400">AURA está analizando...</span>
                       </div>
                     </div>
                   </div>

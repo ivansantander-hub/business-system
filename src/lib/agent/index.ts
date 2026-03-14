@@ -4,8 +4,9 @@ import { getToolIdsForCapabilities } from "./capabilities";
 import { getToolsByNames } from "./tools";
 import { QUERY_HANDLERS } from "./queries";
 import { buildSystemPrompt } from "./prompts";
+import { agentLogger } from "./logger";
 
-const MAX_TOOL_ROUNDS = 8;
+const MAX_TOOL_ROUNDS = 10;
 
 export interface ProcessMessageResult {
   response: string;
@@ -55,16 +56,27 @@ export async function processMessage(
     }));
 
   const toolsUsed: string[] = [];
-  let messages = [...chatHistory];
+  const messages = [...chatHistory];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const result = await llmProvider.chat({
-      model,
-      systemPrompt,
-      messages,
-      tools,
-      maxTokens: config.maxTokens,
-    });
+    let result;
+    try {
+      result = await llmProvider.chat({
+        model,
+        systemPrompt,
+        messages,
+        tools: tools,
+        maxTokens: config.maxTokens,
+      });
+    } catch (err) {
+      agentLogger.error("llm.call.failed", err, { companyId });
+      return {
+        response: "Ocurrió un error al procesar tu consulta. Intenta de nuevo en unos segundos.",
+        model,
+        provider,
+        toolsUsed,
+      };
+    }
 
     if (result.finishReason !== "tool_calls" || result.toolCalls.length === 0) {
       return {
@@ -89,18 +101,23 @@ export async function processMessage(
       try {
         const handler = QUERY_HANDLERS[tc.function.name];
         if (!handler) {
-          toolResult = { error: `Herramienta desconocida: ${tc.function.name}` };
+          toolResult = { error: `Herramienta no disponible: ${tc.function.name}` };
         } else {
-          const args = JSON.parse(tc.function.arguments);
+          const args = JSON.parse(tc.function.arguments || "{}");
           toolResult = await handler(companyId, args);
         }
       } catch (err) {
-        toolResult = { error: `Error ejecutando herramienta: ${err instanceof Error ? err.message : "desconocido"}` };
+        agentLogger.error("tool.execution.failed", err, { companyId, toolName: tc.function.name });
+        toolResult = { error: `Error: ${err instanceof Error ? err.message : "desconocido"}` };
       }
+
+      const serialized = JSON.stringify(toolResult, (_key, value) =>
+        typeof value === "bigint" ? Number(value) : value,
+      );
 
       messages.push({
         role: "tool",
-        content: JSON.stringify(toolResult),
+        content: serialized,
         tool_call_id: tc.id,
       });
     }

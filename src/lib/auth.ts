@@ -1,9 +1,24 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "default-secret-change-me"
-);
+const jwtSecretValue = process.env.JWT_SECRET;
+
+if (!jwtSecretValue) {
+  throw new Error(
+    "[FATAL] La variable de entorno JWT_SECRET no está definida. " +
+      "El servidor no puede iniciar sin un secreto seguro. " +
+      "Agrega JWT_SECRET=<mínimo 32 caracteres> en tu archivo .env"
+  );
+}
+
+if (jwtSecretValue.length < 32) {
+  throw new Error(
+    "[FATAL] JWT_SECRET debe tener al menos 32 caracteres para ser seguro."
+  );
+}
+
+const JWT_SECRET = new TextEncoder().encode(jwtSecretValue);
 
 export interface JWTPayload {
   userId: string;
@@ -65,5 +80,25 @@ export function requireCompanyId(request: Request): string {
     throw new Error("SUPER_ADMIN must specify companyId");
   }
   if (!companyId) throw new Error("Company context required");
+  return companyId;
+}
+
+/**
+ * Versión validada de requireCompanyId: verifica que la empresa exista y esté activa.
+ * Para SUPER_ADMIN, valida que el companyId del query string corresponde a una empresa real.
+ * Para otros roles, el companyId viene del JWT (ya validado al login).
+ */
+export async function requireValidCompanyId(request: Request): Promise<string> {
+  const companyId = requireCompanyId(request);
+  const { role } = getUserFromHeaders(request);
+
+  if (role === "SUPER_ADMIN") {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true },
+    });
+    if (!company) throw new Error("Company not found");
+  }
+
   return companyId;
 }

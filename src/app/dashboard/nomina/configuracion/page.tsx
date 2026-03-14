@@ -104,7 +104,7 @@ export default function ConfiguracionNominaPage() {
     loadConfig();
   }, [loadConfig]);
 
-  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSave(e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>) {
     e.preventDefault();
     setSaving(true);
     try {

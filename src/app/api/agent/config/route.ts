@@ -4,12 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 import { CAPABILITIES } from "@/lib/agent/capabilities";
 
-function maskApiKey(key: string | null | undefined): string | null {
-  if (!key) return null;
-  if (key.length <= 8) return "****";
-  return key.slice(0, 4) + "****" + key.slice(-4);
-}
-
 export async function GET(request: Request) {
   const { userId, role, companyId } = getUserFromHeaders(request);
   if (!userId || !companyId) {
@@ -28,8 +22,6 @@ export async function GET(request: Request) {
     capabilities: config?.capabilities ?? {},
     customPrompt: config?.customPrompt ?? null,
     maxTokens: config?.maxTokens ?? 4096,
-    openaiApiKey: maskApiKey(config?.openaiApiKey),
-    anthropicApiKey: maskApiKey(config?.anthropicApiKey),
     hasOpenaiKey: !!config?.openaiApiKey,
     hasAnthropicKey: !!config?.anthropicApiKey,
     hasGlobalOpenaiKey: !!process.env.OPENAI_API_KEY,
@@ -72,7 +64,7 @@ export async function PUT(request: Request) {
     });
 
     if (enabled && !existing?.enabled) {
-      await ensureAriaUser(companyId);
+      await ensureAuraUser(companyId);
     }
 
     auditApiRequest(request, "agent.config.update", {
@@ -96,8 +88,8 @@ export async function PUT(request: Request) {
       capabilities: config.capabilities,
       customPrompt: config.customPrompt,
       maxTokens: config.maxTokens,
-      openaiApiKey: maskApiKey(config.openaiApiKey),
-      anthropicApiKey: maskApiKey(config.anthropicApiKey),
+      hasOpenaiKey: !!config.openaiApiKey,
+      hasAnthropicKey: !!config.anthropicApiKey,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error interno";
@@ -106,18 +98,29 @@ export async function PUT(request: Request) {
   }
 }
 
-async function ensureAriaUser(companyId: string) {
+async function ensureAuraUser(companyId: string) {
   const existing = await prisma.user.findFirst({
     where: { isBot: true, companies: { some: { companyId } } },
   });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.name !== "AURA") {
+      await prisma.user.update({ where: { id: existing.id }, data: { name: "AURA", email: "aura@sgc.bot" } });
+    }
+    return existing;
+  }
 
-  let ariaUser = await prisma.user.findFirst({ where: { isBot: true, email: "aria@sgc.bot" } });
-  if (!ariaUser) {
-    ariaUser = await prisma.user.create({
+  let botUser = await prisma.user.findFirst({ where: { isBot: true, email: "aura@sgc.bot" } });
+  if (!botUser) {
+    botUser = await prisma.user.findFirst({ where: { isBot: true, email: "aria@sgc.bot" } });
+    if (botUser) {
+      await prisma.user.update({ where: { id: botUser.id }, data: { name: "AURA", email: "aura@sgc.bot" } });
+    }
+  }
+  if (!botUser) {
+    botUser = await prisma.user.create({
       data: {
-        name: "Aria",
-        email: "aria@sgc.bot",
+        name: "AURA",
+        email: "aura@sgc.bot",
         password: "BOT_NO_LOGIN",
         role: "ADMIN",
         isBot: true,
@@ -126,8 +129,8 @@ async function ensureAriaUser(companyId: string) {
   }
 
   await prisma.userCompany.create({
-    data: { userId: ariaUser.id, companyId, role: "ADMIN" },
+    data: { userId: botUser.id, companyId, role: "ADMIN" },
   });
 
-  return ariaUser;
+  return botUser;
 }

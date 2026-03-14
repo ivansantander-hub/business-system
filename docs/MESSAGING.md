@@ -8,7 +8,7 @@ The messaging system provides:
 
 - **Direct messages (DMs)** — One-to-one conversations between users in the same company
 - **Group conversations** — Multi-participant conversations with optional name
-- **AI Agent (Aria)** — A special bot contact that answers business questions using LLM providers (see [AGENT.md](./AGENT.md))
+- **AI Agent (AURA)** — A special bot contact that answers business questions using LLM providers (see [AGENT.md](./AGENT.md))
 - **File attachments** — Messages can include attachments stored in R2
 - **Emoji support** — Message content supports emoji (plain text/Unicode)
 - **RBAC** — Access controlled by the `messaging` permission (ADMIN by default)

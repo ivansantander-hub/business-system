@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { AccountType } from "@prisma/client";
+import { AccountType, Role } from "@prisma/client";
 import { hash } from "bcryptjs";
+import { signToken } from "@/lib/auth";
 
 export async function getOrCreateTestCompany() {
   let company = await prisma.company.findFirst({
@@ -106,6 +107,33 @@ export async function getOrCreateSecondTestUser(companyId: string) {
   }
 
   return user;
+}
+
+export async function createTestUserWithRole(
+  companyId: string,
+  role: string,
+  _adminToken?: string
+): Promise<string> {
+  const email = `test-rbac-${role.toLowerCase()}-${Date.now()}@test.com`;
+  const user = await prisma.user.create({
+    data: {
+      name: `Test RBAC ${role}`,
+      email,
+      password: await hash("test123", 10),
+    },
+  });
+
+  await prisma.userCompany.create({
+    data: { userId: user.id, companyId, role: role as unknown as Role },
+  });
+
+  return signToken({
+    userId: user.id,
+    role,
+    name: user.name,
+    companyId,
+    branchId: null,
+  });
 }
 
 export async function createTestProduct(companyId: string, stock = 100, branchId?: string) {

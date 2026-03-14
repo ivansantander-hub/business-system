@@ -8,7 +8,7 @@
  * 3. Mi Tienda Express (STORE, NIT: 900555666-7) - Cali
  */
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, PaymentMethod } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -242,7 +242,7 @@ async function seedCompanyData(
         const match = lastInvoice.number.match(/\d+$/);
         if (match) nextNum = Number.parseInt(match[0], 10) + 1;
       }
-      const paymentMethods = ["CASH", "CARD", "TRANSFER"] as const;
+      const paymentMethods: PaymentMethod[] = ["CASH", "CARD", "TRANSFER"];
       for (let i = 0; i < targetCount; i++) {
         const numStr = String(nextNum + i).padStart(3, "0");
         const number = `${invoicePrefix}${numStr}`;
@@ -495,7 +495,7 @@ async function seedCompanyData(
       console.log(`  InventoryMovements: already have ${moveCount}, skipping`);
     } else {
       const targetCount = randomInt(50, 100);
-      const types = ["IN", "OUT", "ADJUSTMENT"] as const;
+      const types = ["IN", "OUT", "ADJUSTMENT"] as ("IN" | "OUT" | "ADJUSTMENT")[];
       for (let i = 0; i < targetCount && products.length > 0; i++) {
         const prod = products[randomInt(0, products.length - 1)];
         const type = pick(types);

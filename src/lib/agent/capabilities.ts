@@ -84,6 +84,12 @@ export const CAPABILITIES: Capability[] = [
     description: "Actividad reciente, historial de cambios por entidad",
     tools: ["get_recent_audit", "get_entity_audit_history"],
   },
+  {
+    id: "data_query",
+    label: "Consultas Avanzadas (SQL)",
+    description: "Permite consultas SQL de solo lectura para análisis avanzado: conteos, rankings, totales personalizados y cualquier pregunta sobre los datos",
+    tools: ["execute_sql_query"],
+  },
 ];
 
 export const ALL_CAPABILITY_IDS = CAPABILITIES.map((c) => c.id);

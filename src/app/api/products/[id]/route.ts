@@ -1,11 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromHeaders } from "@/lib/auth";
+import { getUserFromHeaders, requireValidCompanyId } from "@/lib/auth";
+import { getPermissionsFromDB } from "@/lib/rbac";
 import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(_req);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  const { role } = getUserFromHeaders(_req);
+  let companyId: string;
+  try {
+    companyId = await requireValidCompanyId(_req);
+  } catch (e) {
+    const isNotFound = e instanceof Error && e.message === "Company not found";
+    return NextResponse.json(
+      { error: isNotFound ? "Empresa no encontrada" : "Se requiere contexto de empresa" },
+      { status: isNotFound ? 404 : 403 }
+    );
+  }
+  if (role !== "SUPER_ADMIN") {
+    const perms = await getPermissionsFromDB(companyId, role);
+    if (!perms.includes("products")) {
+      return NextResponse.json({ error: "No tienes permiso para ver productos" }, { status: 403 });
+    }
+  }
 
   const { id } = await params;
   const product = await prisma.product.findFirst({
@@ -17,8 +33,23 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(request);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  const { role } = getUserFromHeaders(request);
+  let companyId: string;
+  try {
+    companyId = await requireValidCompanyId(request);
+  } catch (e) {
+    const isNotFound = e instanceof Error && e.message === "Company not found";
+    return NextResponse.json(
+      { error: isNotFound ? "Empresa no encontrada" : "Se requiere contexto de empresa" },
+      { status: isNotFound ? 404 : 403 }
+    );
+  }
+  if (role !== "SUPER_ADMIN") {
+    const perms = await getPermissionsFromDB(companyId, role);
+    if (!perms.includes("inventory")) {
+      return NextResponse.json({ error: "No tienes permiso para editar productos" }, { status: 403 });
+    }
+  }
 
   const { id } = await params;
   const existing = await prisma.product.findFirst({
@@ -65,8 +96,23 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(_req);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  const { role } = getUserFromHeaders(_req);
+  let companyId: string;
+  try {
+    companyId = await requireValidCompanyId(_req);
+  } catch (e) {
+    const isNotFound = e instanceof Error && e.message === "Company not found";
+    return NextResponse.json(
+      { error: isNotFound ? "Empresa no encontrada" : "Se requiere contexto de empresa" },
+      { status: isNotFound ? 404 : 403 }
+    );
+  }
+  if (role !== "SUPER_ADMIN") {
+    const perms = await getPermissionsFromDB(companyId, role);
+    if (!perms.includes("inventory")) {
+      return NextResponse.json({ error: "No tienes permiso para eliminar productos" }, { status: 403 });
+    }
+  }
 
   const { id } = await params;
   const existing = await prisma.product.findFirst({ where: { id, companyId } });
