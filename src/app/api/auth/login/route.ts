@@ -3,8 +3,31 @@ import { prisma } from "@/lib/prisma";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { auditLogger, extractRequestMeta } from "@/lib/audit-logger";
+import { checkRateLimit, type RateLimitConfig } from "@/lib/rate-limiter";
+
+const LOGIN_RATE_LIMIT: RateLimitConfig = {
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+  blockDurationMs: 30 * 60 * 1000,
+};
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    "unknown";
+
+  const { allowed, retryAfterMs } = checkRateLimit(`login:${ip}`, LOGIN_RATE_LIMIT);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Demasiados intentos de acceso. Intenta más tarde." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(Math.ceil((retryAfterMs ?? 0) / 1000)) },
+      }
+    );
+  }
+
   try {
     const { email, password } = await request.json();
 

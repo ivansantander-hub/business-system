@@ -4,6 +4,7 @@ import { getToolIdsForCapabilities } from "./capabilities";
 import { getToolsByNames } from "./tools";
 import { QUERY_HANDLERS } from "./queries";
 import { buildSystemPrompt } from "./prompts";
+import { agentLogger } from "./logger";
 
 const MAX_TOOL_ROUNDS = 10;
 
@@ -68,7 +69,7 @@ export async function processMessage(
         maxTokens: config.maxTokens,
       });
     } catch (err) {
-      console.error("[AURA] LLM call failed:", err);
+      agentLogger.error("llm.call.failed", err, { companyId });
       return {
         response: "Ocurrió un error al procesar tu consulta. Intenta de nuevo en unos segundos.",
         model,
@@ -106,7 +107,7 @@ export async function processMessage(
           toolResult = await handler(companyId, args);
         }
       } catch (err) {
-        console.error(`[AURA] Tool ${tc.function.name} error:`, err);
+        agentLogger.error("tool.execution.failed", err, { companyId, toolName: tc.function.name });
         toolResult = { error: `Error: ${err instanceof Error ? err.message : "desconocido"}` };
       }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { agentLogger } from "./logger";
 
 type D = number;
 
@@ -657,7 +658,7 @@ function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-function injectCompanyFilter(sql: string, companyId: string): string {
+function injectCompanyFilter(sql: string, companyId: string): [string, unknown[]] {
   let query = sql.trim().replace(/;+$/, "");
 
   const tablesReferenced: { table: string; alias: string; schema: "tenant" | "public" }[] = [];
@@ -676,10 +677,10 @@ function injectCompanyFilter(sql: string, companyId: string): string {
   }
 
   const mainTable = tablesReferenced[0];
-  if (!mainTable) return query;
+  if (!mainTable) return [query, []];
 
   const companyCol = "company_id";
-  const filterExpr = `${mainTable.alias}.${companyCol} = '${companyId}'`;
+  const filterExpr = `${mainTable.alias}.${companyCol} = $1`;
 
   const whereIndex = query.toUpperCase().indexOf("WHERE");
   const groupIndex = query.toUpperCase().indexOf("GROUP BY");
@@ -706,7 +707,7 @@ function injectCompanyFilter(sql: string, companyId: string): string {
     query += " LIMIT 100";
   }
 
-  return query;
+  return [query, [companyId]];
 }
 
 export async function executeSqlQuery(companyId: string, args: { sql: string; description?: string }) {
@@ -715,10 +716,11 @@ export async function executeSqlQuery(companyId: string, args: { sql: string; de
     return { error: validation.error };
   }
 
-  const finalSql = injectCompanyFilter(args.sql, companyId);
+  const [finalSql, params] = injectCompanyFilter(args.sql, companyId);
 
+  const t0 = Date.now();
   try {
-    const results = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(finalSql);
+    const results = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(finalSql, ...params);
 
     const serialized = results.map((row) => {
       const out: Record<string, unknown> = {};
@@ -729,6 +731,13 @@ export async function executeSqlQuery(companyId: string, args: { sql: string; de
         else out[key] = val;
       }
       return out;
+    });
+
+    agentLogger.info("sql.query.executed", {
+      companyId,
+      queryDescription: args.description,
+      rowCount: Array.isArray(results) ? results.length : 0,
+      durationMs: Date.now() - t0,
     });
 
     return { rows: serialized, rowCount: serialized.length, query: args.description || "Consulta SQL" };

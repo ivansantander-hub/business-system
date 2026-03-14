@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromHeaders } from "@/lib/auth";
-import { hasPermission } from "@/lib/rbac";
+import { getUserFromHeaders, requireValidCompanyId } from "@/lib/auth";
+import { getPermissionsFromDB } from "@/lib/rbac";
 import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(request: Request) {
-  const { companyId, role } = getUserFromHeaders(request);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
-  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
-    return NextResponse.json({ error: "No tienes permiso para ver productos" }, { status: 403 });
+  const { role } = getUserFromHeaders(request);
+  let companyId: string;
+  try {
+    companyId = await requireValidCompanyId(request);
+  } catch (e) {
+    const isNotFound = e instanceof Error && e.message === "Company not found";
+    return NextResponse.json(
+      { error: isNotFound ? "Empresa no encontrada" : "Se requiere contexto de empresa" },
+      { status: isNotFound ? 404 : 403 }
+    );
+  }
+  if (role !== "SUPER_ADMIN") {
+    const perms = await getPermissionsFromDB(companyId, role);
+    if (!perms.includes("products")) {
+      return NextResponse.json({ error: "No tienes permiso para ver productos" }, { status: 403 });
+    }
   }
 
   const { searchParams } = new URL(request.url);
@@ -36,10 +48,22 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { companyId, role } = getUserFromHeaders(request);
-  if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
-  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
-    return NextResponse.json({ error: "No tienes permiso para crear productos" }, { status: 403 });
+  const { role } = getUserFromHeaders(request);
+  let companyId: string;
+  try {
+    companyId = await requireValidCompanyId(request);
+  } catch (e) {
+    const isNotFound = e instanceof Error && e.message === "Company not found";
+    return NextResponse.json(
+      { error: isNotFound ? "Empresa no encontrada" : "Se requiere contexto de empresa" },
+      { status: isNotFound ? 404 : 403 }
+    );
+  }
+  if (role !== "SUPER_ADMIN") {
+    const perms = await getPermissionsFromDB(companyId, role);
+    if (!perms.includes("inventory")) {
+      return NextResponse.json({ error: "No tienes permiso para crear productos" }, { status: 403 });
+    }
   }
 
   try {
