@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
 import { auditApiRequest } from "@/lib/api-audit";
 
 export async function GET(request: Request) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, role } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
+    return NextResponse.json({ error: "No tienes permiso para ver productos" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") || "";
@@ -32,8 +36,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, role } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
+    return NextResponse.json({ error: "No tienes permiso para crear productos" }, { status: 403 });
+  }
 
   try {
     const body = await request.json();

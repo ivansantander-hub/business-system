@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getUserFromHeaders, requireCompanyId } from "@/lib/auth";
+import { getUserFromHeaders, requireValidCompanyId } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
 
 export async function GET(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, role } = getUserFromHeaders(request);
   if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "messaging")) {
+    return NextResponse.json({ error: "No tienes acceso a mensajería" }, { status: 403 });
+  }
+
   let companyId: string;
   try {
-    companyId = requireCompanyId(request);
-  } catch {
-    return NextResponse.json(
-      { error: "Se requiere contexto de empresa" },
-      { status: 403 }
-    );
+    companyId = await requireValidCompanyId(request);
+  } catch (err) {
+    const msg = err instanceof Error && err.message === "Company not found"
+      ? "Empresa no encontrada"
+      : "Se requiere contexto de empresa";
+    const status = err instanceof Error && err.message === "Company not found" ? 404 : 403;
+    return NextResponse.json({ error: msg }, { status });
   }
 
   const conversations = await prisma.conversation.findMany({
@@ -114,19 +120,24 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, role } = getUserFromHeaders(request);
   if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "messaging")) {
+    return NextResponse.json({ error: "No tienes acceso a mensajería" }, { status: 403 });
+  }
+
   let companyId: string;
   try {
-    companyId = requireCompanyId(request);
-  } catch {
-    return NextResponse.json(
-      { error: "Se requiere contexto de empresa" },
-      { status: 403 }
-    );
+    companyId = await requireValidCompanyId(request);
+  } catch (err) {
+    const msg = err instanceof Error && err.message === "Company not found"
+      ? "Empresa no encontrada"
+      : "Se requiere contexto de empresa";
+    const status = err instanceof Error && err.message === "Company not found" ? 404 : 403;
+    return NextResponse.json({ error: msg }, { status });
   }
 
   const body = await request.json();

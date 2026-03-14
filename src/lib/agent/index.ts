@@ -64,7 +64,7 @@ export async function processMessage(
         model,
         systemPrompt,
         messages,
-        tools: tools.length > 0 ? tools : undefined,
+        tools: tools,
         maxTokens: config.maxTokens,
       });
     } catch (err) {

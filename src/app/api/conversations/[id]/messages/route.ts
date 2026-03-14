@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders, requireCompanyId } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
 
 const MAX_CONTENT_LENGTH = 5000;
 
@@ -28,9 +29,13 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, role } = getUserFromHeaders(request);
   if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "messaging")) {
+    return NextResponse.json({ error: "No tienes acceso a mensajería" }, { status: 403 });
   }
 
   let companyId: string;
@@ -105,9 +110,13 @@ export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { userId } = getUserFromHeaders(request);
+  const { userId, role } = getUserFromHeaders(request);
   if (!userId) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "messaging")) {
+    return NextResponse.json({ error: "No tienes acceso a mensajería" }, { status: 403 });
   }
 
   let companyId: string;

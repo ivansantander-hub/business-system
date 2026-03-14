@@ -39,8 +39,8 @@ export default function ConfiguracionPage() {
     enabled: boolean;
     modelProvider: string;
     modelName: string;
-    openaiApiKey: string;
-    anthropicApiKey: string;
+    hasOpenaiKey: boolean;
+    hasAnthropicKey: boolean;
     capabilities: Record<string, boolean>;
     customPrompt: string;
     maxTokens: number;
@@ -48,12 +48,14 @@ export default function ConfiguracionPage() {
     enabled: false,
     modelProvider: "openai",
     modelName: "gpt-4o-mini",
-    openaiApiKey: "",
-    anthropicApiKey: "",
+    hasOpenaiKey: false,
+    hasAnthropicKey: false,
     capabilities: {},
     customPrompt: "",
     maxTokens: 4096,
   });
+  const [newOpenaiKey, setNewOpenaiKey] = useState("");
+  const [newAnthropicKey, setNewAnthropicKey] = useState("");
   const [agentModels, setAgentModels] = useState<{ provider: string; id: string; label: string }[]>([]);
   const [agentSaving, setAgentSaving] = useState(false);
   const [agentTesting, setAgentTesting] = useState(false);
@@ -82,12 +84,14 @@ export default function ConfiguracionPage() {
         enabled: ag.enabled ?? false,
         modelProvider: ag.modelProvider ?? "openai",
         modelName: ag.modelName ?? "gpt-4o-mini",
-        openaiApiKey: ag.openaiApiKey ?? "",
-        anthropicApiKey: ag.anthropicApiKey ?? "",
+        hasOpenaiKey: ag.hasOpenaiKey ?? false,
+        hasAnthropicKey: ag.hasAnthropicKey ?? false,
         capabilities: ag.capabilities ?? {},
         customPrompt: ag.customPrompt ?? "",
         maxTokens: ag.maxTokens ?? 4096,
       });
+      setNewOpenaiKey("");
+      setNewAnthropicKey("");
       if (ag.availableCapabilities?.length) {
         setAgentCapabilities(ag.availableCapabilities);
       }
@@ -147,12 +151,8 @@ export default function ConfiguracionPage() {
         customPrompt: agentConfig.customPrompt || null,
         maxTokens: agentConfig.maxTokens,
       };
-      if (agentConfig.openaiApiKey && !agentConfig.openaiApiKey.includes("*")) {
-        body.openaiApiKey = agentConfig.openaiApiKey;
-      }
-      if (agentConfig.anthropicApiKey && !agentConfig.anthropicApiKey.includes("*")) {
-        body.anthropicApiKey = agentConfig.anthropicApiKey;
-      }
+      if (newOpenaiKey.trim()) body.openaiApiKey = newOpenaiKey.trim();
+      if (newAnthropicKey.trim()) body.anthropicApiKey = newAnthropicKey.trim();
       const res = await fetch("/api/agent/config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -163,9 +163,11 @@ export default function ConfiguracionPage() {
         const ag = await res.json();
         setAgentConfig((prev) => ({
           ...prev,
-          openaiApiKey: ag.openaiApiKey ?? "",
-          anthropicApiKey: ag.anthropicApiKey ?? "",
+          hasOpenaiKey: ag.hasOpenaiKey ?? prev.hasOpenaiKey,
+          hasAnthropicKey: ag.hasAnthropicKey ?? prev.hasAnthropicKey,
         }));
+        setNewOpenaiKey("");
+        setNewAnthropicKey("");
       } else {
         const err = await res.json();
         setToast({ message: err.error || "Error al guardar", type: "error" });
@@ -553,13 +555,16 @@ export default function ConfiguracionPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     API Key de OpenAI (opcional)
                   </label>
+                  {agentConfig.hasOpenaiKey && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mb-1">Configurada — ingresa una nueva para reemplazarla</p>
+                  )}
                   <div className="relative">
                     <input
                       type={showOpenaiKey ? "text" : "password"}
                       className="input-field pr-10"
-                      value={agentConfig.openaiApiKey}
-                      onChange={(e) => setAgentConfig({ ...agentConfig, openaiApiKey: e.target.value })}
-                      placeholder="sk-... (dejar vacío para usar la global)"
+                      value={newOpenaiKey}
+                      onChange={(e) => setNewOpenaiKey(e.target.value)}
+                      placeholder={agentConfig.hasOpenaiKey ? "Dejar vacío para mantener la actual" : "sk-... (dejar vacío para usar la global)"}
                     />
                     <button
                       type="button"
@@ -574,13 +579,16 @@ export default function ConfiguracionPage() {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                     API Key de Anthropic (opcional)
                   </label>
+                  {agentConfig.hasAnthropicKey && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mb-1">Configurada — ingresa una nueva para reemplazarla</p>
+                  )}
                   <div className="relative">
                     <input
                       type={showAnthropicKey ? "text" : "password"}
                       className="input-field pr-10"
-                      value={agentConfig.anthropicApiKey}
-                      onChange={(e) => setAgentConfig({ ...agentConfig, anthropicApiKey: e.target.value })}
-                      placeholder="sk-ant-... (dejar vacío para usar la global)"
+                      value={newAnthropicKey}
+                      onChange={(e) => setNewAnthropicKey(e.target.value)}
+                      placeholder={agentConfig.hasAnthropicKey ? "Dejar vacío para mantener la actual" : "sk-ant-... (dejar vacío para usar la global)"}
                     />
                     <button
                       type="button"

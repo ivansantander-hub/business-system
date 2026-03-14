@@ -4,12 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 import { CAPABILITIES } from "@/lib/agent/capabilities";
 
-function maskApiKey(key: string | null | undefined): string | null {
-  if (!key) return null;
-  if (key.length <= 8) return "****";
-  return key.slice(0, 4) + "****" + key.slice(-4);
-}
-
 export async function GET(request: Request) {
   const { userId, role, companyId } = getUserFromHeaders(request);
   if (!userId || !companyId) {
@@ -28,8 +22,6 @@ export async function GET(request: Request) {
     capabilities: config?.capabilities ?? {},
     customPrompt: config?.customPrompt ?? null,
     maxTokens: config?.maxTokens ?? 4096,
-    openaiApiKey: maskApiKey(config?.openaiApiKey),
-    anthropicApiKey: maskApiKey(config?.anthropicApiKey),
     hasOpenaiKey: !!config?.openaiApiKey,
     hasAnthropicKey: !!config?.anthropicApiKey,
     hasGlobalOpenaiKey: !!process.env.OPENAI_API_KEY,
@@ -96,8 +88,8 @@ export async function PUT(request: Request) {
       capabilities: config.capabilities,
       customPrompt: config.customPrompt,
       maxTokens: config.maxTokens,
-      openaiApiKey: maskApiKey(config.openaiApiKey),
-      anthropicApiKey: maskApiKey(config.anthropicApiKey),
+      hasOpenaiKey: !!config.openaiApiKey,
+      hasAnthropicKey: !!config.anthropicApiKey,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Error interno";

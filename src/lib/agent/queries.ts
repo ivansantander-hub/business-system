@@ -61,7 +61,7 @@ export async function getBusinessOverview(companyId: string) {
     prisma.customer.count({ where: { companyId } }),
     prisma.supplier.count({ where: { companyId } }),
     prisma.employee.count({ where: { companyId, isActive: true } }),
-    prisma.invoice.count({ where: { companyId, date: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) }, status: { not: "VOID" } } }),
+    prisma.invoice.count({ where: { companyId, date: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) }, status: { not: "CANCELLED" } } }),
   ]);
   return { activeProducts: products, totalCustomers: customers, totalSuppliers: suppliers, activeEmployees: employees, invoicesToday };
 }
@@ -71,7 +71,7 @@ export async function getBusinessOverview(companyId: string) {
 export async function getSalesSummary(companyId: string, args: { period: string; startDate?: string; endDate?: string }) {
   const { start, end } = parsePeriodDates(args.period, args.startDate, args.endDate);
   const invoices = await prisma.invoice.findMany({
-    where: { companyId, date: { gte: start, lte: end }, status: { not: "VOID" } },
+    where: { companyId, date: { gte: start, lte: end }, status: { not: "CANCELLED" } },
     select: { total: true, tax: true, discount: true, paymentMethod: true },
   });
   const total = invoices.reduce((s, i) => s + toNum(i.total), 0);
@@ -83,7 +83,7 @@ export async function getSalesSummary(companyId: string, args: { period: string;
 export async function getSalesByPaymentMethod(companyId: string, args: { period: string; startDate?: string; endDate?: string }) {
   const { start, end } = parsePeriodDates(args.period, args.startDate, args.endDate);
   const invoices = await prisma.invoice.findMany({
-    where: { companyId, date: { gte: start, lte: end }, status: { not: "VOID" } },
+    where: { companyId, date: { gte: start, lte: end }, status: { not: "CANCELLED" } },
     select: { total: true, paymentMethod: true },
   });
   const byMethod: Record<string, { count: number; total: D }> = {};
@@ -99,12 +99,13 @@ export async function getSalesByPaymentMethod(companyId: string, args: { period:
 export async function getTopSellingProducts(companyId: string, args: { period: string; limit?: number; startDate?: string; endDate?: string }) {
   const { start, end } = parsePeriodDates(args.period, args.startDate, args.endDate);
   const items = await prisma.invoiceItem.findMany({
-    where: { invoice: { companyId, date: { gte: start, lte: end }, status: { not: "VOID" } } },
+    where: { invoice: { companyId, date: { gte: start, lte: end }, status: { not: "CANCELLED" } } },
     select: { productId: true, productName: true, quantity: true, total: true },
   });
   const grouped: Record<string, { name: string; quantity: D; revenue: D }> = {};
   for (const item of items) {
     const pid = item.productId;
+    if (!pid) continue;
     if (!grouped[pid]) grouped[pid] = { name: item.productName, quantity: 0, revenue: 0 };
     grouped[pid].quantity += toNum(item.quantity);
     grouped[pid].revenue += toNum(item.total);
@@ -140,12 +141,13 @@ export async function getProductStats(companyId: string) {
 }
 
 export async function searchProducts(companyId: string, args: { query?: string; categoryId?: string; lowStockOnly?: boolean }) {
-  const where: Record<string, unknown> = { companyId, isActive: true };
-  if (args.query) where.name = { contains: args.query, mode: "insensitive" };
-  if (args.categoryId) where.categoryId = args.categoryId;
-
   const products = await prisma.product.findMany({
-    where: where as Parameters<typeof prisma.product.findMany>[0]["where"],
+    where: {
+      companyId,
+      isActive: true,
+      ...(args.query ? { name: { contains: args.query, mode: "insensitive" as const } } : {}),
+      ...(args.categoryId ? { categoryId: args.categoryId } : {}),
+    },
     select: { id: true, name: true, salePrice: true, costPrice: true, stock: true, minStock: true, unit: true, category: { select: { name: true } } },
     take: 20,
     orderBy: { name: "asc" },
@@ -186,11 +188,12 @@ export async function getLowStockProducts(companyId: string) {
 // ──── Inventory ────
 
 export async function getInventoryStatus(companyId: string, args: { productId?: string; lowStockOnly?: boolean }) {
-  const where: Record<string, unknown> = { companyId, isActive: true };
-  if (args.productId) where.id = args.productId;
-
   const products = await prisma.product.findMany({
-    where: where as Parameters<typeof prisma.product.findMany>[0]["where"],
+    where: {
+      companyId,
+      isActive: true,
+      ...(args.productId ? { id: args.productId } : {}),
+    },
     select: { id: true, name: true, stock: true, minStock: true, costPrice: true, unit: true },
     take: 50,
     orderBy: { name: "asc" },
@@ -206,11 +209,11 @@ export async function getInventoryStatus(companyId: string, args: { productId?: 
 }
 
 export async function getInventoryMovements(companyId: string, args: { productId?: string; limit?: number }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.productId) where.productId = args.productId;
-
   const movements = await prisma.inventoryMovement.findMany({
-    where: where as Parameters<typeof prisma.inventoryMovement.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.productId ? { productId: args.productId } : {}),
+    },
     include: { product: { select: { name: true } }, user: { select: { name: true } } },
     take: args.limit || 20,
     orderBy: { createdAt: "desc" },
@@ -242,12 +245,11 @@ export async function listCustomers(companyId: string, args: { limit?: number; o
 }
 
 export async function searchCustomers(companyId: string, args: { query?: string }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.query) {
-    where.OR = [{ name: { contains: args.query, mode: "insensitive" } }, { nit: { contains: args.query } }];
-  }
   const customers = await prisma.customer.findMany({
-    where: where as Parameters<typeof prisma.customer.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.query ? { OR: [{ name: { contains: args.query, mode: "insensitive" as const } }, { nit: { contains: args.query } }] } : {}),
+    },
     select: { id: true, name: true, nit: true, phone: true, email: true, balance: true },
     take: 20,
     orderBy: { name: "asc" },
@@ -293,12 +295,11 @@ export async function listSuppliers(companyId: string, args: { limit?: number })
 }
 
 export async function searchSuppliers(companyId: string, args: { query?: string }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.query) {
-    where.OR = [{ name: { contains: args.query, mode: "insensitive" } }, { nit: { contains: args.query } }];
-  }
   const suppliers = await prisma.supplier.findMany({
-    where: where as Parameters<typeof prisma.supplier.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.query ? { OR: [{ name: { contains: args.query, mode: "insensitive" as const } }, { nit: { contains: args.query } }] } : {}),
+    },
     select: { id: true, name: true, nit: true, contactName: true, phone: true },
     take: 20,
     orderBy: { name: "asc" },
@@ -307,11 +308,11 @@ export async function searchSuppliers(companyId: string, args: { query?: string 
 }
 
 export async function getPurchaseOrders(companyId: string, args: { status?: string; limit?: number }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.status) where.status = args.status;
-
   const purchases = await prisma.purchase.findMany({
-    where: where as Parameters<typeof prisma.purchase.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.status ? { status: args.status as "PENDING" | "RECEIVED" | "CANCELLED" } : {}),
+    },
     include: { supplier: { select: { name: true } } },
     take: args.limit || 10,
     orderBy: { createdAt: "desc" },
@@ -331,7 +332,7 @@ export async function getActiveOrders(companyId: string) {
     include: {
       table: { select: { number: true } },
       customer: { select: { name: true } },
-      items: { select: { productName: true, quantity: true, status: true } },
+      items: { include: { product: { select: { name: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -339,7 +340,7 @@ export async function getActiveOrders(companyId: string) {
     orders: orders.map((o) => ({
       id: o.id, type: o.type, status: o.status, table: o.table?.number, customer: o.customer?.name,
       total: toNum(o.total), itemCount: o.items.length, createdAt: o.createdAt,
-      items: o.items.map((i) => ({ product: i.productName, quantity: toNum(i.quantity), status: i.status })),
+      items: o.items.map((i) => ({ product: i.product?.name ?? i.productId, quantity: toNum(i.quantity), status: i.status })),
     })),
   };
 }
@@ -356,7 +357,7 @@ export async function getOrderDetails(companyId: string, args: { orderId: string
   return {
     id: o.id, type: o.type, status: o.status, table: o.table?.number, customer: o.customer?.name, user: o.user.name,
     subtotal: toNum(o.subtotal), tax: toNum(o.tax), discount: toNum(o.discount), total: toNum(o.total),
-    items: o.items.map((i) => ({ product: i.product?.name || i.productName, quantity: toNum(i.quantity), unitPrice: toNum(i.unitPrice), total: toNum(i.total), status: i.status })),
+    items: o.items.map((i) => ({ product: i.product?.name ?? i.productId, quantity: toNum(i.quantity), unitPrice: toNum(i.unitPrice), total: toNum(i.total), status: i.status })),
   };
 }
 
@@ -379,31 +380,30 @@ export async function getTableStatus(companyId: string) {
 // ──── Employees ────
 
 export async function listEmployees(companyId: string, args: { activeOnly?: boolean; limit?: number }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.activeOnly !== false) where.isActive = true;
+  const whereFilter = { companyId, ...(args.activeOnly !== false ? { isActive: true } : {}) };
   const [employees, total] = await Promise.all([
     prisma.employee.findMany({
-      where: where as Parameters<typeof prisma.employee.findMany>[0]["where"],
+      where: whereFilter,
       select: { id: true, firstName: true, lastName: true, docNumber: true, position: true, contractType: true, baseSalary: true, isActive: true },
       take: args.limit || 30,
       orderBy: { firstName: "asc" },
     }),
-    prisma.employee.count({ where: where as Parameters<typeof prisma.employee.count>[0]["where"] }),
+    prisma.employee.count({ where: whereFilter }),
   ]);
   return { total, employees: employees.map((e) => ({ id: e.id, name: `${e.firstName} ${e.lastName}`, document: e.docNumber, position: e.position, contractType: e.contractType, baseSalary: toNum(e.baseSalary), isActive: e.isActive })) };
 }
 
 export async function searchEmployees(companyId: string, args: { query?: string }) {
-  const where: Record<string, unknown> = { companyId, isActive: true };
-  if (args.query) {
-    where.OR = [
-      { firstName: { contains: args.query, mode: "insensitive" } },
-      { lastName: { contains: args.query, mode: "insensitive" } },
-      { docNumber: { contains: args.query } },
-    ];
-  }
   const employees = await prisma.employee.findMany({
-    where: where as Parameters<typeof prisma.employee.findMany>[0]["where"],
+    where: {
+      companyId,
+      isActive: true,
+      ...(args.query ? { OR: [
+        { firstName: { contains: args.query, mode: "insensitive" as const } },
+        { lastName: { contains: args.query, mode: "insensitive" as const } },
+        { docNumber: { contains: args.query } },
+      ] } : {}),
+    },
     select: { id: true, firstName: true, lastName: true, docNumber: true, position: true, contractType: true },
     take: 20,
   });
@@ -463,11 +463,12 @@ export async function getPayrollSummary(companyId: string, args: { payrollRunId:
 // ──── Accounting ────
 
 export async function getAccountBalances(companyId: string, args: { type?: string }) {
-  const where: Record<string, unknown> = { companyId, isActive: true };
-  if (args.type) where.type = args.type;
-
   const accounts = await prisma.account.findMany({
-    where: where as Parameters<typeof prisma.account.findMany>[0]["where"],
+    where: {
+      companyId,
+      isActive: true,
+      ...(args.type ? { type: args.type as "ASSET" | "LIABILITY" | "EQUITY" | "INCOME" | "EXPENSE" | "COST" } : {}),
+    },
     select: { code: true, name: true, type: true, balance: true },
     orderBy: { code: "asc" },
   });
@@ -475,16 +476,16 @@ export async function getAccountBalances(companyId: string, args: { type?: strin
 }
 
 export async function getJournalEntries(companyId: string, args: { limit?: number; startDate?: string; endDate?: string }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.startDate || args.endDate) {
-    const dateFilter: Record<string, Date> = {};
-    if (args.startDate) dateFilter.gte = new Date(args.startDate);
-    if (args.endDate) dateFilter.lte = new Date(args.endDate);
-    where.date = dateFilter;
-  }
-
   const entries = await prisma.journalEntry.findMany({
-    where: where as Parameters<typeof prisma.journalEntry.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.startDate || args.endDate ? {
+        date: {
+          ...(args.startDate ? { gte: new Date(args.startDate) } : {}),
+          ...(args.endDate ? { lte: new Date(args.endDate) } : {}),
+        },
+      } : {}),
+    },
     include: { lines: { include: { account: { select: { code: true, name: true } } } } },
     take: args.limit || 10,
     orderBy: { date: "desc" },
@@ -500,15 +501,16 @@ export async function getJournalEntries(companyId: string, args: { limit?: numbe
 // ──── Memberships ────
 
 export async function getActiveMemberships(companyId: string, args: { expiringInDays?: number }) {
-  const where: Record<string, unknown> = { status: "ACTIVE", member: { companyId } };
-  if (args.expiringInDays) {
-    const deadline = new Date();
-    deadline.setDate(deadline.getDate() + args.expiringInDays);
-    where.endDate = { lte: deadline };
-  }
+  const deadline = args.expiringInDays
+    ? (() => { const d = new Date(); d.setDate(d.getDate() + args.expiringInDays!); return d; })()
+    : undefined;
 
   const memberships = await prisma.membership.findMany({
-    where: where as Parameters<typeof prisma.membership.findMany>[0]["where"],
+    where: {
+      status: "ACTIVE",
+      member: { companyId },
+      ...(deadline ? { endDate: { lte: deadline } } : {}),
+    },
     include: { member: { include: { customer: { select: { name: true } } } }, plan: { select: { name: true } } },
     take: 20,
     orderBy: { endDate: "asc" },
@@ -542,11 +544,11 @@ export async function getMembershipStats(companyId: string) {
 // ──── Cash ────
 
 export async function getCashSessions(companyId: string, args: { status?: string }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.status) where.status = args.status;
-
   const sessions = await prisma.cashSession.findMany({
-    where: where as Parameters<typeof prisma.cashSession.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.status ? { status: args.status as "OPEN" | "CLOSED" } : {}),
+    },
     include: { user: { select: { name: true } }, branch: { select: { name: true } } },
     take: 10,
     orderBy: { openedAt: "desc" },
@@ -567,7 +569,7 @@ export async function getDailyCashSummary(companyId: string, args: { date?: stri
   const end = endOfDay(targetDate);
 
   const invoices = await prisma.invoice.findMany({
-    where: { companyId, date: { gte: start, lte: end }, status: { not: "VOID" } },
+    where: { companyId, date: { gte: start, lte: end }, status: { not: "CANCELLED" } },
     select: { total: true, paymentMethod: true },
   });
   const expenses = await prisma.expense.findMany({
@@ -584,12 +586,12 @@ export async function getDailyCashSummary(companyId: string, args: { date?: stri
 // ──── Audit ────
 
 export async function getRecentAudit(companyId: string, args: { entity?: string; action?: string; limit?: number }) {
-  const where: Record<string, unknown> = { companyId };
-  if (args.entity) where.entity = args.entity;
-  if (args.action) where.action = { contains: args.action };
-
   const logs = await prisma.auditLog.findMany({
-    where: where as Parameters<typeof prisma.auditLog.findMany>[0]["where"],
+    where: {
+      companyId,
+      ...(args.entity ? { entity: args.entity } : {}),
+      ...(args.action ? { action: { contains: args.action } } : {}),
+    },
     select: { action: true, entity: true, entityId: true, userName: true, details: true, createdAt: true },
     take: args.limit || 20,
     orderBy: { createdAt: "desc" },
@@ -609,115 +611,7 @@ export async function getEntityAuditHistory(companyId: string, args: { entity: s
 
 // ──── Flexible SQL Query ────
 
-const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|MERGE|REPLACE|CALL|SET|COPY|LOAD)\b/i;
-const ALLOWED_TENANT_TABLES = new Set([
-  "categories", "products", "customers", "suppliers",
-  "invoices", "invoice_items", "purchases", "purchase_items",
-  "orders", "order_items", "restaurant_tables",
-  "employees", "payroll_runs", "payroll_items",
-  "inventory_movements", "cash_sessions", "expenses",
-  "accounts", "journal_entries", "journal_lines",
-  "gym_members", "memberships", "membership_plans", "check_ins",
-]);
-const ALLOWED_PUBLIC_TABLES = new Set(["audit_logs"]);
-
-function validateSql(sql: string): { valid: boolean; error?: string } {
-  const trimmed = sql.trim().replace(/;+$/, "").trim();
-
-  if (!trimmed.toUpperCase().startsWith("SELECT")) {
-    return { valid: false, error: "Solo se permiten consultas SELECT" };
-  }
-
-  if (DANGEROUS_KEYWORDS.test(trimmed)) {
-    return { valid: false, error: "La consulta contiene operaciones no permitidas" };
-  }
-
-  if (/--/.test(trimmed) || /\/\*/.test(trimmed)) {
-    return { valid: false, error: "Los comentarios SQL no están permitidos" };
-  }
-
-  return { valid: true };
-}
-
-export async function executeSqlQuery(companyId: string, args: { sql: string; limit?: number }) {
-  const validation = validateSql(args.sql);
-  if (!validation.valid) {
-    return { error: validation.error };
-  }
-
-  let sql = args.sql.trim().replace(/;+$/, "").trim();
-  const maxRows = Math.min(args.limit || 100, 200);
-
-  if (!/\bLIMIT\b/i.test(sql)) {
-    sql += ` LIMIT ${maxRows}`;
-  }
-
-  const companyFilter = `'${companyId.replace(/'/g, "''")}'`;
-
-  for (const table of ALLOWED_TENANT_TABLES) {
-    const pattern = new RegExp(`tenant\\.${table}\\b`, "gi");
-    if (pattern.test(sql)) {
-      sql = sql.replace(
-        new RegExp(`(FROM|JOIN)\\s+tenant\\.${table}\\b`, "gi"),
-        (match) => `${match}`
-      );
-    }
-  }
-
-  const hasTenantTable = [...ALLOWED_TENANT_TABLES].some((t) =>
-    new RegExp(`tenant\\.${t}\\b`, "i").test(sql)
-  );
-  const hasPublicTable = [...ALLOWED_PUBLIC_TABLES].some((t) =>
-    new RegExp(`public\\.${t}\\b`, "i").test(sql)
-  );
-
-  if (!hasTenantTable && !hasPublicTable) {
-    return { error: "La consulta debe referenciar al menos una tabla válida con el prefijo de schema (tenant. o public.)" };
-  }
-
-  const whereClause = `company_id = ${companyFilter}`;
-
-  if (/\bWHERE\b/i.test(sql)) {
-    sql = sql.replace(/\bWHERE\b/i, `WHERE ${whereClause} AND`);
-  } else {
-    const insertPoint = sql.search(/\b(GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|$)/i);
-    if (insertPoint > 0) {
-      sql = sql.slice(0, insertPoint) + ` WHERE ${whereClause} ` + sql.slice(insertPoint);
-    } else {
-      sql += ` WHERE ${whereClause}`;
-    }
-  }
-
-  try {
-    const rows = await prisma.$queryRawUnsafe(sql) as Record<string, unknown>[];
-
-    const serialized = rows.map((row) => {
-      const obj: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(row)) {
-        if (v instanceof Date) obj[k] = v.toISOString();
-        else if (typeof v === "bigint") obj[k] = Number(v);
-        else if (v !== null && typeof v === "object" && "toNumber" in v) obj[k] = toNum(v);
-        else obj[k] = v;
-      }
-      return obj;
-    });
-
-    return { rows: serialized, rowCount: serialized.length, truncated: serialized.length >= maxRows };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Error desconocido";
-    if (msg.includes("relation") && msg.includes("does not exist")) {
-      return { error: "Tabla no encontrada. Verifica el nombre de la tabla usando el esquema proporcionado." };
-    }
-    if (msg.includes("column") && msg.includes("does not exist")) {
-      return { error: "Columna no encontrada. Verifica los nombres de columna usando el esquema proporcionado." };
-    }
-    return { error: `Error en la consulta: ${msg.slice(0, 200)}` };
-  }
-}
-
-// ──── Flexible SQL Query ────
-
-const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|MERGE|CALL|SET|COMMIT|ROLLBACK|SAVEPOINT)\b/i;
+const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|MERGE|CALL|SET|COMMIT|ROLLBACK|SAVEPOINT|EXPLAIN|PRAGMA|ATTACH|DETACH|VACUUM|ANALYZE|DBCC|CHECKPOINT|LOAD|COPY|IMPORT)\b/i;
 const ALLOWED_TENANT_TABLES = new Set([
   "categories", "products", "customers", "suppliers", "invoices", "invoice_items",
   "purchases", "purchase_items", "orders", "order_items", "restaurant_tables",
@@ -728,21 +622,38 @@ const ALLOWED_TENANT_TABLES = new Set([
 ]);
 const ALLOWED_PUBLIC_TABLES = new Set(["audit_logs"]);
 
-function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
-  const trimmed = sql.trim().replace(/;+$/, "").trim();
+function stripSqlComments(sql: string): string {
+  // Elimina comentarios de bloque /* ... */ y de línea -- ...
+  return sql
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/--[^\n]*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  if (!trimmed.toUpperCase().startsWith("SELECT")) {
-    return { valid: false, error: "Solo se permiten consultas SELECT" };
+function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
+  // Rechazar cualquier comentario antes de procesarlo (evasión de keywords)
+  if (sql.includes("--") || sql.includes("/*") || sql.includes("*/")) {
+    return { valid: false, error: "Comentarios SQL no están permitidos" };
   }
-  if (DANGEROUS_KEYWORDS.test(trimmed)) {
-    return { valid: false, error: "Consulta contiene operaciones no permitidas" };
-  }
-  if (trimmed.includes("--") || trimmed.includes("/*")) {
-    return { valid: false, error: "Comentarios SQL no permitidos" };
-  }
+
+  // Rechazar múltiples sentencias (semicolon seguido de contenido)
   if (/;\s*\S/.test(sql)) {
     return { valid: false, error: "Solo se permite una consulta a la vez" };
   }
+
+  const clean = stripSqlComments(sql).replace(/;+$/, "").trim();
+
+  // La query limpia debe empezar estrictamente con SELECT
+  if (!/^SELECT\s/i.test(clean)) {
+    return { valid: false, error: "Solo se permiten consultas SELECT" };
+  }
+
+  // Verificar keywords peligrosos en la query limpia
+  if (DANGEROUS_KEYWORDS.test(clean)) {
+    return { valid: false, error: "La consulta contiene operaciones no permitidas" };
+  }
+
   return { valid: true };
 }
 

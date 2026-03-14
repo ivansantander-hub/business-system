@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromHeaders } from "@/lib/auth";
+import { hasPermission } from "@/lib/rbac";
 import { auditApiRequest, serializeEntity } from "@/lib/api-audit";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(_req);
+  const { companyId, role } = getUserFromHeaders(_req);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
+    return NextResponse.json({ error: "No tienes permiso para ver productos" }, { status: 403 });
+  }
 
   const { id } = await params;
   const product = await prisma.product.findFirst({
@@ -17,8 +21,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(request);
+  const { companyId, role } = getUserFromHeaders(request);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
+    return NextResponse.json({ error: "No tienes permiso para editar productos" }, { status: 403 });
+  }
 
   const { id } = await params;
   const existing = await prisma.product.findFirst({
@@ -65,8 +72,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { companyId } = getUserFromHeaders(_req);
+  const { companyId, role } = getUserFromHeaders(_req);
   if (!companyId) return NextResponse.json({ error: "Contexto de empresa requerido" }, { status: 403 });
+  if (role !== "SUPER_ADMIN" && !hasPermission(role, "products")) {
+    return NextResponse.json({ error: "No tienes permiso para eliminar productos" }, { status: 403 });
+  }
 
   const { id } = await params;
   const existing = await prisma.product.findFirst({ where: { id, companyId } });
