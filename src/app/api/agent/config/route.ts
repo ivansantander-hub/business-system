@@ -72,7 +72,7 @@ export async function PUT(request: Request) {
     });
 
     if (enabled && !existing?.enabled) {
-      await ensureAriaUser(companyId);
+      await ensureAuraUser(companyId);
     }
 
     auditApiRequest(request, "agent.config.update", {
@@ -106,18 +106,29 @@ export async function PUT(request: Request) {
   }
 }
 
-async function ensureAriaUser(companyId: string) {
+async function ensureAuraUser(companyId: string) {
   const existing = await prisma.user.findFirst({
     where: { isBot: true, companies: { some: { companyId } } },
   });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.name !== "AURA") {
+      await prisma.user.update({ where: { id: existing.id }, data: { name: "AURA", email: "aura@sgc.bot" } });
+    }
+    return existing;
+  }
 
-  let ariaUser = await prisma.user.findFirst({ where: { isBot: true, email: "aria@sgc.bot" } });
-  if (!ariaUser) {
-    ariaUser = await prisma.user.create({
+  let botUser = await prisma.user.findFirst({ where: { isBot: true, email: "aura@sgc.bot" } });
+  if (!botUser) {
+    botUser = await prisma.user.findFirst({ where: { isBot: true, email: "aria@sgc.bot" } });
+    if (botUser) {
+      await prisma.user.update({ where: { id: botUser.id }, data: { name: "AURA", email: "aura@sgc.bot" } });
+    }
+  }
+  if (!botUser) {
+    botUser = await prisma.user.create({
       data: {
-        name: "Aria",
-        email: "aria@sgc.bot",
+        name: "AURA",
+        email: "aura@sgc.bot",
         password: "BOT_NO_LOGIN",
         role: "ADMIN",
         isBot: true,
@@ -126,8 +137,8 @@ async function ensureAriaUser(companyId: string) {
   }
 
   await prisma.userCompany.create({
-    data: { userId: ariaUser.id, companyId, role: "ADMIN" },
+    data: { userId: botUser.id, companyId, role: "ADMIN" },
   });
 
-  return ariaUser;
+  return botUser;
 }

@@ -47,7 +47,7 @@ Sistema integral de gestión comercial para empresas de tipo **Restaurante/Bar**
 - **Logo de empresa** — Subida de icono vía R2; mostrado en sidebar y página de configuración
 - **Ejecutor manual de tests** — SUPER_ADMIN puede ejecutar tests E2E desde la UI y ver resultados en vivo
 - **Facturación electrónica por terceros** — Modelo de proveedores (Factus, Carvajal, WorldOffice, Siigo) en lugar de integración directa con DIAN
-- **Agente IA (Aria)** — Asistente de negocio con consultas en lenguaje natural; soporte OpenAI y Anthropic; capacidades configurables por empresa; conversaciones independientes por usuario
+- **Agente IA (AURA)** — Asistente Unificado de Reportes y Análisis; consultas en lenguaje natural y SQL flexible; soporte OpenAI y Anthropic; capacidades configurables por empresa; conversaciones independientes por usuario
 - **Datos de demostración (6 meses)** — Seed con 3 empresas, cada una con facturas, compras, nómina, inventario, gastos, contabilidad y más
 
 ## Requisitos previos
@@ -184,7 +184,7 @@ business-system/
 - [Facturación Electrónica](docs/ELECTRONIC-INVOICING.md) — Proveedores terceros, CUFE, rangos
 - [Sucursales](docs/BRANCHES.md) — API, configuración, asignación de usuarios
 - [Mensajería](docs/MESSAGING.md) — DMs, grupos, adjuntos, RBAC
-- [Agente IA (Aria)](docs/AGENT.md) — Consultas en lenguaje natural, configuración, capacidades
+- [Agente IA (AURA)](docs/AGENT.md) — Consultas en lenguaje natural, SQL flexible, configuración, capacidades
 - [Referencia API](docs/API-REFERENCE.md) — Endpoints REST
 
 ## Licencia

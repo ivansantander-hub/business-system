@@ -490,7 +490,7 @@ export default function ConfiguracionPage() {
       {/* Agent Configuration */}
       <div className="card">
         <h2 className="font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-          <Bot className="w-5 h-5 text-violet-500" /> Agente de IA (Aria)
+          <Bot className="w-5 h-5 text-violet-500" /> Agente de IA (AURA)
         </h2>
         <form onSubmit={saveAgentConfig} className="space-y-6">
           <div className="flex items-center justify-between">

@@ -219,7 +219,8 @@ export async function getInventoryMovements(companyId: string, args: { productId
   return {
     movements: movements.map((m) => ({
       date: m.createdAt, type: m.type, product: m.product.name, quantity: toNum(m.quantity),
-      reference: m.reference, user: m.user?.name, notes: m.notes,
+      previousStock: toNum(m.previousStock), newStock: toNum(m.newStock),
+      reason: m.reason, user: m.user?.name,
     })),
   };
 }
@@ -499,7 +500,7 @@ export async function getJournalEntries(companyId: string, args: { limit?: numbe
 // ──── Memberships ────
 
 export async function getActiveMemberships(companyId: string, args: { expiringInDays?: number }) {
-  const where: Record<string, unknown> = { companyId: undefined, status: "ACTIVE", member: { companyId } };
+  const where: Record<string, unknown> = { status: "ACTIVE", member: { companyId } };
   if (args.expiringInDays) {
     const deadline = new Date();
     deadline.setDate(deadline.getDate() + args.expiringInDays);
@@ -512,7 +513,6 @@ export async function getActiveMemberships(companyId: string, args: { expiringIn
     take: 20,
     orderBy: { endDate: "asc" },
   });
-  delete where.companyId;
 
   return {
     memberships: memberships.map((m) => ({
@@ -607,6 +607,225 @@ export async function getEntityAuditHistory(companyId: string, args: { entity: s
   return { entity: args.entity, entityId: args.entityId, history: logs };
 }
 
+// ──── Flexible SQL Query ────
+
+const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|MERGE|REPLACE|CALL|SET|COPY|LOAD)\b/i;
+const ALLOWED_TENANT_TABLES = new Set([
+  "categories", "products", "customers", "suppliers",
+  "invoices", "invoice_items", "purchases", "purchase_items",
+  "orders", "order_items", "restaurant_tables",
+  "employees", "payroll_runs", "payroll_items",
+  "inventory_movements", "cash_sessions", "expenses",
+  "accounts", "journal_entries", "journal_lines",
+  "gym_members", "memberships", "membership_plans", "check_ins",
+]);
+const ALLOWED_PUBLIC_TABLES = new Set(["audit_logs"]);
+
+function validateSql(sql: string): { valid: boolean; error?: string } {
+  const trimmed = sql.trim().replace(/;+$/, "").trim();
+
+  if (!trimmed.toUpperCase().startsWith("SELECT")) {
+    return { valid: false, error: "Solo se permiten consultas SELECT" };
+  }
+
+  if (DANGEROUS_KEYWORDS.test(trimmed)) {
+    return { valid: false, error: "La consulta contiene operaciones no permitidas" };
+  }
+
+  if (/--/.test(trimmed) || /\/\*/.test(trimmed)) {
+    return { valid: false, error: "Los comentarios SQL no están permitidos" };
+  }
+
+  return { valid: true };
+}
+
+export async function executeSqlQuery(companyId: string, args: { sql: string; limit?: number }) {
+  const validation = validateSql(args.sql);
+  if (!validation.valid) {
+    return { error: validation.error };
+  }
+
+  let sql = args.sql.trim().replace(/;+$/, "").trim();
+  const maxRows = Math.min(args.limit || 100, 200);
+
+  if (!/\bLIMIT\b/i.test(sql)) {
+    sql += ` LIMIT ${maxRows}`;
+  }
+
+  const companyFilter = `'${companyId.replace(/'/g, "''")}'`;
+
+  for (const table of ALLOWED_TENANT_TABLES) {
+    const pattern = new RegExp(`tenant\\.${table}\\b`, "gi");
+    if (pattern.test(sql)) {
+      sql = sql.replace(
+        new RegExp(`(FROM|JOIN)\\s+tenant\\.${table}\\b`, "gi"),
+        (match) => `${match}`
+      );
+    }
+  }
+
+  const hasTenantTable = [...ALLOWED_TENANT_TABLES].some((t) =>
+    new RegExp(`tenant\\.${t}\\b`, "i").test(sql)
+  );
+  const hasPublicTable = [...ALLOWED_PUBLIC_TABLES].some((t) =>
+    new RegExp(`public\\.${t}\\b`, "i").test(sql)
+  );
+
+  if (!hasTenantTable && !hasPublicTable) {
+    return { error: "La consulta debe referenciar al menos una tabla válida con el prefijo de schema (tenant. o public.)" };
+  }
+
+  const whereClause = `company_id = ${companyFilter}`;
+
+  if (/\bWHERE\b/i.test(sql)) {
+    sql = sql.replace(/\bWHERE\b/i, `WHERE ${whereClause} AND`);
+  } else {
+    const insertPoint = sql.search(/\b(GROUP\s+BY|HAVING|ORDER\s+BY|LIMIT|$)/i);
+    if (insertPoint > 0) {
+      sql = sql.slice(0, insertPoint) + ` WHERE ${whereClause} ` + sql.slice(insertPoint);
+    } else {
+      sql += ` WHERE ${whereClause}`;
+    }
+  }
+
+  try {
+    const rows = await prisma.$queryRawUnsafe(sql) as Record<string, unknown>[];
+
+    const serialized = rows.map((row) => {
+      const obj: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        if (v instanceof Date) obj[k] = v.toISOString();
+        else if (typeof v === "bigint") obj[k] = Number(v);
+        else if (v !== null && typeof v === "object" && "toNumber" in v) obj[k] = toNum(v);
+        else obj[k] = v;
+      }
+      return obj;
+    });
+
+    return { rows: serialized, rowCount: serialized.length, truncated: serialized.length >= maxRows };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido";
+    if (msg.includes("relation") && msg.includes("does not exist")) {
+      return { error: "Tabla no encontrada. Verifica el nombre de la tabla usando el esquema proporcionado." };
+    }
+    if (msg.includes("column") && msg.includes("does not exist")) {
+      return { error: "Columna no encontrada. Verifica los nombres de columna usando el esquema proporcionado." };
+    }
+    return { error: `Error en la consulta: ${msg.slice(0, 200)}` };
+  }
+}
+
+// ──── Flexible SQL Query ────
+
+const DANGEROUS_KEYWORDS = /\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE|EXEC|EXECUTE|MERGE|CALL|SET|COMMIT|ROLLBACK|SAVEPOINT)\b/i;
+const ALLOWED_TENANT_TABLES = new Set([
+  "categories", "products", "customers", "suppliers", "invoices", "invoice_items",
+  "purchases", "purchase_items", "orders", "order_items", "restaurant_tables",
+  "employees", "payroll_runs", "payroll_items", "inventory_movements",
+  "cash_sessions", "expenses", "accounts", "journal_entries", "journal_lines",
+  "gym_members", "memberships", "membership_plans", "check_ins",
+  "branches",
+]);
+const ALLOWED_PUBLIC_TABLES = new Set(["audit_logs"]);
+
+function validateSqlQuery(sql: string): { valid: boolean; error?: string } {
+  const trimmed = sql.trim().replace(/;+$/, "").trim();
+
+  if (!trimmed.toUpperCase().startsWith("SELECT")) {
+    return { valid: false, error: "Solo se permiten consultas SELECT" };
+  }
+  if (DANGEROUS_KEYWORDS.test(trimmed)) {
+    return { valid: false, error: "Consulta contiene operaciones no permitidas" };
+  }
+  if (trimmed.includes("--") || trimmed.includes("/*")) {
+    return { valid: false, error: "Comentarios SQL no permitidos" };
+  }
+  if (/;\s*\S/.test(sql)) {
+    return { valid: false, error: "Solo se permite una consulta a la vez" };
+  }
+  return { valid: true };
+}
+
+function injectCompanyFilter(sql: string, companyId: string): string {
+  let query = sql.trim().replace(/;+$/, "");
+
+  const tablesReferenced: { table: string; alias: string; schema: "tenant" | "public" }[] = [];
+  const fromJoinPattern = /(?:FROM|JOIN)\s+(tenant\.|public\.)?(\w+)(?:\s+(?:AS\s+)?(\w+))?/gi;
+  let match;
+  while ((match = fromJoinPattern.exec(query)) !== null) {
+    const schemaPrefix = match[1]?.replace(".", "") as "tenant" | "public" | undefined;
+    const tableName = match[2].toLowerCase();
+    const alias = match[3] || match[2];
+
+    if (ALLOWED_TENANT_TABLES.has(tableName)) {
+      tablesReferenced.push({ table: tableName, alias, schema: schemaPrefix || "tenant" });
+    } else if (ALLOWED_PUBLIC_TABLES.has(tableName)) {
+      tablesReferenced.push({ table: tableName, alias, schema: schemaPrefix || "public" });
+    }
+  }
+
+  const mainTable = tablesReferenced[0];
+  if (!mainTable) return query;
+
+  const companyCol = "company_id";
+  const filterExpr = `${mainTable.alias}.${companyCol} = '${companyId}'`;
+
+  const whereIndex = query.toUpperCase().indexOf("WHERE");
+  const groupIndex = query.toUpperCase().indexOf("GROUP BY");
+  const orderIndex = query.toUpperCase().indexOf("ORDER BY");
+  const limitIndex = query.toUpperCase().indexOf("LIMIT");
+  const havingIndex = query.toUpperCase().indexOf("HAVING");
+
+  if (whereIndex !== -1) {
+    const insertPos = whereIndex + 6;
+    query = query.slice(0, insertPos) + ` ${filterExpr} AND` + query.slice(insertPos);
+  } else {
+    const insertBefore = [groupIndex, orderIndex, limitIndex, havingIndex]
+      .filter((i) => i !== -1)
+      .sort((a, b) => a - b)[0];
+
+    if (insertBefore !== undefined) {
+      query = query.slice(0, insertBefore) + ` WHERE ${filterExpr} ` + query.slice(insertBefore);
+    } else {
+      query += ` WHERE ${filterExpr}`;
+    }
+  }
+
+  if (!/LIMIT\s+\d+/i.test(query)) {
+    query += " LIMIT 100";
+  }
+
+  return query;
+}
+
+export async function executeSqlQuery(companyId: string, args: { sql: string; description?: string }) {
+  const validation = validateSqlQuery(args.sql);
+  if (!validation.valid) {
+    return { error: validation.error };
+  }
+
+  const finalSql = injectCompanyFilter(args.sql, companyId);
+
+  try {
+    const results = await prisma.$queryRawUnsafe<Record<string, unknown>[]>(finalSql);
+
+    const serialized = results.map((row) => {
+      const out: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(row)) {
+        if (val instanceof Date) out[key] = val.toISOString();
+        else if (typeof val === "bigint") out[key] = Number(val);
+        else if (val !== null && typeof val === "object" && "toNumber" in val) out[key] = (val as { toNumber: () => number }).toNumber();
+        else out[key] = val;
+      }
+      return out;
+    });
+
+    return { rows: serialized, rowCount: serialized.length, query: args.description || "Consulta SQL" };
+  } catch (err) {
+    return { error: `Error en consulta: ${err instanceof Error ? err.message : "desconocido"}` };
+  }
+}
+
 export const QUERY_HANDLERS: Record<string, (companyId: string, args: Record<string, unknown>) => Promise<unknown>> = {
   get_business_overview: (cid) => getBusinessOverview(cid),
   get_sales_summary: (cid, args) => getSalesSummary(cid, args as Parameters<typeof getSalesSummary>[1]),
@@ -642,4 +861,5 @@ export const QUERY_HANDLERS: Record<string, (companyId: string, args: Record<str
   get_daily_cash_summary: (cid, args) => getDailyCashSummary(cid, args as Parameters<typeof getDailyCashSummary>[1]),
   get_recent_audit: (cid, args) => getRecentAudit(cid, args as Parameters<typeof getRecentAudit>[1]),
   get_entity_audit_history: (cid, args) => getEntityAuditHistory(cid, args as Parameters<typeof getEntityAuditHistory>[1]),
+  execute_sql_query: (cid, args) => executeSqlQuery(cid, args as Parameters<typeof executeSqlQuery>[1]),
 };

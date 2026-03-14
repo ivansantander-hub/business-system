@@ -78,7 +78,7 @@ export async function GET(request: Request) {
 
       const lastMessage = conv.messages[0];
       const displayName = hasBot
-        ? "Aria"
+        ? "AURA"
         : conv.isGroup
           ? conv.name ?? otherParticipants.map((u) => u.name).join(", ")
           : otherParticipants[0]?.name ?? "Sin nombre";

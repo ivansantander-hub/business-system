@@ -367,6 +367,19 @@ export const ALL_TOOLS: ToolDefinition[] = [
       required: ["entity", "entityId"],
     },
   },
+  // ──── Flexible SQL Query ────
+  {
+    name: "execute_sql_query",
+    description: "Ejecuta una consulta SQL SELECT de solo lectura contra la base de datos. Usa esto para contar registros, obtener totales, últimos registros, rankings, y cualquier análisis que las herramientas predefinidas no cubren. El filtro company_id se añade automáticamente. Usa schema 'tenant.' para las tablas (ej: tenant.invoices, tenant.products). Siempre incluye LIMIT.",
+    parameters: {
+      type: "object",
+      properties: {
+        sql: { type: "string", description: "Consulta SQL SELECT. Ejemplo: SELECT COUNT(*) as total FROM tenant.invoices WHERE status != 'VOID'" },
+        description: { type: "string", description: "Descripción breve de qué busca la consulta" },
+      },
+      required: ["sql"],
+    },
+  },
 ];
 
 export function getToolsByNames(names: string[]): ToolDefinition[] {
